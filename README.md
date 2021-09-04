@@ -1,8 +1,15 @@
 # Battery Simulator integration/custom component for home assistant
 
-Allows you to model how much energy you would save with a home battery if you currently export energy to the grid. Requires an energy monitor that can measure import and export energy.
+Allows you to model how much energy you would save with a home battery if you currently export energy to the grid e.g. from solar panels. Requires an energy monitor that can measure import and export energy. Whenever you are exporting energy your simulated battery will charge up and whenevery you are importing it will discharge. Battery charge percentage and total energy saved are in the attributes. 
 
 # Example configuration
+
+You can create any custom battery you want, but below is the config for some common batteries.
+import_sensor - the sensor that measures the energy in kwh imported to your house cummlatively (e.g. output of a utility_meter component)
+export_sensor - the sensor that measures the energy in kwh exported to your house cummlatively (e.g. output of a utility_meter component)
+size_kwh - the maximum usable capacity of the battery in kwh - must be floating point number (with a decimal point e.g. 5.0)
+max_discharge_rate_kw/max_charge_rate_kw - how fast the battery can discharge/charge in kw - must be floating point number (with a decimal point e.g. 5.0)
+efficiency - the round trip efficiency of the battery (0-1)
 
 ```yaml
 battery_sim:
