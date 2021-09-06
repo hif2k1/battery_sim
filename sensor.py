@@ -88,7 +88,6 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     async_add_entities(batteries)
 
-
 class SimulatedBattery(RestoreEntity, SensorEntity):
     """Representation of an utility meter sensor."""
 
@@ -125,6 +124,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
     @callback
     def async_export_reading(self, event):
+
         """Handle the sensor state changes."""
         old_state = event.data.get("old_state")
         new_state = event.data.get("new_state")
@@ -136,6 +136,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         ):
             return
 
+        if self._state=='unknown': self._state = 0
+
         try:
             """Calculate maximum possible charge based on battery specifications"""
             time_now = time.time()
@@ -143,15 +145,18 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             self._last_import_reading_time = time_now
             max_charge = time_since_last_import*self._max_charge_rate/3600
 
-            diff = Decimal(new_state.state) - Decimal(old_state.state)
+            diff = float(new_state.state) - float(old_state.state)
 
             if diff <= 0:
                 return
+            
+            available_capacity = self._battery_size - float(self._state)
 
-            diff = min(diff, max_charge)
+            diff = min(diff, max_charge, available_capacity)
 
-            self._state = min(self._battery_size, self._state + diff)
+            self._state = round(float(self._state) + diff,2)
             self._charging = True
+            self._charge_percentage = round(100*float(self._state)/float(self._battery_size))
 
         except ValueError as err:
             _LOGGER.warning("While processing state changes: %s", err)
@@ -159,7 +164,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             _LOGGER.warning(
                 "Invalid state (%s > %s): %s", old_state.state, new_state.state, err
             )
-        self.async_write_ha_state()
+        self.schedule_update_ha_state(True)
+#        self.async_write_ha_state()
 
     @callback
     def async_import_reading(self, event):
@@ -174,6 +180,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         ):
             return
 
+        if self._state=='unknown': self._state = 0
+
         try:
             """Calculate maximum possible discharge based on battery specifications"""
             time_now = time.time()
@@ -181,16 +189,16 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             self._last_import_reading_time = time_now
             max_discharge = time_since_last_import*self._max_discharge_rate/3600
 
-            diff = Decimal(new_state.state) - Decimal(old_state.state)
-
+            diff = float(new_state.state) - float(old_state.state)
+            _LOGGER.warning("State3: (%s)", self._state)
             if diff <= 0:
                 return
 
-            diff = min(diff, max_discharge)
-            
-            self._state = max(0, Decimal(self._state) - diff/Decimal(self._battery_efficiency))
+            diff = min(diff, max_discharge, float(self._state)*float(self._battery_efficiency))
+
+            self._state = round(float(self._state) - diff/float(self._battery_efficiency),2)
             self._energy_saved += diff
-            self._charge_percentage = round(100*Decimal(self._state)/Decimal(self._battery_size))
+            self._charge_percentage = round(100*float(self._state)/float(self._battery_size))
 
             self._charging = False
 
@@ -200,7 +208,9 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             _LOGGER.warning(
                 "Invalid state (%s > %s): %s", old_state.state, new_state.state, err
             )
-        self.async_write_ha_state()
+#        self.async_write_ha_state()
+        self.schedule_update_ha_state(True)
+        _LOGGER.warning("State 4: ")
 
     async def async_added_to_hass(self):
         """Handle entity which will be added."""
@@ -208,7 +218,9 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
         state = await self.async_get_last_state()
         if state:
-            self._state = Decimal(state.state)
+            self._state = state.state
+
+#        async_dispatcher_connect(self.hass)
 
         @callback
         def async_source_tracking(event):
@@ -235,6 +247,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
+        _LOGGER.warning("State7: (%s)", str(self._state))
         return self._state
 
     @property
@@ -251,6 +264,11 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
     @property
     def native_unit_of_measurement(self):
+        """Return the unit the value is expressed in."""
+        return ENERGY_KILO_WATT_HOUR
+
+    @property
+    def unit_of_measurement(self):
         """Return the unit the value is expressed in."""
         return ENERGY_KILO_WATT_HOUR
 
@@ -281,3 +299,13 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             return ICON_CHARGING
         else:
             return ICON_DISCHARGING
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        return self._state
+
+    def update(self):
+        """Fetch new state data for the sensor.
+        This is the only method that should fetch new data for Home Assistant.
+        """
