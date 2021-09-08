@@ -4,7 +4,6 @@ from decimal import Decimal, DecimalException
 import logging
 
 from homeassistant.components.sensor import (
-    ATTR_LAST_RESET,
     STATE_CLASS_MEASUREMENT,
     SensorEntity,
 )
@@ -43,11 +42,6 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-
-#ATTR_PERIOD = "meter_period"
-#ATTR_LAST_PERIOD = "last_period"
-#ATTR_TARIFF = "tariff"
 
 DEVICE_CLASS_MAP = {
     ENERGY_WATT_HOUR: DEVICE_CLASS_ENERGY,
