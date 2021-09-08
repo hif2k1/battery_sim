@@ -165,7 +165,6 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
                 "Invalid state (%s > %s): %s", old_state.state, new_state.state, err
             )
         self.schedule_update_ha_state(True)
-#        self.async_write_ha_state()
 
     @callback
     def async_import_reading(self, event):
@@ -190,7 +189,6 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             max_discharge = time_since_last_import*self._max_discharge_rate/3600
 
             diff = float(new_state.state) - float(old_state.state)
-            _LOGGER.warning("State3: (%s)", self._state)
             if diff <= 0:
                 return
 
@@ -208,9 +206,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             _LOGGER.warning(
                 "Invalid state (%s > %s): %s", old_state.state, new_state.state, err
             )
-#        self.async_write_ha_state()
         self.schedule_update_ha_state(True)
-        _LOGGER.warning("State 4: ")
 
     async def async_added_to_hass(self):
         """Handle entity which will be added."""
@@ -220,7 +216,6 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         if state:
             self._state = state.state
 
-#        async_dispatcher_connect(self.hass)
 
         @callback
         def async_source_tracking(event):
@@ -306,6 +301,4 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         return self._state
 
     def update(self):
-        """Fetch new state data for the sensor.
-        This is the only method that should fetch new data for Home Assistant.
-        """
+        """Not used"""
