@@ -15,4 +15,4 @@ jobs:
       - name: HACS Action
         uses: "hacs/action@main"
         with:
-          category: "hif2k1/battery_sim"
+          category: "integration"
