@@ -1,6 +1,5 @@
 {
   "name": "battery_sim",
-  "content_in_root": true,
   "country": ["UK"],
   "render_readme": true,
   "domains":["sensor"]
