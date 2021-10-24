@@ -135,9 +135,9 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         try:
             """Calculate maximum possible charge based on battery specifications"""
             time_now = time.time()
-            time_since_last_import = time_now-self._last_import_reading_time
-            self._last_import_reading_time = time_now
-            max_charge = time_since_last_import*self._max_charge_rate/3600
+            time_since_last_export = time_now-self._last_export_reading_time
+            self._last_export_reading_time = time_now
+            max_charge = time_since_last_export*self._max_charge_rate/3600
 
             diff = float(new_state.state) - float(old_state.state)
 
