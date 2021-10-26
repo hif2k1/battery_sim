@@ -236,7 +236,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        return round(self._state,2)
+        return round(float(self._state),2)
 
     @property
     def device_class(self):
@@ -291,7 +291,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        return round(self._state,2)
+        return round(float(self._state),2)
 
     def update(self):
         """Not used"""
