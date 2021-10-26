@@ -148,7 +148,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
             diff = min(diff, max_charge, available_capacity)
 
-            self._state = round(float(self._state) + diff,2)
+            self._state = float(self._state) + diff
             self._charging = True
             self._charge_percentage = round(100*float(self._state)/float(self._battery_size))
 
@@ -188,7 +188,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
             diff = min(diff, max_discharge, float(self._state)*float(self._battery_efficiency))
 
-            self._state = round(float(self._state) - diff/float(self._battery_efficiency),2)
+            self._state = float(self._state) - diff/float(self._battery_efficiency)
             self._energy_saved += diff
             self._charge_percentage = round(100*float(self._state)/float(self._battery_size))
 
@@ -236,8 +236,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        _LOGGER.warning("State7: (%s)", str(self._state))
-        return self._state
+        return round(self._state,2)
 
     @property
     def device_class(self):
@@ -292,7 +291,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        return self._state
+        return round(self._state,2)
 
     def update(self):
         """Not used"""
