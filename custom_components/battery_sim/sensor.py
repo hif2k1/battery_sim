@@ -209,7 +209,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         state = await self.async_get_last_state()
         if state:
             self._state = state.state
-
+            self._energy_saved = state.attributes['energy_saved']
 
         @callback
         def async_source_tracking(event):
