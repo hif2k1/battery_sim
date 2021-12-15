@@ -36,6 +36,7 @@ from .const import (
     ATTR_SOURCE_ID,
     ATTR_STATUS,
     ATTR_ENERGY_SAVED,
+    ATTR_ENERGY_SAVED_TODAY,
     CHARGING,
     DISCHARGING,
     ATTR_CHARGE_PERCENTAGE
@@ -100,6 +101,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         self._export_sensor_id = export_sensor
         self._state = 0
         self._energy_saved = 0
+        self._energy_saved_today = 0
         self._collecting1 = None
         self._collecting2 = None
         self._charging = False
@@ -178,6 +180,10 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         try:
             """Calculate maximum possible discharge based on battery specifications"""
             time_now = time.time()
+
+            if time.strftime("%w") != time.strftime("%w", time.gmtime(self._last_import_reading_time)):
+                self._energy_saved_today = 0
+ 
             time_since_last_import = time_now-self._last_import_reading_time
             self._last_import_reading_time = time_now
             max_discharge = time_since_last_import*self._max_discharge_rate/3600
@@ -190,6 +196,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
             self._state = float(self._state) - diff/float(self._battery_efficiency)
             self._energy_saved += diff
+            self._energy_saved_today += diff
             self._charge_percentage = round(100*float(self._state)/float(self._battery_size))
 
             self._charging = False
@@ -273,6 +280,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             ATTR_STATUS: CHARGING if self._charging else DISCHARGING,
             ATTR_ENERGY_SAVED: float(self._energy_saved),
             ATTR_CHARGE_PERCENTAGE: int(self._charge_percentage),
+            ATTR_ENERGY_SAVED_TODAY: round(float(self._energy_saved_today),2),
             CONF_BATTERY_SIZE: self._battery_size,
             CONF_BATTERY_EFFICIENCY: float(self._battery_efficiency),
             CONF_BATTERY_MAX_DISCHARGE_RATE: float(self._max_discharge_rate),

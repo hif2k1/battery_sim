@@ -27,6 +27,7 @@ ATTR_SOURCE_ID = "source"
 ATTR_STATUS = "status"
 PRECISION = 3
 ATTR_ENERGY_SAVED = "energy_saved"
+ATTR_ENERGY_SAVED_TODAY = "energy_saved_today"
 CHARGING = "charging"
 DISCHARGING = "discharging"
 ATTR_CHARGE_PERCENTAGE = "percentage"
