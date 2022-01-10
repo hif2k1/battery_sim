@@ -15,6 +15,7 @@ You can create any custom battery you want, but below is the config for some com
 - max_discharge_rate_kw: how fast the battery can discharge in kw - must be floating point number (with a decimal point e.g. 5.0)
 - max_charge_rate_kw: how fast the battery can charge in kw - must be floating point number (with a decimal point e.g. 5.0)
 - efficiency - the round trip efficiency of the battery (0-1). This factor is applied on discharging the battery.
+- energy_tariff - (optional) for use with variable energy tarrifs. If provided will count money saved by multiplying discharge from the battery by current tarrif. Currently no support for currency symbols so only enter number value.
 
 ```yaml
 battery_sim:
@@ -26,6 +27,7 @@ battery_sim:
     max_discharge_rate_kw: 5.0
     max_charge_rate_kw: 3.68
     efficiency: 0.9
+    energy_tarriff: 0.184
   lg_chem_resu10h:
     name: LG Chem
     import_sensor: sensor.circuitsetup_cumulative_import_energy_kwh
