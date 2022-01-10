@@ -32,11 +32,18 @@ from .const import (
     CONF_BATTERY_SIZE,
     CONF_IMPORT_SENSOR,
     CONF_EXPORT_SENSOR,
+    CONF_ENERGY_TARIFF,
+    ATTR_MONEY_SAVED,
     DATA_UTILITY,
     ATTR_SOURCE_ID,
+    ATTR_CHARGING_RATE,
+    ATTR_DISCHARGING_RATE,
     ATTR_STATUS,
     ATTR_ENERGY_SAVED,
     ATTR_ENERGY_SAVED_TODAY,
+    ATTR_ENERGY_SAVED_WEEK,
+    ATTR_ENERGY_SAVED_MONTH,
+    ATTR_DATE_RECORDING_STARTED,
     CHARGING,
     DISCHARGING,
     ATTR_CHARGE_PERCENTAGE
@@ -64,6 +71,10 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         battery = conf[CONF_BATTERY]
         conf_import_sensor = hass.data[DATA_UTILITY][battery][CONF_IMPORT_SENSOR]
         conf_export_sensor = hass.data[DATA_UTILITY][battery][CONF_EXPORT_SENSOR]
+        if CONF_ENERGY_TARIFF in hass.data[DATA_UTILITY][battery]:
+            conf_tariff_sensor = hass.data[DATA_UTILITY][battery][CONF_ENERGY_TARIFF]
+        else:
+            conf_tariff_sensor = "none"
         conf_battery_size = hass.data[DATA_UTILITY][battery].get(CONF_BATTERY_SIZE)
         conf_battery_efficiency = hass.data[DATA_UTILITY][battery].get(CONF_BATTERY_EFFICIENCY)
         conf_battery_max_discharge_rate = hass.data[DATA_UTILITY][battery].get(CONF_BATTERY_MAX_DISCHARGE_RATE)
@@ -73,6 +84,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             SimulatedBattery(
                 conf_import_sensor,
                 conf_export_sensor,
+                conf_tariff_sensor,
                 conf_battery_size,
                 conf_battery_max_discharge_rate,
                 conf_battery_max_charge_rate,
@@ -84,24 +96,30 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     async_add_entities(batteries)
 
 class SimulatedBattery(RestoreEntity, SensorEntity):
-    """Representation of an utility meter sensor."""
+    """Representation of a battery."""
 
     def __init__(
         self,
         import_sensor,
         export_sensor,
+        tariff_sensor,
         battery_size,
         max_discharge_rate,
         max_charge_rate,
         battery_efficiency,
         name,
     ):
-        """Initialize the Utility Meter sensor."""
+        """Initialize the Battery."""
         self._import_sensor_id = import_sensor
         self._export_sensor_id = export_sensor
+        self._tariff_sensor_id = tariff_sensor
         self._state = 0
         self._energy_saved = 0
+        self._money_saved = 0
         self._energy_saved_today = 0
+        self._energy_saved_week = 0
+        self._energy_saved_month = 0
+        self._date_recording_started = time.asctime()
         self._collecting1 = None
         self._collecting2 = None
         self._charging = False
@@ -117,6 +135,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         self._last_export_reading_time = time.time()
         self._max_discharge = 0
         self._charge_percentage = 0
+        self._charging_rate = 0
+        self._discharging_rate = 0
 
     @callback
     def async_export_reading(self, event):
@@ -144,6 +164,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             diff = float(new_state.state) - float(old_state.state)
 
             if diff <= 0:
+                self._charging_rate = 0
                 return
             
             available_capacity = self._battery_size - float(self._state)
@@ -153,6 +174,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             self._state = float(self._state) + diff
             self._charging = True
             self._charge_percentage = round(100*float(self._state)/float(self._battery_size))
+            self._charging_rate = diff/(time_since_last_export/3600)
 
         except ValueError as err:
             _LOGGER.warning("While processing state changes: %s", err)
@@ -183,6 +205,10 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
             if time.strftime("%w") != time.strftime("%w", time.gmtime(self._last_import_reading_time)):
                 self._energy_saved_today = 0
+            if time.strftime("%U") != time.strftime("%U", time.gmtime(self._last_import_reading_time)):
+                self._energy_saved_week = 0
+            if time.strftime("%m") != time.strftime("%m", time.gmtime(self._last_import_reading_time)):
+                self._energy_saved_month = 0
  
             time_since_last_import = time_now-self._last_import_reading_time
             self._last_import_reading_time = time_now
@@ -190,6 +216,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
             diff = float(new_state.state) - float(old_state.state)
             if diff <= 0:
+                self._discharging_rate = 0
                 return
 
             diff = min(diff, max_discharge, float(self._state)*float(self._battery_efficiency))
@@ -197,9 +224,15 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             self._state = float(self._state) - diff/float(self._battery_efficiency)
             self._energy_saved += diff
             self._energy_saved_today += diff
+            self._energy_saved_week += diff
+            self._energy_saved_month += diff
             self._charge_percentage = round(100*float(self._state)/float(self._battery_size))
+            
+            if self._tariff_sensor_id != "none":
+                self._money_saved += diff*float(self.hass.states.get(self._tariff_sensor_id).state)
 
             self._charging = False
+            self._discharging_rate = diff/(time_since_last_import/3600)
 
         except ValueError as err:
             _LOGGER.warning("While processing state changes: %s", err)
@@ -216,8 +249,19 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         state = await self.async_get_last_state()
         if state:
             self._state = state.state
-            self._energy_saved = state.attributes['energy_saved']
-
+            if ATTR_ENERGY_SAVED in state.attributes:
+                self._energy_saved = state.attributes[ATTR_ENERGY_SAVED]
+            if ATTR_DATE_RECORDING_STARTED in state.attributes:
+                self._date_recording_started = state.attributes[ATTR_DATE_RECORDING_STARTED]
+            if ATTR_ENERGY_SAVED_TODAY in state.attributes:
+                self._energy_saved_today = state.attributes[ATTR_ENERGY_SAVED_TODAY]
+            if ATTR_ENERGY_SAVED_WEEK in state.attributes:
+                self._energy_saved_week = state.attributes[ATTR_ENERGY_SAVED_WEEK]
+            if ATTR_ENERGY_SAVED_MONTH in state.attributes:
+                self._energy_saved_month = state.attributes[ATTR_ENERGY_SAVED_MONTH]
+            if self._tariff_sensor_id != "none" and ATTR_MONEY_SAVED in state.attributes:
+               self._money_saved = state.attributes[ATTR_MONEY_SAVED]
+            
         @callback
         def async_source_tracking(event):
             """Wait for source to be ready, then start."""
@@ -278,9 +322,15 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         state_attr = {
             ATTR_SOURCE_ID: self._export_sensor_id,
             ATTR_STATUS: CHARGING if self._charging else DISCHARGING,
-            ATTR_ENERGY_SAVED: float(self._energy_saved),
+            ATTR_CHARGING_RATE: round(self._charging_rate,2),
+            ATTR_DISCHARGING_RATE: round(self._discharging_rate,2),
             ATTR_CHARGE_PERCENTAGE: int(self._charge_percentage),
+            ATTR_DATE_RECORDING_STARTED: self._date_recording_started,
+            ATTR_ENERGY_SAVED: round(float(self._energy_saved),2),
+            ATTR_MONEY_SAVED: round(float(self._money_saved),2),
             ATTR_ENERGY_SAVED_TODAY: round(float(self._energy_saved_today),2),
+            ATTR_ENERGY_SAVED_WEEK: round(float(self._energy_saved_week),2),
+            ATTR_ENERGY_SAVED_MONTH: round(float(self._energy_saved_month),2),
             CONF_BATTERY_SIZE: self._battery_size,
             CONF_BATTERY_EFFICIENCY: float(self._battery_efficiency),
             CONF_BATTERY_MAX_DISCHARGE_RATE: float(self._max_discharge_rate),
