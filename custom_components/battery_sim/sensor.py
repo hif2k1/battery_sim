@@ -4,7 +4,7 @@ from decimal import Decimal, DecimalException
 import logging
 
 from homeassistant.components.sensor import (
-    STATE_CLASS_MEASUREMENT,
+    STATE_CLASS_TOTAL_INCREASING,
     SensorEntity,
 )
 from homeassistant.const import (
@@ -41,6 +41,8 @@ from .const import (
     ATTR_DISCHARGING_RATE,
     ATTR_STATUS,
     ATTR_ENERGY_SAVED,
+    ATTR_ENERGY_BATTERY_OUT,
+    ATTR_ENERGY_BATTERY_IN,
     ATTR_ENERGY_SAVED_TODAY,
     ATTR_ENERGY_SAVED_WEEK,
     ATTR_ENERGY_SAVED_MONTH,
@@ -87,11 +89,15 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             conf_name = f"{conf_battery_size} kwh battery"
 
         energySavedSensor = DisplayOnlySensor(conf_name + " - total energy saved", ENERGY_KILO_WATT_HOUR)
+        energyBatteryOutSensor = DisplayOnlySensor(conf_name + " - batery energy out", ENERGY_KILO_WATT_HOUR)
+        energyBatteryInSensor = DisplayOnlySensor(conf_name + " - battery energy in", ENERGY_KILO_WATT_HOUR)
         chargingRateSensor = DisplayOnlySensor(conf_name + " - current charging rate", POWER_KILO_WATT)
         dischargingRateSensor = DisplayOnlySensor(conf_name + " - current discharging rate", POWER_KILO_WATT)
         simulatedExportSensor = DisplayOnlySensor(conf_name + " - simulated grid export after battery charging", ENERGY_KILO_WATT_HOUR)
         simulatedImportSensor = DisplayOnlySensor(conf_name + " - simulated grid import after battery discharging", ENERGY_KILO_WATT_HOUR)
         batteries.append(energySavedSensor)
+        batteries.append(energyBatteryOutSensor)
+        batteries.append(energyBatteryInSensor)
         batteries.append(chargingRateSensor)
         batteries.append(dischargingRateSensor)
         batteries.append(simulatedExportSensor)
@@ -107,6 +113,8 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 conf_battery_efficiency,
                 conf_name,
                 energySavedSensor,
+                energyBatteryOutSensor,
+                energyBatteryInSensor,
                 chargingRateSensor,
                 dischargingRateSensor,
                 simulatedImportSensor,
@@ -150,7 +158,7 @@ class DisplayOnlySensor(SensorEntity):
     def state_class(self):
         """Return the device class of the sensor."""
         return (
-            STATE_CLASS_MEASUREMENT
+            STATE_CLASS_TOTAL_INCREASING
         )
 
     @property
@@ -189,6 +197,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         battery_efficiency,
         name,
         energySavedSensor,
+        energyBatteryOutSensor,
+        energyBatteryInSensor,
         chargingRateSensor,
         dischargingRateSensor,
         simulatedImportSensor,
@@ -200,6 +210,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         self._tariff_sensor_id = tariff_sensor
         self._state = 0
         self._energy_saved = 0
+        self._energy_battery_out = 0
+        self._energy_battery_in = 0
         self._money_saved = 0
         self._energy_saved_today = 0
         self._energy_saved_week = 0
@@ -220,6 +232,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         self._charging_rate = 0
         self._discharging_rate = 0
         self._energy_saved_sensor = energySavedSensor
+        self._energy_battery_out_sensor = energyBatteryOutSensor
+        self._energy_battery_in_sensor = energyBatteryInSensor
         self._charging_rate_sensor = chargingRateSensor
         self._discharging_rate_sensor = dischargingRateSensor
         self._simulated_grid_import = 0
@@ -270,6 +284,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             amount_to_charge = min(diff, max_charge, available_capacity)
 
             self._state = float(self._state) + amount_to_charge
+            self._energy_battery_in += amount_to_charge
+            self._energy_battery_in_sensor.update_value(self._energy_battery_in)
             self._simulated_grid_export += diff - amount_to_charge
             self._simulated_grid_export_sensor.update_value(self._simulated_grid_export)
             self._charging = True
@@ -335,6 +351,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             self._state = float(self._state) - amount_to_discharge/float(self._battery_efficiency)
             self._energy_saved += amount_to_discharge
             self._energy_saved_sensor.update_value(self._energy_saved)
+            self._energy_battery_out += amount_to_discharge
+            self._energy_battery_out_sensor.update_value(self._energy_battery_out)            
             self._energy_saved_today += amount_to_discharge
             self._energy_saved_week += amount_to_discharge
             self._energy_saved_month += amount_to_discharge
@@ -367,6 +385,10 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             self._state = state.state
             if ATTR_ENERGY_SAVED in state.attributes:
                 self._energy_saved = state.attributes[ATTR_ENERGY_SAVED]
+            if ATTR_ENERGY_BATTERY_OUT in state.attributes:
+                self._energy_battery_out = state.attributes[ATTR_ENERGY_BATTERY_OUT]
+            if ATTR_ENERGY_BATTERY_IN in state.attributes:
+                self._energy_battery_in = state.attributes[ATTR_ENERGY_BATTERY_IN]
             if ATTR_DATE_RECORDING_STARTED in state.attributes:
                 self._date_recording_started = state.attributes[ATTR_DATE_RECORDING_STARTED]
             if ATTR_ENERGY_SAVED_TODAY in state.attributes:
@@ -381,7 +403,6 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         @callback
         def async_source_tracking(event):
             """Wait for source to be ready, then start."""
- 
             _LOGGER.debug("<%s> collecting from %s", self.name, self._import_sensor_id)
             self._collecting1 = async_track_state_change_event(
                 self.hass, [self._import_sensor_id], self.async_import_reading
@@ -423,7 +444,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     def state_class(self):
         """Return the device class of the sensor."""
         return (
-            STATE_CLASS_MEASUREMENT
+            STATE_CLASS_TOTAL_INCREASING
         )
 
     @property
@@ -452,6 +473,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             ATTR_CHARGE_PERCENTAGE: int(self._charge_percentage),
             ATTR_DATE_RECORDING_STARTED: self._date_recording_started,
             ATTR_ENERGY_SAVED: round(float(self._energy_saved),2),
+            ATTR_ENERGY_BATTERY_OUT: round(float(self._energy_battery_out),2),
+            ATTR_ENERGY_BATTERY_IN: round(float(self._energy_battery_in),2),
             ATTR_MONEY_SAVED: round(float(self._money_saved),2),
             ATTR_ENERGY_SAVED_TODAY: round(float(self._energy_saved_today),2),
             ATTR_ENERGY_SAVED_WEEK: round(float(self._energy_saved_week),2),
