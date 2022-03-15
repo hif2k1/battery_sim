@@ -58,7 +58,8 @@ battery_sim:
 
 You can configure battery_sim to display your simulated battery on your Energy Dashboard:
 
-![image](https://user-images.githubusercontent.com/79175134/157999023-e29130f4-42ca-4bb8-becf-7883a06ed82d.png)
+![Screenshot 2022-03-15 19 36 47](https://user-images.githubusercontent.com/79175134/158349586-cfc64761-0614-4067-a18a-5603d2288d7c.png)
+
 
 ![image](https://user-images.githubusercontent.com/79175134/157999078-0174ab36-9f71-47c8-8585-73d6eb3acec8.png)
 
