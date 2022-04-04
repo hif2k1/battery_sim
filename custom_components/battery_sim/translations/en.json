@@ -1,0 +1,40 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "This device is already configured."
+        },
+        "error": { 
+            "not_float": "Needs to be a number",
+            "one_instance_only": "Only 1 instance of the wiser hub is supported. Check in ignored devices."
+        },
+        "flow_title": "Setup new simulated battery",
+        "step": {
+            "user": {
+                "title": "Select battery",
+                "data":{
+                    "battery": "Battery model"
+                },
+                "description": "Select a battery model to simulate from the list or select custom to create one."
+            },
+            "custom": {
+                "title": "Custom battery",
+                "data":{
+                    "size_kwh": "Battery size in kWh",
+                    "max_discharge_rate_kw" : "Maximum discharge rate in kW",
+                    "max_charge_rate_kw": "Maximum charging rate in kW",
+                    "efficiency": "Round trip efficiency (0 to 1)"
+                },
+                "description": "Set the speciffications of the battery."
+            },
+            "connectsensors": {
+                "title": "Connect battery to energy meter sensors",
+                "data":{
+                    "import_sensor": "Import sensor/meter - energy coming into house",
+                    "export_sensor" : "Export sensor/meter - energy sent to grid",
+                    "energy_tariff": "Energy tarriff entity"
+                },
+                "description": "When export sensor shows energy leaving the house battery will charge. When import sensor shows energy entering the house from the grid the battery will discharge."
+            }
+         }
+    }
+}

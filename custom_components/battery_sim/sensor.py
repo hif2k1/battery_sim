@@ -163,7 +163,6 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     
     @callback
     def increment_value(self, value):
-        _LOGGER.error("Increment received: %s, %s", value, self._name)        
         self._state += float(value)
         self.schedule_update_ha_state(True)
 
@@ -200,7 +199,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     def state_class(self):
         """Return the device class of the sensor."""
         return (
-            STATE_CLASS_TOTAL_INCREASING
+            STATE_CLASS_TOTAL
         )
 
     @property
