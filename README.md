@@ -8,7 +8,13 @@ The easiest way to get battery_sim is to use HACS to add it as an integration. O
 
 # Example configuration
 
-You can create any custom battery you want, but below is the config for some common batteries.
+You can create any custom battery you want or use batteries with parameters the same as some common available models. There are two ways to do this.
+
+The simplest is to go to Configuration -> Devices and Services and then click on add integration and select Battery Simulation. This user interface will then walk you through the setup.
+
+Alternatively you can add your battery to the home assistant configuration file.
+
+The relevant parameters are:
 - import_sensor: the sensor that measures the energy in kwh imported (coming into) your house cummlatively (e.g. output of a utility_meter component)
 - export_sensor: the sensor that measures the energy in kwh exported (leaving - sometimes called injection) your house cummlatively (e.g. output of a utility_meter component)
 - size_kwh: the maximum usable capacity of the battery in kwh - must be floating point number (with a decimal point e.g. 5.0)
