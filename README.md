@@ -53,3 +53,13 @@ battery_sim:
     max_charge_rate_kw: 4.2
     efficiency: 0.965
    ```
+
+# Energy Dashboard
+
+You can configure battery_sim to display your simulated battery on your Energy Dashboard:
+
+![Screenshot 2022-03-15 19 36 47](https://user-images.githubusercontent.com/79175134/158349586-cfc64761-0614-4067-a18a-5603d2288d7c.png)
+
+
+![image](https://user-images.githubusercontent.com/79175134/157999078-0174ab36-9f71-47c8-8585-73d6eb3acec8.png)
+
