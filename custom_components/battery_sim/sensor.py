@@ -335,7 +335,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         self._charging_rate_sensor.update_value(
             amount_to_charge/(time_since_last_export/3600)
             )
-        self._energy_battery_out_sensor.increment_value(amount_to_charge)
+        self._energy_battery_in_sensor.increment_value(amount_to_charge)
 
         self.schedule_update_ha_state(True)
 
