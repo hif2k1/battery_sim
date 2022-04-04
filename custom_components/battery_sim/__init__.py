@@ -43,7 +43,6 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 async def async_setup(hass, config):
-    """Set up a battery"""
     hass.data[DATA_UTILITY] = {}
 
     for battery, conf in config.get(DOMAIN).items():
@@ -62,3 +61,13 @@ async def async_setup(hass, config):
         )
     return True
 
+async def async_setup_entry(hass, entry) -> bool:
+    """Set up platform from a ConfigEntry."""
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = entry.data
+
+    # Forward the setup to the sensor platform.
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, "sensor")
+    )
+    return True
