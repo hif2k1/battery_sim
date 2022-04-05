@@ -33,7 +33,7 @@ battery_sim:
     max_discharge_rate_kw: 5.0
     max_charge_rate_kw: 3.68
     efficiency: 0.9
-    energy_tarriff: 0.184
+    energy_tariff: 0.184
   lg_chem_resu10h:
     name: LG Chem
     import_sensor: sensor.circuitsetup_cumulative_import_energy_kwh
