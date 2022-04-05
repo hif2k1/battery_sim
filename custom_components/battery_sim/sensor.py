@@ -394,8 +394,9 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         amount_to_discharge = min(diff, max_discharge, float(self._state)*float(self._battery_efficiency))
 
         self._state = float(self._state) - amount_to_discharge/float(self._battery_efficiency)
-        self._energy_saved_sensor.increment_value(amount_to_discharge)
         self._energy_battery_out_sensor.increment_value(amount_to_discharge)
+        self._energy_saved += amount_to_discharge
+        self._energy_saved_sensor.update_value(self._energy_saved)
         self._energy_saved_today += amount_to_discharge
         self._energy_saved_week += amount_to_discharge
         self._energy_saved_month += amount_to_discharge
