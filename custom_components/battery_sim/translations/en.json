@@ -4,8 +4,7 @@
             "already_configured": "This device is already configured."
         },
         "error": { 
-            "not_float": "Needs to be a number",
-            "one_instance_only": "Only 1 instance of the wiser hub is supported. Check in ignored devices."
+            "not_float": "Needs to be a number"
         },
         "flow_title": "Setup new simulated battery",
         "step": {
