@@ -2,7 +2,7 @@
   "domain": "battery_sim",
   "name": "Battery Simulation",
   "documentation": "https://github.com/hif2k1/battery_sim/",
-  "version": "1.1",
+  "version": "1.0",
   "requirements": [],
   "codeowners": ["@hif2k1"],
   "quality_scale": "internal",
