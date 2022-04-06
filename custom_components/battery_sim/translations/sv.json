@@ -4,8 +4,7 @@
             "already_configured": "Den här enheten är redan konfigurerad."
         },
         "error": { 
-            "not_float": "Måste vara en siffra",
-            "one_instance_only": "Bara en instans av Wiser hub är tillåten. Kolla i ignorerade enheter"
+            "not_float": "Måste vara en siffra"
         },
         "flow_title": "Ställ in nytt simulerat batteri",
         "step": {
