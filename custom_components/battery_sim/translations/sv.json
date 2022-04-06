@@ -1,0 +1,39 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Den här enheten är redan konfigurerad."
+        },
+        "error": { 
+            "not_float": "Måste vara en siffra"
+        },
+        "flow_title": "Ställ in nytt simulerat batteri",
+        "step": {
+            "user": {
+                "title": "Välj batteri",
+                "data":{
+                    "battery": "Batterimodell"
+                },
+                "description": "Välj en batterimodell att simulera från listan eller välj anpassad för att skapa en ny."
+            },
+            "custom": {
+                "title": "Anpassat batteri",
+                "data":{
+                    "size_kwh": "Batteristorlek i kWh",
+                    "max_discharge_rate_kw" : "Max urladdningshastighet i kW",
+                    "max_charge_rate_kw": "Max laddningshastighet i kW",
+                    "efficiency": "Round trip efficiency (0 to 1)"
+                },
+                "description": "Ställ in specifikationerna för batteriet."
+            },
+            "connectsensors": {
+                "title": "Anslut batteri eller energi mätarare",
+                "data":{
+                    "import_sensor": "Importera senor/mätare - inkommande energi",
+                    "export_sensor" : "Exportera sensor/mätare - producering till elnätet",
+                    "energy_tariff": "Energy tarriff entity"
+                },
+                "description": "När exportsensorn visar energi som lämnar huset laddas batteriet. När importsensorn visar energi som kommer in i huset från nätet laddas batteriet ur."
+            }
+         }
+    }
+}
