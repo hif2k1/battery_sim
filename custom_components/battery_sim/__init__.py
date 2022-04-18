@@ -45,20 +45,21 @@ CONFIG_SCHEMA = vol.Schema(
 async def async_setup(hass, config):
     hass.data[DATA_UTILITY] = {}
 
-    for battery, conf in config.get(DOMAIN).items():
-        _LOGGER.debug("Setup %s.%s", DOMAIN, battery)
+    if config.get(DOMAIN)!= None:
+        for battery, conf in config.get(DOMAIN).items():
+            _LOGGER.debug("Setup %s.%s", DOMAIN, battery)
 
-        hass.data[DATA_UTILITY][battery] = conf
+            hass.data[DATA_UTILITY][battery] = conf
 
-        hass.async_create_task(
-            discovery.async_load_platform(
-                hass,
-                SENSOR_DOMAIN,
-                DOMAIN,
-                [{CONF_BATTERY: battery, CONF_NAME: conf.get(CONF_NAME, battery)}],
-                config,
+            hass.async_create_task(
+                discovery.async_load_platform(
+                    hass,
+                    SENSOR_DOMAIN,
+                    DOMAIN,
+                    [{CONF_BATTERY: battery, CONF_NAME: conf.get(CONF_NAME, battery)}],
+                    config,
+                )
             )
-        )
     return True
 
 async def async_setup_entry(hass, entry) -> bool:
