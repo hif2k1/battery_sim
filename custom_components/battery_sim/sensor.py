@@ -141,11 +141,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         self._device_name = device_name
         self._type_of_sensor = type_of_sensor
         self._last_reset = dt_util.utcnow()
-        if comparitor_sensor is not None:
-            self._comparitor_sensor = comparitor_sensor
-            self._state = float(self._comparitor_sensor.state)
-        else:
-            self._state = 0.0
+        self._comparitor_sensor = comparitor_sensor
 
     async def async_added_to_hass(self):
         """Handle entity which will be added."""
@@ -154,6 +150,10 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         state = await self.async_get_last_state()
         if state:
             self._state = float(state.state)
+        elif self._comparitor_sensor is not None and self._comparitor_sensor.state not in [STATE_UNAVAILABLE, STATE_UNKNOWN]:
+            self._state = float(self._comparitor_sensor.state)
+        else:
+            self._state = 0.0
 
     @callback
     def update_value(self, value):
