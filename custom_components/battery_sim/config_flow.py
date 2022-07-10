@@ -19,7 +19,9 @@ from .const import (
     CONF_BATTERY_EFFICIENCY,
     CONF_IMPORT_SENSOR,
     CONF_EXPORT_SENSOR,
-    CONF_ENERGY_TARIFF
+    CONF_ENERGY_TARIFF,
+    SETUP_TYPE,
+    CONFIG_FLOW
 )
 
 import voluptuous as vol
@@ -78,6 +80,8 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._data[CONF_IMPORT_SENSOR] = user_input[CONF_IMPORT_SENSOR]
             self._data[CONF_EXPORT_SENSOR] = user_input[CONF_EXPORT_SENSOR]
+            self._data[CONF_ENERGY_TARIFF] = user_input[CONF_ENERGY_TARIFF]
+            self._data[SETUP_TYPE] = CONFIG_FLOW
             return self.async_create_entry(title=self._data["name"], data=self._data)
 
         entities = self.hass.states.async_entity_ids()

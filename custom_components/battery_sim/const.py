@@ -5,6 +5,8 @@ DOMAIN = "battery_sim"
 
 BATTERY_TYPE = "battery"
 
+BATTERY_PLATFORMS = ["sensor", "switch", "button"]
+
 QUARTER_HOURLY = "quarter-hourly"
 HOURLY = "hourly"
 DAILY = "daily"
@@ -15,6 +17,10 @@ QUARTERLY = "quarterly"
 YEARLY = "yearly"
 
 DATA_UTILITY = "battery_sim_data"
+
+SETUP_TYPE = "setup_type"
+CONFIG_FLOW = "config_flow"
+YAML = "yaml"
 
 CONF_BATTERY = "battery"
 CONF_IMPORT_SENSOR = "import_sensor"
@@ -46,6 +52,10 @@ GRID_EXPORT_SIM = "simulated grid export after battery charging"
 GRID_IMPORT_SIM = "simulated grid import after battery discharging"
 ICON_CHARGING = "mdi:battery-charging-50"
 ICON_DISCHARGING = "mdi:battery-50"
+OVERIDE_CHARGING = "overide_charging"
+PAUSE_BATTERY = "pause_battery"
+RESET_BATTERY = "reset_battery"
+PERCENTAGE_ENERGY_IMPORT_SAVED = "percentage_import_energy_saved"
 
 BATTERY_OPTIONS = {
     "Tesla Powerwall": {
