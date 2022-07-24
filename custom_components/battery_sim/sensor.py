@@ -147,7 +147,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        return round(float(self._handle._sensors[self._sensor_type]),2)
+        return round(float(self._handle._sensors[self._sensor_type]),3)
 
     @property
     def device_class(self):
@@ -177,9 +177,9 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         state_attr = {}
         if(self._sensor_type == ATTR_ENERGY_SAVED):
             state_attr = {
-                ATTR_ENERGY_SAVED_TODAY: round(float(self._handle._energy_saved_today),2),
-                ATTR_ENERGY_SAVED_WEEK: round(float(self._handle._energy_saved_week),2),
-                ATTR_ENERGY_SAVED_MONTH: round(float(self._handle._energy_saved_month),2)
+                ATTR_ENERGY_SAVED_TODAY: round(float(self._handle._energy_saved_today),3),
+                ATTR_ENERGY_SAVED_WEEK: round(float(self._handle._energy_saved_week),3),
+                ATTR_ENERGY_SAVED_MONTH: round(float(self._handle._energy_saved_month),3)
             }
         elif(self._sensor_type == GRID_IMPORT_SIM):
             real_world_import = self._handle._last_import_cumulative_reading
@@ -203,7 +203,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        return round(float(self._handle._sensors[self._sensor_type]),2)
+        return round(float(self._handle._sensors[self._sensor_type]),3)
 
     def update(self):
         """Not used"""
@@ -270,7 +270,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        return round(float(self.handle._charge_state),2)
+        return round(float(self.handle._charge_state),3)
 
     @property
     def device_class(self):
@@ -306,9 +306,9 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             ATTR_STATUS: CHARGING if self.handle._charging else DISCHARGING,
             ATTR_CHARGE_PERCENTAGE: int(self.handle._charge_percentage),
             ATTR_DATE_RECORDING_STARTED: self.handle._date_recording_started,
-            ATTR_ENERGY_SAVED_TODAY: round(float(self.handle._energy_saved_today),2),
-            ATTR_ENERGY_SAVED_WEEK: round(float(self.handle._energy_saved_week),2),
-            ATTR_ENERGY_SAVED_MONTH: round(float(self.handle._energy_saved_month),2),
+            ATTR_ENERGY_SAVED_TODAY: round(float(self.handle._energy_saved_today),3),
+            ATTR_ENERGY_SAVED_WEEK: round(float(self.handle._energy_saved_week),3),
+            ATTR_ENERGY_SAVED_MONTH: round(float(self.handle._energy_saved_month),3),
             CONF_BATTERY_SIZE: self.handle._battery_size,
             CONF_BATTERY_EFFICIENCY: float(self.handle._battery_efficiency),
             CONF_BATTERY_MAX_DISCHARGE_RATE: float(self.handle._max_discharge_rate),
@@ -328,7 +328,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        return round(float(self.handle._charge_state),2)
+        return round(float(self.handle._charge_state),3)
 
     def update(self):
         """Not used"""
