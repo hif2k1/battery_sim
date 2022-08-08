@@ -1,0 +1,39 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Het apparaat is reeds geconfigureerd."
+        },
+        "error": { 
+            "not_float": "Moet een getal zijn"
+        },
+        "flow_title": "Nieuwe batterijsimulatie instellen",
+        "step": {
+            "user": {
+                "title": "Selecteer batterij",
+                "data":{
+                    "battery": "Batterij model"
+                },
+                "description": "Selecteer het te simuleren model uit de lijst, of maak een aangepast model."
+            },
+            "custom": {
+                "title": "Aangepaste batterij",
+                "data":{
+                    "size_kwh": "Batterij capaciteit in kWh",
+                    "max_discharge_rate_kw" : "Maximum ontlaadcapaciteit in kW",
+                    "max_charge_rate_kw": "Maximum laadcapaciteit in kW",
+                    "efficiency": "AC-DC-AC efficiëntie (0 to 1)"
+                },
+                "description": "Stel de batterijspecificaties in."
+            },
+            "connectsensors": {
+                "title": "Energiemeter sensoren aan batterij koppelen",
+                "data":{
+                    "import_sensor": "Import sensor/meter - binnenkomende energie van het net",
+                    "export_sensor" : "Export sensor/meter - uitgaande energie naar het net",
+                    "energy_tariff": "Energietarief entiteit"
+                },
+                "description": "De batterij zal opladen wanneer de export sensor aangeeft dat stroom teruggeleverd wordt aan het net. De batterij zal ontladen wanneer de import sensor aangeeft dat stroom van het net gehaald wordt."
+            }
+         }
+    }
+}
