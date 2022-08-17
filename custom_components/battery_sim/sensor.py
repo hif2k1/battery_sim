@@ -146,8 +146,11 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
 
     @property
     def native_value(self):
-        """Return the state of the sensor."""
-        return round(float(self._handle._sensors[self._sensor_type]),3)
+        """Return the state of the sensor."""        
+        if (self._sensor_type == ATTR_MONEY_SAVED):
+            return round(float(self._handle._sensors[self._sensor_type]),2)
+        else:
+            return round(float(self._handle._sensors[self._sensor_type]),3)
 
     @property
     def device_class(self):
@@ -203,7 +206,10 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        return round(float(self._handle._sensors[self._sensor_type]),3)
+        if (self._sensor_type == ATTR_MONEY_SAVED):
+            return round(float(self._handle._sensors[self._sensor_type]),2)
+        else:
+            return round(float(self._handle._sensors[self._sensor_type]),3)
 
     def update(self):
         """Not used"""
