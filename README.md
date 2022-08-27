@@ -4,13 +4,9 @@ Allows you to model how much energy you would save with a home battery if you cu
 
 # Setup
 
-The easiest way to get battery_sim is to use HACS to add it as an integration. Once you have done this you need to add an entry in your home assistant config file to specify the batteries you want to simulate. If you don't want to use HACS you can just copy the code into the custom integrations folder in your home assistant config folder. 
+The easiest way to get battery_sim is to use HACS to add it as an integration. If you don't want to use HACS you can just copy the code into the custom_components folder in your home assistant config folder. 
 
-# Example configuration
-
-You can create any custom battery you want or use batteries with parameters the same as some common available models. There are two ways to do this.
-
-The simplest is to go to Configuration -> Devices and Services and then click on add integration and select Battery Simulation. This user interface will then walk you through the setup.
+Once you have done this you need to create your batteries. You can create any custom battery you want or use batteries with parameters the same as some common available models. The recommended way to do this is by going to **Settings > Devices and Services** and then clicking **Add Integration** and search for **Battery Simulation** and then work through the dialogue to create your battery. Repeat this process for each battery you want to add. 
 
 Alternatively you can add your battery to the home assistant configuration file.
 
