@@ -294,7 +294,7 @@ class SimulatedBatteryHandle():
         self._last_export_reading = 0.0
     
     def updateBattery(self, import_amount, export_amount):
-        _LOGGER.debug("Battery update event (%s). Import: %s, Export: %s", self._name, round(import_amount,4), round,(export_amount,4))
+        _LOGGER.debug("Battery update event (%s). Import: %s, Export: %s", self._name, round(import_amount,4), round(export_amount,4))
         if self._charge_state=='unknown': self._charge_state = 0.0
 
         """Calculate maximum possible discharge based on battery specifications and time since last discharge"""
