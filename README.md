@@ -65,3 +65,15 @@ You can configure battery_sim to display your simulated battery on your Energy D
 
 ![image](https://user-images.githubusercontent.com/79175134/157999078-0174ab36-9f71-47c8-8585-73d6eb3acec8.png)
 
+# Debug
+
+If you are having problems it is helpful to get the debug log for the battery by adding:
+
+```
+logger:
+  default: critical
+  logs:
+    custom_components.battery_sim: debug
+```
+
+to your configuration.yaml and then restarting. If you leave it to run for a few minutes go to logs then and click "load full log" you should see entries from the battery saying it's been set up and then each time it receives an update. If you need to raise an issue then including this code is helpful.
