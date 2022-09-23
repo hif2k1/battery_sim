@@ -80,7 +80,8 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._data[CONF_IMPORT_SENSOR] = user_input[CONF_IMPORT_SENSOR]
             self._data[CONF_EXPORT_SENSOR] = user_input[CONF_EXPORT_SENSOR]
-            self._data[CONF_ENERGY_TARIFF] = user_input[CONF_ENERGY_TARIFF]
+            if CONF_ENERGY_TARIFF in user_input:
+                self._data[CONF_ENERGY_TARIFF] = user_input[CONF_ENERGY_TARIFF]
             self._data[SETUP_TYPE] = CONFIG_FLOW
             return self.async_create_entry(title=self._data["name"], data=self._data)
 
