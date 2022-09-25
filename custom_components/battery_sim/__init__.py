@@ -318,6 +318,7 @@ class SimulatedBatteryHandle():
             amount_to_discharge = 0.0
             net_export = max(export_amount - amount_to_charge, 0)
             net_import = max(amount_to_charge - export_amount, 0) + import_amount
+            self._charging = True
             if self._tariff_sensor_id is not None:
                 net_money_saved = -1*amount_to_charge*float(self._hass.states.get(self._tariff_sensor_id).state)
         else:
@@ -330,6 +331,10 @@ class SimulatedBatteryHandle():
                 self._hass.states.get(self._tariff_sensor_id) is not None and
                 self._hass.states.get(self._tariff_sensor_id).state not in [STATE_UNAVAILABLE, STATE_UNKNOWN]):
                 net_money_saved = amount_to_discharge*float(self._hass.states.get(self._tariff_sensor_id).state)
+            if amount_to_charge > amount_to_discharge:
+                self._charging = True
+            else:
+                self._charging = False
 
         self._charge_state = float(self._charge_state) + amount_to_charge - amount_to_discharge
 
