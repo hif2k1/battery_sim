@@ -5,7 +5,7 @@ import logging
 
 from homeassistant.components.switch import SwitchEntity
 
-from .const import DOMAIN, CONF_BATTERY, OVERIDE_CHARGING, PAUSE_BATTERY
+from .const import DOMAIN, CONF_BATTERY, OVERIDE_CHARGING, PAUSE_BATTERY, FORCE_DISCHARGE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,6 +19,11 @@ BATTERY_SWITCHES = [
         "name": PAUSE_BATTERY,
         "key":  "pause_battery_enabled",
         "icon": "mdi:pause",
+    },
+    {
+        "name": FORCE_DISCHARGE,
+        "key": "force _battery_enabled",
+        "icon": "mdi:home-export-outline"
     }
 ]
 
