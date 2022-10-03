@@ -52,10 +52,20 @@ GRID_EXPORT_SIM = "simulated grid export after battery charging"
 GRID_IMPORT_SIM = "simulated grid import after battery discharging"
 ICON_CHARGING = "mdi:battery-charging-50"
 ICON_DISCHARGING = "mdi:battery-50"
-OVERIDE_CHARGING = "overide_charging"
+OVERIDE_CHARGING = "force_charge"
+FORCE_DISCHARGE = "force_discharge"
 PAUSE_BATTERY = "pause_battery"
 RESET_BATTERY = "reset_battery"
 PERCENTAGE_ENERGY_IMPORT_SAVED = "percentage_import_energy_saved"
+
+BATTERY_MODE = "Battery_mode"
+MODE_IDLE = "Idle/Paused"
+MODE_CHARGING = "Charging"
+MODE_DISCHARGING = "Discharging"
+MODE_FORCE_CHARGING = "Forced charging"
+MODE_FORCE_DISCHARGING = "Forced discharging"
+MODE_FULL = "Full"
+MODE_EMPTY = "Empty"
 
 BATTERY_OPTIONS = {
     "Tesla Powerwall": {
