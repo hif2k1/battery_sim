@@ -41,7 +41,8 @@ from .const import (
     DISCHARGING_RATE,
     GRID_EXPORT_SIM,
     GRID_IMPORT_SIM,
-    ATTR_MONEY_SAVED
+    ATTR_MONEY_SAVED,
+    FORCE_DISCHARGE
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -142,12 +143,13 @@ class SimulatedBatteryHandle():
         self._last_import_cumulative_reading = 1.0
         self._switches = {
             OVERIDE_CHARGING: False, 
-            PAUSE_BATTERY: False 
+            PAUSE_BATTERY: False,
+            FORCE_DISCHARGE: False
             }
         self._sensors = {
             ATTR_ENERGY_SAVED: 0.0,
             ATTR_ENERGY_BATTERY_OUT: 0.0,
-            ATTR_ENERGY_BATTERY_IN: 0.0, 
+            ATTR_ENERGY_BATTERY_IN: 0.0,
             CHARGING_RATE: 0.0,
             DISCHARGING_RATE: 0.0,
             GRID_EXPORT_SIM: 0.0,
@@ -319,6 +321,15 @@ class SimulatedBatteryHandle():
             net_export = max(export_amount - amount_to_charge, 0)
             net_import = max(amount_to_charge - export_amount, 0) + import_amount
             self._charging = True
+            if self._tariff_sensor_id is not None:
+                net_money_saved = -1*amount_to_charge*float(self._hass.states.get(self._tariff_sensor_id).state)
+        elif self._switches[FORCE_DISCHARGE]:
+            _LOGGER.debug("Battery (%s) forced discharging.", self._name)
+            amount_to_charge = 0.0
+            amount_to_discharge = min(max_discharge, available_capacity_to_discharge)
+            net_export = max(amount_to_discharge - import_amount, 0) + export_amount
+            net_import = max(import_amount - amount_to_discharge, 0)
+            self._charging = False
             if self._tariff_sensor_id is not None:
                 net_money_saved = -1*amount_to_charge*float(self._hass.states.get(self._tariff_sensor_id).state)
         else:
