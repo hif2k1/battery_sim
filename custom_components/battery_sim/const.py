@@ -58,7 +58,7 @@ PAUSE_BATTERY = "pause_battery"
 RESET_BATTERY = "reset_battery"
 PERCENTAGE_ENERGY_IMPORT_SAVED = "percentage_import_energy_saved"
 
-BATTERY_MODE = "Battery_mode"
+BATTERY_MODE = "Battery_mode_now"
 MODE_IDLE = "Idle/Paused"
 MODE_CHARGING = "Charging"
 MODE_DISCHARGING = "Discharging"

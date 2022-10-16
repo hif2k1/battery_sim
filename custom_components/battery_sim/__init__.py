@@ -42,7 +42,15 @@ from .const import (
     GRID_EXPORT_SIM,
     GRID_IMPORT_SIM,
     ATTR_MONEY_SAVED,
-    FORCE_DISCHARGE
+    FORCE_DISCHARGE,
+    BATTERY_MODE,
+    MODE_IDLE,
+    MODE_CHARGING,
+    MODE_DISCHARGING,
+    MODE_FORCE_CHARGING,
+    MODE_FORCE_DISCHARGING,
+    MODE_FULL,
+    MODE_EMPTY
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -154,7 +162,8 @@ class SimulatedBatteryHandle():
             DISCHARGING_RATE: 0.0,
             GRID_EXPORT_SIM: 0.0,
             GRID_IMPORT_SIM: 0.0,
-            ATTR_MONEY_SAVED: 0.0
+            ATTR_MONEY_SAVED: 0.0,
+            BATTERY_MODE: MODE_IDLE
         }
         self._energy_saved_today = 0.0
         self._energy_saved_week = 0.0
@@ -314,6 +323,7 @@ class SimulatedBatteryHandle():
             amount_to_discharge = 0.0
             net_export = export_amount
             net_import = import_amount
+            self._sensors[BATTERY_MODE] = MODE_IDLE
         elif self._switches[OVERIDE_CHARGING]:
             _LOGGER.debug("Battery (%s) overide charging.", self._name)
             amount_to_charge = min(max_charge, available_capacity_to_charge)
@@ -321,6 +331,7 @@ class SimulatedBatteryHandle():
             net_export = max(export_amount - amount_to_charge, 0)
             net_import = max(amount_to_charge - export_amount, 0) + import_amount
             self._charging = True
+            self._sensors[BATTERY_MODE] = MODE_FORCE_CHARGING
             if self._tariff_sensor_id is not None:
                 net_money_saved = -1*amount_to_charge*float(self._hass.states.get(self._tariff_sensor_id).state)
         elif self._switches[FORCE_DISCHARGE]:
@@ -330,6 +341,7 @@ class SimulatedBatteryHandle():
             net_export = max(amount_to_discharge - import_amount, 0) + export_amount
             net_import = max(import_amount - amount_to_discharge, 0)
             self._charging = False
+            self._sensors[BATTERY_MODE] = MODE_FORCE_DISCHARGING
             if self._tariff_sensor_id is not None:
                 net_money_saved = -1*amount_to_charge*float(self._hass.states.get(self._tariff_sensor_id).state)
         else:
@@ -344,8 +356,10 @@ class SimulatedBatteryHandle():
                 net_money_saved = amount_to_discharge*float(self._hass.states.get(self._tariff_sensor_id).state)
             if amount_to_charge > amount_to_discharge:
                 self._charging = True
+                self._sensors[BATTERY_MODE] = MODE_CHARGING
             else:
                 self._charging = False
+                self._sensors[BATTERY_MODE] = MODE_DISCHARGING
 
         self._charge_state = float(self._charge_state) + amount_to_charge - amount_to_discharge
 
@@ -358,6 +372,12 @@ class SimulatedBatteryHandle():
         self._sensors[DISCHARGING_RATE] = amount_to_discharge/(time_since_last_battery_update/3600)
 
         self._charge_percentage = round(100*self._charge_state/self._battery_size)
+
+        if self._charge_percentage < 2:
+            self._sensors[BATTERY_MODE] = MODE_EMPTY
+        elif self._charge_percentage >98:
+            self._sensors[BATTERY_MODE] = MODE_FULL
+
         if self._tariff_sensor_id is not None:
             self._sensors[ATTR_MONEY_SAVED] += net_money_saved
         self._energy_saved_today += amount_to_discharge
