@@ -361,7 +361,7 @@ class SimulatedBatteryHandle():
                 self._charging = False
                 self._sensors[BATTERY_MODE] = MODE_DISCHARGING
 
-        self._charge_state = float(self._charge_state) + amount_to_charge - amount_to_discharge
+        self._charge_state = float(self._charge_state) + amount_to_charge - (amount_to_discharge/float(self._battery_efficiency))
 
         self._sensors[ATTR_ENERGY_SAVED] += amount_to_discharge
         self._sensors[GRID_IMPORT_SIM] += net_import
