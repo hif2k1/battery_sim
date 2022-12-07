@@ -113,6 +113,11 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         if state:
             try: 
                 self._handle._sensors[self._sensor_type] = float(state.state)
+                self._last_reset = dt_util.as_utc(
+                    dt_util.parse_datetime(state.attributes.get(ATTR_LAST_RESET))
+                )
+                self._available = True
+                await self.async_update_ha_state(True)
             except:
                 _LOGGER.debug("Sensor state not restored properly.")
                 if self._sensor_type == GRID_IMPORT_SIM:
