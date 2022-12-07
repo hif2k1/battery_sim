@@ -8,6 +8,7 @@ from homeassistant.components.sensor import (
     STATE_CLASS_MEASUREMENT,
     STATE_CLASS_TOTAL,
     SensorEntity,
+    ATTR_LAST_RESET
 )
 from homeassistant.const import (
     DEVICE_CLASS_ENERGY,
