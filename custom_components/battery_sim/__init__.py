@@ -13,8 +13,7 @@ from homeassistant.core import callback
 
 from homeassistant.const import (
     CONF_NAME,
-    ENERGY_WATT_HOUR,
-    ENERGY_KILO_WATT_HOUR,
+    UnitOfEnergy,
     ATTR_UNIT_OF_MEASUREMENT,
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
@@ -241,9 +240,9 @@ class SimulatedBatteryHandle():
 
         conversion_factor = 1.0
         units = self._hass.states.get(self._export_sensor_id).attributes.get(ATTR_UNIT_OF_MEASUREMENT)
-        if units == ENERGY_WATT_HOUR:
+        if units == UnitOfEnergy.WATT_HOUR:
             conversion_factor = 0.001
-        elif units == ENERGY_KILO_WATT_HOUR:
+        elif units == UnitOfEnergy.KILO_WATT_HOUR:
             conversion_factor = 1.0
         else:
             _LOGGER.warning("Units of import sensor not recognised - may give wrong results")
@@ -287,9 +286,9 @@ class SimulatedBatteryHandle():
         """Check units of import sensor and calculate import amount in kWh"""
         conversion_factor = 1.0
         units = self._hass.states.get(self._import_sensor_id).attributes.get(ATTR_UNIT_OF_MEASUREMENT)
-        if units == ENERGY_WATT_HOUR:
+        if units == UnitOfEnergy.WATT_HOUR:
             conversion_factor = 0.001
-        elif units == ENERGY_KILO_WATT_HOUR:
+        elif units == UnitOfEnergy.KILO_WATT_HOUR:
             conversion_factor = 1
         else:
             _LOGGER.warning("Units of import sensor not recognised - may give wrong results")

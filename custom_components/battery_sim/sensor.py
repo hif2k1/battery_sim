@@ -5,20 +5,14 @@ import logging
 import homeassistant.util.dt as dt_util
 from homeassistant.helpers.dispatcher import dispatcher_send, async_dispatcher_connect
 from homeassistant.components.sensor import (
-    STATE_CLASS_MEASUREMENT,
-    STATE_CLASS_TOTAL,
+    SensorDeviceClass,
     SensorEntity,
+    SensorStateClass,
     ATTR_LAST_RESET
 )
 from homeassistant.const import (
-    DEVICE_CLASS_ENERGY,
-    DEVICE_CLASS_POWER,
-    ENERGY_KILO_WATT_HOUR,
-    ENERGY_WATT_HOUR,
-    POWER_KILO_WATT,
-    DEVICE_CLASS_MONETARY,
-    ENERGY_WATT_HOUR,
-    ENERGY_KILO_WATT_HOUR
+    UnitOfEnergy,
+    UnitOfPower
 )
 from homeassistant.helpers.restore_state import RestoreEntity
 
@@ -53,8 +47,8 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 DEVICE_CLASS_MAP = {
-    ENERGY_WATT_HOUR: DEVICE_CLASS_ENERGY,
-    ENERGY_KILO_WATT_HOUR: DEVICE_CLASS_ENERGY,
+    UnitOfEnergy.WATT_HOUR: SensorDeviceClass.ENERGY,
+    UnitOfEnergy.KILO_WATT_HOUR: SensorDeviceClass.ENERGY,
 }
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
@@ -74,15 +68,15 @@ async def async_setup_platform(hass, configuration, async_add_entities, discover
 
 async def define_sensors(hass, handle):
     sensors = []
-    sensors.append(DisplayOnlySensor(handle, ATTR_ENERGY_SAVED, DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR))
-    sensors.append(DisplayOnlySensor(handle, ATTR_ENERGY_BATTERY_OUT, DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR))
-    sensors.append(DisplayOnlySensor(handle, ATTR_ENERGY_BATTERY_IN, DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR))
-    sensors.append(DisplayOnlySensor(handle, CHARGING_RATE, DEVICE_CLASS_POWER, POWER_KILO_WATT))
-    sensors.append(DisplayOnlySensor(handle, DISCHARGING_RATE, DEVICE_CLASS_POWER, POWER_KILO_WATT))
-    sensors.append(DisplayOnlySensor(handle, GRID_EXPORT_SIM, DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR))
-    sensors.append(DisplayOnlySensor(handle, GRID_IMPORT_SIM, DEVICE_CLASS_ENERGY, ENERGY_KILO_WATT_HOUR))
+    sensors.append(DisplayOnlySensor(handle, ATTR_ENERGY_SAVED, SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR))
+    sensors.append(DisplayOnlySensor(handle, ATTR_ENERGY_BATTERY_OUT, SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR))
+    sensors.append(DisplayOnlySensor(handle, ATTR_ENERGY_BATTERY_IN, SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR))
+    sensors.append(DisplayOnlySensor(handle, CHARGING_RATE, SensorDeviceClass.POWER, UnitOfPower.KILO_WATT))
+    sensors.append(DisplayOnlySensor(handle, DISCHARGING_RATE, SensorDeviceClass.POWER, UnitOfPower.KILO_WATT))
+    sensors.append(DisplayOnlySensor(handle, GRID_EXPORT_SIM, SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR))
+    sensors.append(DisplayOnlySensor(handle, GRID_IMPORT_SIM, SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR))
     if handle._tariff_sensor_id != "none":
-        sensors.append(DisplayOnlySensor(handle, ATTR_MONEY_SAVED, DEVICE_CLASS_MONETARY, hass.config.currency))
+        sensors.append(DisplayOnlySensor(handle, ATTR_MONEY_SAVED, SensorDeviceClass.MONETARY, hass.config.currency))
     sensors.append(SimulatedBattery(handle))
     sensors.append(BatteryStatus(handle, BATTERY_MODE))
     return sensors
@@ -177,7 +171,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     def state_class(self):
         """Return the device class of the sensor."""
         return (
-            STATE_CLASS_TOTAL
+            SensorStateClass.TOTAL
         )
 
     @property
@@ -302,24 +296,23 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def device_class(self):
         """Return the device class of the sensor."""
-        return DEVICE_CLASS_ENERGY
+        return SensorDeviceClass.ENERGY
 
     @property
     def state_class(self):
         """Return the device class of the sensor."""
         return (
-            STATE_CLASS_MEASUREMENT
+            SensorStateClass.MEASUREMENT
         )
 
     @property
     def native_unit_of_measurement(self):
         """Return the unit the value is expressed in."""
-        return ENERGY_KILO_WATT_HOUR
-
+        return UnitOfEnergy.KILO_WATT_HOUR
     @property
     def unit_of_measurement(self):
         """Return the unit the value is expressed in."""
-        return ENERGY_KILO_WATT_HOUR
+        return UnitOfEnergy.KILO_WATT_HOUR
 
     @property
     def should_poll(self):
@@ -414,7 +407,7 @@ class BatteryStatus(SensorEntity):
     @property
     def device_class(self):
         """Return the device class of the sensor."""
-        return DEVICE_CLASS_ENERGY
+        return SensorDeviceClass.ENERGY
 
     @property
     def should_poll(self):

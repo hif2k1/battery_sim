@@ -6,8 +6,7 @@ from homeassistant.components import sensor
 from homeassistant.const import (
     ATTR_UNIT_OF_MEASUREMENT,
     CONF_NAME,
-    ENERGY_KILO_WATT_HOUR,
-    ENERGY_WATT_HOUR
+    UnitOfEnergy
 )
 from .const import (
     DOMAIN, 
@@ -89,7 +88,11 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         energy_entities = []
         for entity_id in entities:
             entity = self.hass.states.get(entity_id)
-            if entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == ENERGY_KILO_WATT_HOUR or entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == ENERGY_WATT_HOUR:
+<<<<<<< Updated upstream
+            if entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) ==     UnitOfEnergy.KILO_WATT_HOUR or entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == UnitOfEnergy.WATT_HOUR:
+=======
+            if entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) ==     UnitOfEnergy.KILO_WATT_HOUR or entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == ENERGY_WATT_HOUR:
+>>>>>>> Stashed changes
                 energy_entities.append(entity_id)
         return self.async_show_form(
             step_id="connectsensors",
