@@ -88,11 +88,7 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         energy_entities = []
         for entity_id in entities:
             entity = self.hass.states.get(entity_id)
-<<<<<<< Updated upstream
-            if entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) ==     UnitOfEnergy.KILO_WATT_HOUR or entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == UnitOfEnergy.WATT_HOUR:
-=======
-            if entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) ==     UnitOfEnergy.KILO_WATT_HOUR or entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == ENERGY_WATT_HOUR:
->>>>>>> Stashed changes
+            if entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == UnitOfEnergy.KILO_WATT_HOUR or entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == UnitOfEnergy.WATT_HOUR:
                 energy_entities.append(entity_id)
         return self.async_show_form(
             step_id="connectsensors",
