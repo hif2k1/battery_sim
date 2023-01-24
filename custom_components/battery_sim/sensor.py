@@ -24,6 +24,8 @@ from .const import (
     CONF_BATTERY_MAX_CHARGE_RATE,
     CONF_BATTERY_SIZE,
     ATTR_MONEY_SAVED,
+    ATTR_MONEY_SAVED_IMPORT,
+    ATTR_MONEY_SAVED_EXPORT,
     ATTR_SOURCE_ID,
     ATTR_STATUS,
     ATTR_ENERGY_SAVED,
@@ -75,8 +77,11 @@ async def define_sensors(hass, handle):
     sensors.append(DisplayOnlySensor(handle, DISCHARGING_RATE, SensorDeviceClass.POWER, UnitOfPower.KILO_WATT))
     sensors.append(DisplayOnlySensor(handle, GRID_EXPORT_SIM, SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR))
     sensors.append(DisplayOnlySensor(handle, GRID_IMPORT_SIM, SensorDeviceClass.ENERGY, UnitOfEnergy.KILO_WATT_HOUR))
-    if handle._tariff_sensor_id != "none":
+    if handle._import_tariff_sensor_id != None:
+        sensors.append(DisplayOnlySensor(handle, ATTR_MONEY_SAVED_IMPORT, SensorDeviceClass.MONETARY, hass.config.currency))
         sensors.append(DisplayOnlySensor(handle, ATTR_MONEY_SAVED, SensorDeviceClass.MONETARY, hass.config.currency))
+    if handle._export_tariff_sensor_id != None:
+        sensors.append(DisplayOnlySensor(handle, ATTR_MONEY_SAVED_EXPORT, SensorDeviceClass.MONETARY, hass.config.currency))
     sensors.append(SimulatedBattery(handle))
     sensors.append(BatteryStatus(handle, BATTERY_MODE))
     return sensors
