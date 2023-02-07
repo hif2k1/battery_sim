@@ -64,6 +64,8 @@ BATTERY_CONFIG_SCHEMA = vol.Schema(
         {
             vol.Required(CONF_IMPORT_SENSOR): cv.entity_id,
             vol.Required(CONF_EXPORT_SENSOR): cv.entity_id,
+            vol.Optional(CONF_ENERGY_TARIFF): cv.entity_id,
+            vol.Optional(CONF_ENERGY_EXPORT_TARIFF): cv.entity_id,
             vol.Optional(CONF_ENERGY_IMPORT_TARIFF): cv.entity_id,
             vol.Optional(CONF_NAME): cv.string,
             vol.Required(CONF_BATTERY_SIZE): vol.All(float),
