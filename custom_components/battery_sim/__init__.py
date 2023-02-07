@@ -26,6 +26,7 @@ from .const import (
     CONF_BATTERY_MAX_DISCHARGE_RATE,
     CONF_BATTERY_MAX_CHARGE_RATE,
     CONF_BATTERY_SIZE,
+    CONF_ENERGY_TARIFF,
     CONF_ENERGY_IMPORT_TARIFF,
     CONF_ENERGY_EXPORT_TARIFF,
     CONF_IMPORT_SENSOR,
@@ -81,25 +82,26 @@ async def async_setup(hass, config):
     """Set up platform from a YAML."""
     hass.data.setdefault(DOMAIN, {})
 
-    if config.get(DOMAIN)!= None:
-        for battery, conf in config.get(DOMAIN).items():
-            _LOGGER.debug("Setup %s.%s", DOMAIN, battery)
-            handle = SimulatedBatteryHandle(conf, hass)
-            if (battery in hass.data[DOMAIN]):
-                _LOGGER.warning("Battery name not unique - not able to create.")
-                continue
-            hass.data[DOMAIN][battery] = handle
+    if config.get(DOMAIN)== None:
+        return True
+    for battery, conf in config.get(DOMAIN).items():
+        _LOGGER.debug("Setup %s.%s", DOMAIN, battery)
+        handle = SimulatedBatteryHandle(conf, hass)
+        if (battery in hass.data[DOMAIN]):
+            _LOGGER.warning("Battery name not unique - not able to create.")
+            continue
+        hass.data[DOMAIN][battery] = handle
 
-            for platform in BATTERY_PLATFORMS:
-                hass.async_create_task(
-                    discovery.async_load_platform(
-                        hass,
-                        platform,
-                        DOMAIN,
-                        [{CONF_BATTERY: battery, CONF_NAME: conf.get(CONF_NAME, battery)}],
-                        config,
-                    )
+        for platform in BATTERY_PLATFORMS:
+            hass.async_create_task(
+                discovery.async_load_platform(
+                    hass,
+                    platform,
+                    DOMAIN,
+                    [{CONF_BATTERY: battery, CONF_NAME: conf.get(CONF_NAME, battery)}],
+                    config,
                 )
+            )
     return True
 
 async def async_setup_entry(hass, entry) -> bool:
@@ -137,7 +139,12 @@ class SimulatedBatteryHandle():
             self._second_import_sensor_id = config[CONF_SECOND_IMPORT_SENSOR]
         if (CONF_ENERGY_IMPORT_TARIFF not in config or
             len(config[CONF_ENERGY_IMPORT_TARIFF]) < 6):
-            self._import_tariff_sensor_id = None
+            """For backwards compatibility"""
+            if (CONF_ENERGY_TARIFF not in config or
+                len(config[CONF_ENERGY_TARIFF]) < 6):
+                self._import_tariff_sensor_id = None
+            else:
+                self._import_tariff_sensor_id = config[CONF_ENERGY_TARIFF]
         else:
             self._import_tariff_sensor_id = config[CONF_ENERGY_IMPORT_TARIFF]
         if (CONF_ENERGY_EXPORT_TARIFF not in config or
