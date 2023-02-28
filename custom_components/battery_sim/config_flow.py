@@ -2,10 +2,10 @@ import logging
 import voluptuous as vol
 from distutils import errors
 from homeassistant import config_entries
+from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import (
-    ATTR_UNIT_OF_MEASUREMENT,
-    CONF_NAME,
-    UnitOfEnergy
+    CONF_NAME
 )
 from .const import (
     DOMAIN, 
@@ -85,80 +85,61 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_metertype(self, user_input = None):
         """Handle a flow initialized by the user."""
         if user_input is not None:
-            if (user_input[METER_TYPE] == ONE_IMPORT_ONE_EXPORT_METER):
-                return await self.async_step_connectsensorsoneimport()
-            else:
-                return await self.async_step_connectsensorstwoimport()
+            self._data[METER_TYPE] = user_input[METER_TYPE]
+            self._data[TARIFF_TYPE] = user_input[TARIFF_TYPE]
+            return await self.async_step_connectsensors()
 
         meter_types = [ONE_IMPORT_ONE_EXPORT_METER, TWO_IMPORT_ONE_EXPORT_METER]
+        tariff_types = [NO_TARIFF_INFO, FIXED_NUMERICAL_TARIFFS, TARIFF_SENSOR_ENTITIES]
 
         return self.async_show_form(
             step_id="metertype",
             data_schema=vol.Schema({
                     vol.Required(METER_TYPE): vol.In(meter_types),
-                }),
+                    vol.Required(TARIFF_TYPE): vol.In(tariff_types)
+                })
         )
 
-    async def async_step_connectsensorsoneimport(self, user_input = None):
+    async def async_step_connectsensors(self, user_input = None):
         if user_input is not None:
             self._data[CONF_IMPORT_SENSOR] = user_input[CONF_IMPORT_SENSOR]
             self._data[CONF_EXPORT_SENSOR] = user_input[CONF_EXPORT_SENSOR]
-            return await self.async_step_connecttariffsensors()
+            if self._data[METER_TYPE] == TWO_IMPORT_ONE_EXPORT_METER:
+                self._data[CONF_SECOND_IMPORT_SENSOR] = user_input[CONF_SECOND_IMPORT_SENSOR]
+            if self._data[TARIFF_TYPE] == NO_TARIFF_INFO:
+                return self.async_create_entry(title=self._data["name"], data=self._data)
+            else:
+                return await self.async_step_connecttariffsensors()
             
-        entities = self.hass.states.async_entity_ids()
-        energy_entities = []
-        for entity_id in entities:
-            entity = self.hass.states.get(entity_id)
-            if entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == UnitOfEnergy.KILO_WATT_HOUR or entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == UnitOfEnergy.WATT_HOUR:
-                energy_entities.append(entity_id)
-        return self.async_show_form(
-            step_id="connectsensorsoneimport",
-            data_schema=vol.Schema({
-                vol.Required(CONF_IMPORT_SENSOR): vol.In(energy_entities),
-                vol.Required(CONF_EXPORT_SENSOR): vol.In(energy_entities),
-            }),
-        )
+        if self._data[METER_TYPE] == ONE_IMPORT_ONE_EXPORT_METER:
+            schema = {
+                vol.Required(CONF_IMPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY)),
+                vol.Required(CONF_EXPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY))
+            }
+        elif self._data[METER_TYPE] == TWO_IMPORT_ONE_EXPORT_METER:
+            schema ={
+                vol.Required(CONF_IMPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY)),
+                vol.Required(CONF_SECOND_IMPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY)),
+                vol.Required(CONF_EXPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY))
+            }
 
-    async def async_step_connectsensorstwoimport(self, user_input = None):
-        if user_input is not None:
-            self._data[CONF_IMPORT_SENSOR] = user_input[CONF_IMPORT_SENSOR]
-            self._data[CONF_EXPORT_SENSOR] = user_input[CONF_EXPORT_SENSOR]
-            self._data[CONF_SECOND_IMPORT_SENSOR] = user_input[CONF_SECOND_IMPORT_SENSOR]
-            return await self.async_step_connecttariffsensors()
-
-        entities = self.hass.states.async_entity_ids()
-        energy_entities = []
-        for entity_id in entities:
-            entity = self.hass.states.get(entity_id)
-            if entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) ==     UnitOfEnergy.KILO_WATT_HOUR or entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == UnitOfEnergy.WATT_HOUR:
-                energy_entities.append(entity_id)
-        return self.async_show_form(
-            step_id="connectsensorstwoimport",
-            data_schema=vol.Schema({
-                vol.Required(CONF_IMPORT_SENSOR): vol.In(energy_entities),
-                vol.Required(CONF_SECOND_IMPORT_SENSOR): vol.In(energy_entities),
-                vol.Required(CONF_EXPORT_SENSOR): vol.In(energy_entities),
-            }),
-        )
+        return self.async_show_form(step_id="connectsensors", data_schema=vol.Schema(schema))
 
     async def async_step_connecttariffsensors(self, user_input = None):
         if user_input is not None:
             self._data[CONF_ENERGY_IMPORT_TARIFF] = user_input[CONF_ENERGY_IMPORT_TARIFF]
-            self._data[TARIFF_TYPE] = TARIFF_SENSOR_ENTITIES
             if CONF_ENERGY_EXPORT_TARIFF in user_input:
                 self._data[CONF_ENERGY_EXPORT_TARIFF] = user_input[CONF_ENERGY_EXPORT_TARIFF]
             return self.async_create_entry(title=self._data["name"], data=self._data)
+        if self._data[TARIFF_TYPE] == TARIFF_SENSOR_ENTITIES:
+            schema = {
+                vol.Required(CONF_ENERGY_IMPORT_TARIFF): EntitySelector(EntitySelectorConfig()),
+                vol.Optional(CONF_ENERGY_EXPORT_TARIFF): EntitySelector(EntitySelectorConfig())
+            }
+        elif self._data[TARIFF_TYPE] == FIXED_NUMERICAL_TARIFFS:
+            schema = {
+                vol.Required(CONF_ENERGY_IMPORT_TARIFF, default=0.3): vol.All(vol.Coerce(float), vol.Range(min=0, max=10)),
+                vol.Optional(CONF_ENERGY_EXPORT_TARIFF, default=0.3): vol.All(vol.Coerce(float), vol.Range(min=0, max=10))
+            }
 
-        entities = self.hass.states.async_entity_ids()
-        energy_entities = []
-        for entity_id in entities:
-            entity = self.hass.states.get(entity_id)
-            if entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == UnitOfEnergy.KILO_WATT_HOUR or entity.attributes.get(ATTR_UNIT_OF_MEASUREMENT) == UnitOfEnergy.WATT_HOUR:
-                energy_entities.append(entity_id)
-        return self.async_show_form(
-            step_id="connecttariffsensors",
-            data_schema=vol.Schema({
-                vol.Optional(CONF_ENERGY_IMPORT_TARIFF): vol.In(entities),
-                vol.Optional(CONF_ENERGY_EXPORT_TARIFF): vol.In(entities),
-            }),
-        )
+        return self.async_show_form(step_id="connecttariffsensors", data_schema=vol.Schema(schema))

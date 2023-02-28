@@ -1,20 +1,10 @@
 """Constants for the battery_sim component."""
-from typing import Final
 
 DOMAIN = "battery_sim"
 
 BATTERY_TYPE = "battery"
 
 BATTERY_PLATFORMS = ["sensor", "switch", "button"]
-
-QUARTER_HOURLY = "quarter-hourly"
-HOURLY = "hourly"
-DAILY = "daily"
-WEEKLY = "weekly"
-MONTHLY = "monthly"
-BIMONTHLY = "bimonthly"
-QUARTERLY = "quarterly"
-YEARLY = "yearly"
 
 DATA_UTILITY = "battery_sim_data"
 
@@ -55,8 +45,6 @@ ATTR_ENERGY_BATTERY_IN = "battery_energy_in"
 ATTR_MONEY_SAVED = "total_money_saved"
 ATTR_MONEY_SAVED_IMPORT = "money_saved_on_imports"
 ATTR_MONEY_SAVED_EXPORT = "extra_money_earned_on_exports"
-CHARGING = "charging"
-DISCHARGING = "discharging"
 CHARGING_RATE = "current charging rate"
 DISCHARGING_RATE = "current discharging rate"
 ATTR_CHARGE_PERCENTAGE = "percentage"
@@ -64,11 +52,14 @@ GRID_EXPORT_SIM = "simulated grid export after battery charging"
 GRID_IMPORT_SIM = "simulated grid import after battery discharging"
 ICON_CHARGING = "mdi:battery-charging-50"
 ICON_DISCHARGING = "mdi:battery-50"
+ICON_FULL = "mdi:battery"
+ICON_EMPTY = "mdi:battery-outline"
 OVERIDE_CHARGING = "force_charge"
 FORCE_DISCHARGE = "force_discharge"
 PAUSE_BATTERY = "pause_battery"
 RESET_BATTERY = "reset_battery"
 PERCENTAGE_ENERGY_IMPORT_SAVED = "percentage_import_energy_saved"
+BATTERY_CYCLES = "battery_cycles"
 
 BATTERY_MODE = "Battery_mode_now"
 MODE_IDLE = "Idle/Paused"

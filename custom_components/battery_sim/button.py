@@ -92,4 +92,4 @@ class BatteryButton(ButtonEntity):
         return False
 
     async def async_press(self):
-        dispatcher_send(self.hass, f"{self._name}-BatteryResetMessage")
+        dispatcher_send(self.hass, f"{self._device_name}-BatteryResetMessage")
