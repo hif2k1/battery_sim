@@ -5,7 +5,7 @@ import logging
 
 from homeassistant.components.switch import SwitchEntity
 
-from .const import DOMAIN, CONF_BATTERY, OVERIDE_CHARGING, PAUSE_BATTERY, FORCE_DISCHARGE
+from .const import DOMAIN, CONF_BATTERY, OVERIDE_CHARGING, PAUSE_BATTERY, FORCE_DISCHARGE, CHARGE_ONLY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,8 +22,13 @@ BATTERY_SWITCHES = [
     },
     {
         "name": FORCE_DISCHARGE,
-        "key": "force _battery_enabled",
+        "key": "force_battery_enabled",
         "icon": "mdi:home-export-outline"
+    },
+    {
+        "name": CHARGE_ONLY,
+        "key": "charge_only_enabled",
+        "icon": "mdi:home-import-outline"
     }
 ]
 
@@ -109,6 +114,10 @@ class BatterySwitch(SwitchEntity):
 
     async def async_turn_on(self, **kwargs):
         self.handle._switches[self._switch_type] = True
+        if self._switch_type == CHARGE_ONLY:
+            self.handle._switches[FORCE_DISCHARGE] = False
+        elif self._switch_type == FORCE_DISCHARGE:
+            self.handle._switches[CHARGE_ONLY] = False
         self.schedule_update_ha_state(True)
         return True
 

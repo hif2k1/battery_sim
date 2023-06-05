@@ -15,9 +15,11 @@ from .const import (
     CONF_BATTERY_MAX_DISCHARGE_RATE, 
     CONF_BATTERY_MAX_CHARGE_RATE, 
     CONF_BATTERY_EFFICIENCY,
+    CONF_UNIQUE_NAME,
     CONF_IMPORT_SENSOR,
     CONF_SECOND_IMPORT_SENSOR,
     CONF_EXPORT_SENSOR,
+    CONF_SECOND_EXPORT_SENSOR,
     CONF_ENERGY_IMPORT_TARIFF,
     CONF_ENERGY_EXPORT_TARIFF,
     SETUP_TYPE,
@@ -25,6 +27,7 @@ from .const import (
     METER_TYPE,
     ONE_IMPORT_ONE_EXPORT_METER,
     TWO_IMPORT_ONE_EXPORT_METER,
+    TWO_IMPORT_TWO_EXPORT_METER,
     TARIFF_TYPE,
     NO_TARIFF_INFO, 
     TARIFF_SENSOR_ENTITIES,
@@ -66,7 +69,7 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._data = user_input
             self._data[SETUP_TYPE] = CONFIG_FLOW
-            self._data[CONF_NAME]=DOMAIN + ": " + str(user_input[CONF_BATTERY_SIZE]) + "_kWh_battery"
+            self._data[CONF_NAME]=DOMAIN + ": " + self._data[CONF_UNIQUE_NAME]
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
             return await self.async_step_metertype()
@@ -75,6 +78,7 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="custom",
             data_schema=vol.Schema({
+                vol.Required(CONF_UNIQUE_NAME): vol.All(str),
                 vol.Required(CONF_BATTERY_SIZE): vol.All(vol.Coerce(float)),
                 vol.Required(CONF_BATTERY_MAX_DISCHARGE_RATE): vol.All(vol.Coerce(float)),
                 vol.Required(CONF_BATTERY_MAX_CHARGE_RATE): vol.All(vol.Coerce(float)),
@@ -89,7 +93,7 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data[TARIFF_TYPE] = user_input[TARIFF_TYPE]
             return await self.async_step_connectsensors()
 
-        meter_types = [ONE_IMPORT_ONE_EXPORT_METER, TWO_IMPORT_ONE_EXPORT_METER]
+        meter_types = [ONE_IMPORT_ONE_EXPORT_METER, TWO_IMPORT_ONE_EXPORT_METER, TWO_IMPORT_TWO_EXPORT_METER]
         tariff_types = [NO_TARIFF_INFO, FIXED_NUMERICAL_TARIFFS, TARIFF_SENSOR_ENTITIES]
 
         return self.async_show_form(
@@ -121,6 +125,13 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_IMPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY)),
                 vol.Required(CONF_SECOND_IMPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY)),
                 vol.Required(CONF_EXPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY))
+            }
+        elif self._data[METER_TYPE] == TWO_IMPORT_TWO_EXPORT_METER:
+            schema ={
+                vol.Required(CONF_IMPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY)),
+                vol.Required(CONF_SECOND_IMPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY)),
+                vol.Required(CONF_EXPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY)),
+                vol.Required(CONF_SECOND_EXPORT_SENSOR): EntitySelector(EntitySelectorConfig(device_class = SensorDeviceClass.ENERGY))
             }
 
         return self.async_show_form(step_id="connectsensors", data_schema=vol.Schema(schema))

@@ -18,12 +18,13 @@
             "custom": {
                 "title": "Custom battery",
                 "data":{
+                    "unique_name": "Unique name",
                     "size_kwh": "Battery size in kWh",
                     "max_discharge_rate_kw" : "Maximum discharge rate in kW",
                     "max_charge_rate_kw": "Maximum charging rate in kW",
                     "efficiency": "Round trip efficiency (0 to 1)"
                 },
-                "description": "Set the speciffications of the battery."
+                "description": "Set the speciffications of the battery. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
             },
             "metertype":{
                 "title": "Energy meter type",
@@ -38,7 +39,8 @@
                 "data":{
                     "import_sensor": "Import sensor/meter - energy coming into house",
                     "second_import_sensor": "Second import sensor/meter - e.g. night time or Economy 7",
-                    "export_sensor" : "Export sensor/meter - energy sent to grid"
+                    "export_sensor" : "Export sensor/meter - energy sent to grid",
+                    "second_export_sensor" : "Second export sensor/meter - e.g. night time or Economy 7"
                 },
                 "description": "When export sensor shows energy leaving the house battery will charge. When import sensor shows energy entering the house from the grid the battery will discharge."
             },

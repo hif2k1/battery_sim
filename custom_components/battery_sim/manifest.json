@@ -1,12 +1,12 @@
 {
   "domain": "battery_sim",
   "name": "Battery Simulation",
-  "documentation": "https://github.com/hif2k1/battery_sim/",
-  "version": "1.0",
-  "requirements": [],
   "codeowners": ["@hif2k1"],
-  "quality_scale": "internal",
+  "config_flow": true,
+  "documentation": "https://github.com/hif2k1/battery_sim/",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/hif2k1/battery_sim/issues",
-  "config_flow": true
+  "quality_scale": "internal",
+  "requirements": [],
+  "version": "1.0"
 }

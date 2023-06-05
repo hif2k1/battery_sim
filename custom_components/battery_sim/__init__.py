@@ -30,6 +30,7 @@ from .const import (
     CONF_ENERGY_EXPORT_TARIFF,
     CONF_IMPORT_SENSOR,
     CONF_SECOND_IMPORT_SENSOR,
+    CONF_SECOND_EXPORT_SENSOR,
     CONF_EXPORT_SENSOR,
     DOMAIN,
     BATTERY_PLATFORMS,
@@ -58,7 +59,8 @@ from .const import (
     NO_TARIFF_INFO,
     TARIFF_SENSOR_ENTITIES,
     FIXED_NUMERICAL_TARIFFS,
-    BATTERY_CYCLES
+    BATTERY_CYCLES,
+    CHARGE_ONLY
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -139,9 +141,13 @@ class SimulatedBatteryHandle():
         self._import_sensor_id = config[CONF_IMPORT_SENSOR]
         self._export_sensor_id = config[CONF_EXPORT_SENSOR]
         self._second_import_sensor_id = None
+        self._second_export_sensor_id = None
         if (CONF_SECOND_IMPORT_SENSOR in config and
             len(config[CONF_SECOND_IMPORT_SENSOR]) > 6):
             self._second_import_sensor_id = config[CONF_SECOND_IMPORT_SENSOR]
+        if (CONF_SECOND_EXPORT_SENSOR in config and
+            len(config[CONF_SECOND_EXPORT_SENSOR]) > 6):
+            self._second_export_sensor_id = config[CONF_SECOND_EXPORT_SENSOR]
         """Defalt to sensor entites for backwards compatibility"""
         self._tariff_type = TARIFF_SENSOR_ENTITIES
         if TARIFF_TYPE in config:
@@ -176,7 +182,8 @@ class SimulatedBatteryHandle():
         self._switches = {
             OVERIDE_CHARGING: False, 
             PAUSE_BATTERY: False,
-            FORCE_DISCHARGE: False
+            FORCE_DISCHARGE: False,
+            CHARGE_ONLY: False
             }
         self._sensors = {
             ATTR_ENERGY_SAVED: 0.0,
@@ -256,6 +263,11 @@ class SimulatedBatteryHandle():
             self._hass, [self._export_sensor_id], self.async_export_reading
         )
         _LOGGER.debug("<%s> monitoring %s", self._name, self._export_sensor_id)
+        if self._second_export_sensor_id != None:
+            self._collecting4 = async_track_state_change_event(
+                self._hass, [self._second_export_sensor_id], self.async_export_reading
+            )
+        _LOGGER.debug("<%s> monitoring %s", self._name, self._second_export_sensor_id)
 
     @callback
     def async_export_reading(self, event):
@@ -378,6 +390,16 @@ class SimulatedBatteryHandle():
             net_export = max(amount_to_discharge - import_amount, 0) + export_amount
             net_import = max(import_amount - amount_to_discharge, 0)
             self._sensors[BATTERY_MODE] = MODE_FORCE_DISCHARGING
+        elif self._switches[CHARGE_ONLY]:
+            _LOGGER.debug("Battery (%s) charge only mode.", self._name)
+            amount_to_charge = min(export_amount, max_charge, available_capacity_to_charge)
+            amount_to_discharge = 0.0
+            net_import = import_amount
+            net_export = export_amount - amount_to_charge
+            if amount_to_charge > amount_to_discharge:
+                self._sensors[BATTERY_MODE] = MODE_CHARGING
+            else:
+                self._sensors[BATTERY_MODE] = MODE_IDLE
         else:
             _LOGGER.debug("Battery (%s) normal mode.", self._name)
             amount_to_charge = min(export_amount, max_charge, available_capacity_to_charge)
