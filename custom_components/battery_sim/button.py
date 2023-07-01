@@ -10,12 +10,14 @@ from .const import DOMAIN, CONF_BATTERY, RESET_BATTERY, GRID_IMPORT_SIM, GRID_EX
 
 _LOGGER = logging.getLogger(__name__)
 
-BATTERY_BUTTONS =[
+BATTERY_BUTTONS = [
     {
         "name": RESET_BATTERY,
-        "key":  "overide_charging_enabled",
+        "key": "overide_charging_enabled",
         "icon": "mdi:fast-forward",
-    }]
+    }
+]
+
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add the Wiser System Switch entities."""
@@ -26,13 +28,16 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     for button in BATTERY_BUTTONS:
         battery_buttons.append(
             BatteryButton(handle, button["name"], button["key"], button["icon"])
-        )        
-    
+        )
+
     async_add_entities(battery_buttons)
 
     return True
 
-async def async_setup_platform(hass, configuration, async_add_entities, discovery_info=None):
+
+async def async_setup_platform(
+    hass, configuration, async_add_entities, discovery_info=None
+):
     if discovery_info is None:
         _LOGGER.error("This platform is only available through discovery")
         return
@@ -40,15 +45,16 @@ async def async_setup_platform(hass, configuration, async_add_entities, discover
     for conf in discovery_info:
         battery = conf[CONF_BATTERY]
         handle = hass.data[DOMAIN][battery]
-    
+
     battery_buttons = []
     for button in BATTERY_BUTTONS:
         battery_buttons.append(
             BatteryButton(handle, button["name"], button["key"], button["icon"])
         )
-    
+
     async_add_entities(battery_buttons)
     return True
+
 
 class BatteryButton(ButtonEntity):
     """Switch to set the status of the Wiser Operation Mode (Away/Normal)."""
@@ -75,11 +81,9 @@ class BatteryButton(ButtonEntity):
     @property
     def device_info(self):
         return {
-                "name": self._device_name,
-                "identifiers": {
-                    (DOMAIN, self._device_name)
-                },
-            }
+            "name": self._device_name,
+            "identifiers": {(DOMAIN, self._device_name)},
+        }
 
     @property
     def icon(self):
