@@ -1,5 +1,5 @@
 <p>
-  <img href="https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=integration%20usage&suffix=%20installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.battery_sim.versions[%271.0%27]">
+  <img alt="downloads" href="https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=integration%20usage&suffix=%20installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.battery_sim.versions[%271.0%27]" />
 </p>
 
 # Battery Simulator integration/custom component for home assistant
