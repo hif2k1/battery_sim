@@ -29,7 +29,8 @@
                 "title": "Energy meter type",
                 "data":{
                     "one_import_one_export" : "One import and one export meter",
-                    "two_import_one_export" : "Two import and one export meter"
+                    "two_import_one_export" : "Two import and one export meter",
+                    "two_import_two_export" : "Two import and two export meter"
                 },
                 "description": "Select the type of energy meter you have. Import meters measure energy coming into your home from the grid. You may have two of these e.g. one for day time and one for night. Export meters measure energy leaving your house to the grid e.g. excess solar generation."
             },

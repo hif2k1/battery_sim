@@ -6,7 +6,7 @@ import logging
 from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.dispatcher import dispatcher_send, async_dispatcher_connect
 
-from .const import DOMAIN, CONF_BATTERY, RESET_BATTERY, GRID_IMPORT_SIM, GRID_EXPORT_SIM
+from .const import DOMAIN, CONF_BATTERY, RESET_BATTERY, MESSAGE_TYPE_BATTERY_RESET
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -96,4 +96,4 @@ class BatteryButton(ButtonEntity):
         return False
 
     async def async_press(self):
-        dispatcher_send(self.hass, f"{self._device_name}-BatteryResetMessage")
+        dispatcher_send(self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET}")

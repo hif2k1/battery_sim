@@ -6,6 +6,10 @@ BATTERY_TYPE = "battery"
 
 BATTERY_PLATFORMS = ["sensor", "switch", "button"]
 
+MESSAGE_TYPE_GENERAL = 'BatteryResetMessage'
+MESSAGE_TYPE_BATTERY_RESET = 'BatteryResetSim'
+MESSAGE_TYPE_BATTERY_UPDATE = 'BatteryUpdateMessage'
+
 DATA_UTILITY = "battery_sim_data"
 
 SETUP_TYPE = "setup_type"

@@ -45,6 +45,7 @@ from .const import (
     MODE_FULL,
     MODE_EMPTY,
     BATTERY_CYCLES,
+    MESSAGE_TYPE_BATTERY_RESET,MESSAGE_TYPE_BATTERY_UPDATE
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -193,18 +194,18 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
                 _LOGGER.debug("Sensor state not restored properly.")
                 if self._sensor_type == GRID_IMPORT_SIM:
                     dispatcher_send(
-                        self.hass, f"{self._device_name}-BatteryResetImportSim"
+                        self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET}"
                     )
                 elif self._sensor_type == GRID_EXPORT_SIM:
                     dispatcher_send(
-                        self.hass, f"{self._device_name}-BatteryResetExportSim"
+                        self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET}"
                     )
         else:
             _LOGGER.debug("No sensor state - presume new battery.")
             if self._sensor_type == GRID_IMPORT_SIM:
-                dispatcher_send(self.hass, f"{self._device_name}-BatteryResetImportSim")
+                dispatcher_send(self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET}")
             elif self._sensor_type == GRID_EXPORT_SIM:
-                dispatcher_send(self.hass, f"{self._device_name}-BatteryResetExportSim")
+                dispatcher_send(self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET}")
 
         async def async_update_state():
             """Update sensor state."""
@@ -212,7 +213,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
             await self.async_update_ha_state(True)
 
         async_dispatcher_connect(
-            self.hass, f"{self._device_name}-BatteryUpdateMessage", async_update_state
+            self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_UPDATE}", async_update_state
         )
 
     @property
@@ -331,7 +332,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             await self.async_update_ha_state(True)
 
         async_dispatcher_connect(
-            self.hass, f"{self._name}-BatteryUpdateMessage", async_update_state
+            self.hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}", async_update_state
         )
 
     @property
@@ -428,7 +429,7 @@ class BatteryStatus(SensorEntity):
             await self.async_update_ha_state(True)
 
         async_dispatcher_connect(
-            self.hass, f"{self._device_name}-BatteryUpdateMessage", async_update_state
+            self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_UPDATE}", async_update_state
         )
 
     @property

@@ -44,13 +44,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add the Wiser System Switch entities."""
     handle = hass.data[DOMAIN][config_entry.entry_id]  # Get Handler
 
-    # Add Defined Switches
-    battery_switches = []
-    for switch in BATTERY_SWITCHES:
-        battery_switches.append(
-            BatterySwitch(handle, switch["name"], switch["key"], switch["icon"])
-        )
-
+    battery_switches = [
+        BatterySwitch(handle, switch["name"], switch["key"], switch["icon"])
+        for switch in BATTERY_SWITCHES
+    ]
     async_add_entities(battery_switches)
 
     return True
@@ -67,12 +64,10 @@ async def async_setup_platform(
         battery = conf[CONF_BATTERY]
         handle = hass.data[DOMAIN][battery]
 
-    battery_switches = []
-    for switch in BATTERY_SWITCHES:
-        battery_switches.append(
-            BatterySwitch(handle, switch["name"], switch["key"], switch["icon"])
-        )
-
+    battery_switches = [
+        BatterySwitch(handle, switch["name"], switch["key"], switch["icon"])
+        for switch in BATTERY_SWITCHES
+    ]
     async_add_entities(battery_switches)
     return True
 
