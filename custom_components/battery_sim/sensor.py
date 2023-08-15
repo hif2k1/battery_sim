@@ -84,6 +84,7 @@ async def define_sensors(hass, handle):
             UnitOfEnergy.KILO_WATT_HOUR,
         )
     )
+
     sensors.append(
         DisplayOnlySensor(
             handle,
@@ -126,6 +127,7 @@ async def define_sensors(hass, handle):
             UnitOfEnergy.KILO_WATT_HOUR,
         )
     )
+
     sensors.append(DisplayOnlySensor(handle, BATTERY_CYCLES, None, None))
     if handle._import_tariff_sensor_id != None:
         sensors.append(
@@ -377,7 +379,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes of the sensor."""
-        state_attr = {
+        return {
             ATTR_STATUS: self.handle._sensors[BATTERY_MODE],
             ATTR_CHARGE_PERCENTAGE: int(self.handle._charge_percentage),
             ATTR_DATE_RECORDING_STARTED: self.handle._date_recording_started,
@@ -387,7 +389,6 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             CONF_BATTERY_MAX_CHARGE_RATE: float(self.handle._max_charge_rate),
             ATTR_SOURCE_ID: self.handle._export_sensor_id,
         }
-        return state_attr
 
     @property
     def icon(self):
@@ -457,8 +458,7 @@ class BatteryStatus(SensorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes of the sensor."""
-        state_attr = {}
-        return state_attr
+        return {}
 
     @property
     def icon(self):
