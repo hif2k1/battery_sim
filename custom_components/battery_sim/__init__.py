@@ -51,6 +51,8 @@ from .const import (
     MODE_DISCHARGING,
     MODE_FULL,
     MODE_EMPTY,
+    MODE_FORCE_DISCHARGING,
+    MODE_FORCE_CHARGING,
     ATTR_MONEY_SAVED_IMPORT,
     ATTR_MONEY_SAVED_EXPORT,
     TARIFF_TYPE,
@@ -349,6 +351,8 @@ class SimulatedBatteryHandle:
 
         old_state_value = float(old_state.state)
         new_state_value = float(new_state.state)
+        
+        _LOGGER.debug(f"({self._name}) {sensor_id}: Old = {old_state_value} / New = {new_state_value} ")
 
         reading_difference = new_state_value - old_state_value
 
@@ -367,15 +371,15 @@ class SimulatedBatteryHandle:
         cumulative_reading = conversion_factor * new_state_value
         rate_reading = conversion_factor * reading_difference
 
+        _LOGGER.debug(
+            f"Last Reading Time {self._last_import_reading_time} - {self._last_export_reading_time}"
+        )
+        
         if self._last_import_reading_time > self._last_export_reading_time:
             if self._last_export_reading > 0:
                 _LOGGER.warning("Accumulated reading not cleared error")
                 
             last_reading = rate_reading
-            
-            _LOGGER.debug(
-                f"Last Reading Time {self._last_import_reading_time} - {self._last_export_reading_time}"
-            )
             
         else:
             last_reading += rate_reading
@@ -404,154 +408,310 @@ class SimulatedBatteryHandle:
             return None
 
         return float(self._hass.states.get(entity_id).state)
-
+    
     def updateBattery(self, import_amount, export_amount):
         _LOGGER.debug(
-            "Battery update event (%s). Import: %s, Export: %s",
+            "(%s) Battery update event: Import = %s, Export = %s",
             self._name,
             round(import_amount, 4),
             round(export_amount, 4),
         )
-
-        def calculate_charge_discharge(
-            is_charge, max_rate, available_capacity, reading_amount
-        ):
-            if is_charge:
-                return min(reading_amount, max_rate, available_capacity)
-            else:
-                return min(reading_amount, max_rate, available_capacity) / float(
-                    self._battery_efficiency
-                )
+        
+        amount_to_charge: float = 0.0
+        amount_to_discharge: float = 0.0
+        net_export: float = 0.0
+        net_import: float = 0.0
         
         if self._charge_state == "unknown":
             self._charge_state = 0.0
 
+        """Calculate maximum possible charge and discharge based on battery specifications and time since last discharge"""
         time_now = time.time()
         time_since_last_battery_update = time_now - self._last_battery_update_time
         max_discharge = time_since_last_battery_update * self._max_discharge_rate / 3600
         max_charge = time_since_last_battery_update * self._max_charge_rate / 3600
+        available_capacity_to_charge = self._battery_size - float(self._charge_state)
+        available_capacity_to_discharge = float(self._charge_state) * float(
+            self._battery_efficiency
+        )
         
-        current_import_tariff = self.getTariffReading(self._import_tariff_sensor_id)
-        current_export_tariff = self.getTariffReading(self._export_tariff_sensor_id)
-    
-        is_charge = self._switches[OVERIDE_CHARGING]
-        is_discharge = self._switches[FORCE_DISCHARGE]
-        is_charge_only = self._switches[CHARGE_ONLY]    
-        is_paused = self._switches[PAUSE_BATTERY]
-        
-        _LOGGER.debug("Battery (%s) Settings.", self._name)
-        _LOGGER.debug("Is Force Charging: ", is_charge)
-        _LOGGER.debug("Is Force Discharging: ", is_discharge)
-        _LOGGER.debug("Is Charge Only: ", is_charge_only)
-        _LOGGER.debug("Is Paused: ", is_paused)
+        if not any(self._switches.values()):
+            _LOGGER.debug("Battery (%s) normal mode.", self._name)
+            amount_to_charge = min(
+                export_amount, max_charge, available_capacity_to_charge
+            )
+            amount_to_discharge = min(
+                import_amount, max_discharge, available_capacity_to_discharge
+            )
+            net_import = import_amount - amount_to_discharge
+            net_export = export_amount - amount_to_charge
+            if amount_to_charge > amount_to_discharge:
+                self._sensors[BATTERY_MODE] = MODE_CHARGING
+            else:
+                self._sensors[BATTERY_MODE] = MODE_DISCHARGING
 
-        if is_paused:
+        if self._switches[PAUSE_BATTERY]:
             _LOGGER.debug("Battery (%s) paused.", self._name)
-           
+            amount_to_charge = 0.0
+            amount_to_discharge = 0.0
+            net_export = export_amount
+            net_import = import_amount
             self._sensors[BATTERY_MODE] = MODE_IDLE
-            self._sensors[GRID_IMPORT_SIM] += import_amount
-            self._sensors[GRID_EXPORT_SIM] += export_amount
-            self._sensors[ATTR_ENERGY_BATTERY_IN] += 0.0
-            self._sensors[ATTR_ENERGY_BATTERY_OUT] += 0.0
-            self._sensors[CHARGING_RATE] = 0.0 
-            self._sensors[DISCHARGING_RATE] = 0.0 
-
-        else:
-            amount_to_charge = calculate_charge_discharge(
-                is_charge,
-                max_charge,
-                self._battery_size - float(self._charge_state),
-                export_amount,
-            )
-
-            amount_to_discharge = calculate_charge_discharge(
-                is_discharge,
-                max_discharge,
-                float(self._charge_state) * float(self._battery_efficiency),
-                import_amount,
-            )
             
-            _LOGGER.debug(
-                "Battery update event (%s). Amount to Charge: %s, Amount to Discharge: %s",
-                self._name,
-                round(amount_to_charge, 4),
-                round(amount_to_discharge, 4),
-            )
-
+        if self._switches[OVERIDE_CHARGING]:
+            _LOGGER.debug("Battery (%s) overide charging.", self._name)
+            amount_to_charge = min(max_charge, available_capacity_to_charge)
+            amount_to_discharge = 0.0
+            net_export = max(export_amount - amount_to_charge, 0)
+            net_import = max(amount_to_charge - export_amount, 0) + import_amount
+            self._charging = True
+            self._sensors[BATTERY_MODE] = MODE_FORCE_CHARGING
+            
+        if self._switches[FORCE_DISCHARGE]:
+            _LOGGER.debug("Battery (%s) forced discharging.", self._name)
+            amount_to_charge = 0.0
+            amount_to_discharge = min(max_discharge, available_capacity_to_discharge)
             net_export = max(amount_to_discharge - import_amount, 0) + export_amount
             net_import = max(import_amount - amount_to_discharge, 0)
+            self._sensors[BATTERY_MODE] = MODE_FORCE_DISCHARGING
             
-            _LOGGER.debug(
-                "Battery update event (%s). Net Import: %s, Net Export: %s",
-                self._name,
-                round(net_import, 4),
-                round(net_export, 4),
+        if self._switches[CHARGE_ONLY]:
+            _LOGGER.debug("Battery (%s) charge only mode.", self._name)
+            amount_to_charge: float = min(
+                export_amount, max_charge, available_capacity_to_charge
             )
-
-            if is_charge_only:
-                self._sensors[BATTERY_MODE] = (
-                    MODE_CHARGING
-                    if amount_to_charge > amount_to_discharge
-                    else MODE_IDLE
-                )
+            amount_to_discharge: float = 0.0
+            net_import = import_amount
+            net_export = export_amount - amount_to_charge
+            if amount_to_charge > amount_to_discharge:
+                self._sensors[BATTERY_MODE] = MODE_CHARGING
             else:
-                self._sensors[BATTERY_MODE] = (
-                    MODE_CHARGING
-                    if amount_to_charge > amount_to_discharge
-                    else MODE_DISCHARGING
-                )
+                self._sensors[BATTERY_MODE] = MODE_IDLE
 
-            if current_import_tariff is not None:
-                self._sensors[ATTR_MONEY_SAVED_IMPORT] += (
-                    import_amount - net_import
-                ) * current_import_tariff
-            if current_export_tariff is not None:
-                self._sensors[ATTR_MONEY_SAVED_EXPORT] += (
-                    net_export - export_amount
-                ) * current_export_tariff
+        current_import_tariff = self.getTariffReading(self._import_tariff_sensor_id)
+        current_export_tariff = self.getTariffReading(self._export_tariff_sensor_id)
 
-            if self._tariff_type is not NO_TARIFF_INFO:
-                self._sensors[ATTR_MONEY_SAVED] = (
-                    self._sensors[ATTR_MONEY_SAVED_IMPORT]
-                    + self._sensors[ATTR_MONEY_SAVED_EXPORT]
-                )
-
-            self._charge_state += amount_to_charge - amount_to_discharge
-
-            self._sensors[ATTR_ENERGY_SAVED] += import_amount - net_import
-            self._sensors[GRID_IMPORT_SIM] += net_import
-            self._sensors[GRID_EXPORT_SIM] += net_export
-            self._sensors[ATTR_ENERGY_BATTERY_IN] += amount_to_charge
-            self._sensors[ATTR_ENERGY_BATTERY_OUT] += amount_to_discharge
-
-            self._sensors[CHARGING_RATE] = amount_to_charge / (
-                time_since_last_battery_update / 3600
-            )
-            self._sensors[DISCHARGING_RATE] = amount_to_discharge / (
-                time_since_last_battery_update / 3600
-            )
-            self._sensors[BATTERY_CYCLES] = (
-                self._sensors[ATTR_ENERGY_BATTERY_IN] / self._battery_size
+        if current_import_tariff is not None:
+            self._sensors[ATTR_MONEY_SAVED_IMPORT] += (
+                import_amount - net_import
+            ) * current_import_tariff
+        if current_export_tariff is not None:
+            self._sensors[ATTR_MONEY_SAVED_EXPORT] += (
+                net_export - export_amount
+            ) * current_export_tariff
+        if self._tariff_type is not NO_TARIFF_INFO:
+            self._sensors[ATTR_MONEY_SAVED] = (
+                self._sensors[ATTR_MONEY_SAVED_IMPORT]
+                + self._sensors[ATTR_MONEY_SAVED_EXPORT]
             )
 
-            self._charge_percentage = round(100 * self._charge_state / self._battery_size)
+        self._charge_state = (
+            float(self._charge_state)
+            + amount_to_charge
+            - (amount_to_discharge / float(self._battery_efficiency))
+        )
 
-            if self._charge_percentage < 2:
-                self._sensors[BATTERY_MODE] = MODE_EMPTY
-            elif self._charge_percentage > 98:
-                self._sensors[BATTERY_MODE] = MODE_FULL
+        self._sensors[ATTR_ENERGY_SAVED] += import_amount - net_import
+        self._sensors[GRID_IMPORT_SIM] += net_import
+        self._sensors[GRID_EXPORT_SIM] += net_export
+        self._sensors[ATTR_ENERGY_BATTERY_IN] += amount_to_charge
+        self._sensors[ATTR_ENERGY_BATTERY_OUT] += amount_to_discharge
+        self._sensors[CHARGING_RATE] = amount_to_charge / (
+            time_since_last_battery_update / 3600
+        )
+        self._sensors[DISCHARGING_RATE] = amount_to_discharge / (
+            time_since_last_battery_update / 3600
+        )
+        self._sensors[BATTERY_CYCLES] = (
+            self._sensors[ATTR_ENERGY_BATTERY_IN] / self._battery_size
+        )
 
-            if self._last_battery_update_time.weekday() != time_now.weekday():
-                self._energy_saved_today = 0
-            if self._last_battery_update_time.isocalendar()[1] != time_now.isocalendar()[1]:
-                self._energy_saved_week = 0
-            if self._last_battery_update_time.month != time_now.month:
-                self._energy_saved_month = 0
+        self._charge_percentage = round(100 * self._charge_state / self._battery_size)
 
-            self._last_battery_update_time = time_now
+        if self._charge_percentage < 2:
+            self._sensors[BATTERY_MODE] = MODE_EMPTY
+        elif self._charge_percentage > 98:
+            self._sensors[BATTERY_MODE] = MODE_FULL
 
+        """Reset day/week/month counters"""
+        if time.strftime("%w") != time.strftime(
+            "%w", time.gmtime(self._last_battery_update_time)
+        ):
+            self._energy_saved_today = 0
+        if time.strftime("%U") != time.strftime(
+            "%U", time.gmtime(self._last_battery_update_time)
+        ):
+            self._energy_saved_week = 0
+        if time.strftime("%m") != time.strftime(
+            "%m", time.gmtime(self._last_battery_update_time)
+        ):
+            self._energy_saved_month = 0
+
+        self._last_battery_update_time = time_now
+        dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
         _LOGGER.debug(
             "Battery update complete (%s). Sensors: %s", self._name, self._sensors
         )
 
-        dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
+    # def updateBattery(self, import_amount, export_amount):
+    #     _LOGGER.debug(
+    #         "Battery update event (%s). Import: %s, Export: %s",
+    #         self._name,
+    #         round(import_amount, 4),
+    #         round(export_amount, 4),
+    #     )
+
+    #     def calculate_charge_discharge(
+    #         is_charge, max_rate, available_capacity, reading_amount
+    #     ):
+    #         if is_charge:
+    #             return min(reading_amount, max_rate, available_capacity)
+    #         else:
+    #             return min(reading_amount, max_rate, available_capacity) / float(
+    #                 self._battery_efficiency
+    #             )
+        
+    #     if self._charge_state == "unknown":
+    #         self._charge_state = 0.0
+
+    #     time_now = time.time()
+        
+    #     time_since_last_battery_update = time_now - self._last_battery_update_time
+        
+    #     _LOGGER.debug(f"Last Update: {self._last_battery_update_time} - Now: {time_now} = {time_since_last_battery_update}")
+        
+    #     max_discharge = time_since_last_battery_update * self._max_discharge_rate / 3600
+    #     max_charge = time_since_last_battery_update * self._max_charge_rate / 3600
+        
+    #     current_import_tariff = self.getTariffReading(self._import_tariff_sensor_id)
+    #     current_export_tariff = self.getTariffReading(self._export_tariff_sensor_id)
+    
+    #     is_charge = self._switches[OVERIDE_CHARGING]
+    #     is_discharge = self._switches[FORCE_DISCHARGE]
+    #     is_charge_only = self._switches[CHARGE_ONLY]    
+    #     is_paused = self._switches[PAUSE_BATTERY]
+        
+    #     _LOGGER.debug("Battery (%s): Is Force Charging: %s ", self._name, is_charge)
+    #     _LOGGER.debug("Battery (%s): Is Force Discharging: %s ", self._name,  is_discharge)
+    #     _LOGGER.debug("Battery (%s): Is Charge Only: %s", self._name,  is_charge_only)
+    #     _LOGGER.debug("Battery (%s): Is Paused: %s", self._name,  is_paused)
+        
+    #     _LOGGER.debug("Battery (%s): %s", self._name, self._sensors)
+
+    #     if is_paused:          
+    #         self._sensors[BATTERY_MODE] = MODE_IDLE
+    #         self._sensors[GRID_IMPORT_SIM] += import_amount
+    #         self._sensors[GRID_EXPORT_SIM] += export_amount
+    #         self._sensors[ATTR_ENERGY_BATTERY_IN] += 0.0
+    #         self._sensors[ATTR_ENERGY_BATTERY_OUT] += 0.0
+    #         self._sensors[CHARGING_RATE] = 0.0 
+    #         self._sensors[DISCHARGING_RATE] = 0.0 
+
+    #     else:
+    #         if self._sensors[CHARGING_RATE] <= 0:
+    #             self._sensors[BATTERY_MODE] = MODE_EMPTY
+            
+    #         amount_to_charge = calculate_charge_discharge(
+    #             is_charge,
+    #             max_charge,
+    #             self._battery_size - float(self._charge_state),
+    #             export_amount,
+    #         )
+
+    #         amount_to_discharge = calculate_charge_discharge(
+    #             is_discharge,
+    #             max_discharge,
+    #             float(self._charge_state) * float(self._battery_efficiency),
+    #             import_amount,
+    #         )
+            
+    #         _LOGGER.debug(
+    #             "Battery update event (%s). Amount to Charge: %s, Amount to Discharge: %s",
+    #             self._name,
+    #             round(amount_to_charge, 4),
+    #             round(amount_to_discharge, 4),
+    #         )
+
+    #         net_export = max(amount_to_discharge - import_amount, 0) + export_amount
+    #         net_import = max(import_amount - amount_to_discharge, 0)
+            
+    #         _LOGGER.debug(
+    #             "Battery update event (%s). Net Import: %s, Net Export: %s",
+    #             self._name,
+    #             round(net_import, 4),
+    #             round(net_export, 4),
+    #         )
+
+    #         if is_charge_only:
+    #             self._sensors[BATTERY_MODE] = (
+    #                 MODE_CHARGING
+    #                 if amount_to_charge > amount_to_discharge
+    #                 else MODE_IDLE
+    #             )
+    #         else:
+    #             self._sensors[BATTERY_MODE] = (
+    #                 MODE_CHARGING
+    #                 if amount_to_charge > amount_to_discharge
+    #                 else MODE_DISCHARGING
+    #             )
+
+    #         if current_import_tariff is not None:
+    #             self._sensors[ATTR_MONEY_SAVED_IMPORT] += (
+    #                 import_amount - net_import
+    #             ) * current_import_tariff
+    #         if current_export_tariff is not None:
+    #             self._sensors[ATTR_MONEY_SAVED_EXPORT] += (
+    #                 net_export - export_amount
+    #             ) * current_export_tariff
+
+    #         if self._tariff_type is not NO_TARIFF_INFO:
+    #             self._sensors[ATTR_MONEY_SAVED] = (
+    #                 self._sensors[ATTR_MONEY_SAVED_IMPORT]
+    #                 + self._sensors[ATTR_MONEY_SAVED_EXPORT]
+    #             )
+
+    #         self._charge_state += amount_to_charge - amount_to_discharge
+
+    #         self._sensors[ATTR_ENERGY_SAVED] += import_amount - net_import
+    #         self._sensors[GRID_IMPORT_SIM] += net_import
+    #         self._sensors[GRID_EXPORT_SIM] += net_export
+    #         self._sensors[ATTR_ENERGY_BATTERY_IN] += amount_to_charge
+    #         self._sensors[ATTR_ENERGY_BATTERY_OUT] += amount_to_discharge
+
+    #         self._sensors[CHARGING_RATE] = amount_to_charge / (
+    #             time_since_last_battery_update / 3600
+    #         )
+    #         self._sensors[DISCHARGING_RATE] = amount_to_discharge / (
+    #             time_since_last_battery_update / 3600
+    #         )
+    #         self._sensors[BATTERY_CYCLES] = (
+    #             self._sensors[ATTR_ENERGY_BATTERY_IN] / self._battery_size
+    #         )
+
+    #         self._charge_percentage = round(100 * self._charge_state / self._battery_size)
+            
+    #         _LOGGER.debug(f"Battery State ({self._name}): {self._charge_percentage}% ")
+
+    #         if self._charge_percentage < 2:
+    #             self._sensors[BATTERY_MODE] = MODE_EMPTY
+    #         elif self._charge_percentage > 98:
+    #             self._sensors[BATTERY_MODE] = MODE_FULL
+                
+    #         _LOGGER.debug(f"Battery State ({self._name}): {self._charge_percentage}% @ {self._sensors[BATTERY_MODE]} ")
+            
+    #         last_update_battery = self._last_battery_update_time
+
+    #         # if last_update_battery.weekday() != time_now.weekday():
+    #         #     self._energy_saved_today = 0
+    #         # if last_update_battery.isocalendar()[1] != time_now.isocalendar()[1]:
+    #         #     self._energy_saved_week = 0
+    #         # if last_update_battery.month != time_now.month:
+    #         #     self._energy_saved_month = 0
+                
+    #         self._last_battery_update_time = time_now
+
+    #     _LOGGER.debug(
+    #         "Battery update complete (%s). Sensors: %s", self._name, self._sensors
+    #     )
+
+    #     dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
