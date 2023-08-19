@@ -45,7 +45,9 @@ from .const import (
     MODE_FULL,
     MODE_EMPTY,
     BATTERY_CYCLES,
-    MESSAGE_TYPE_BATTERY_RESET,MESSAGE_TYPE_BATTERY_UPDATE
+    MESSAGE_TYPE_BATTERY_RESET_IMP,
+    MESSAGE_TYPE_BATTERY_RESET_EXP,
+    MESSAGE_TYPE_BATTERY_UPDATE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -75,7 +77,7 @@ async def async_setup_platform(
         async_add_entities(sensors)
 
 
-async def define_sensors(hass, handle):
+async def define_sensors(hass, handle): 
     sensors = []
     sensors.append(
         DisplayOnlySensor(
@@ -85,7 +87,6 @@ async def define_sensors(hass, handle):
             UnitOfEnergy.KILO_WATT_HOUR,
         )
     )
-
     sensors.append(
         DisplayOnlySensor(
             handle,
@@ -169,7 +170,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     def __init__(self, handle, sensor_name, type_of_sensor, units):
         self._handle = handle
         self._units = units
-        self._name = handle._name + " - " + sensor_name
+        self._name = f"{handle._name} - {sensor_name}"
         self._device_name = handle._name
         self._sensor_type = sensor_name
         self._type_of_sensor = type_of_sensor
@@ -190,22 +191,26 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
                 )
                 self._available = True
                 await self.async_update_ha_state(True)
-            except:
+            except Exception:
                 _LOGGER.debug("Sensor state not restored properly.")
                 if self._sensor_type == GRID_IMPORT_SIM:
                     dispatcher_send(
-                        self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET}"
+                        self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_IMP}"
                     )
                 elif self._sensor_type == GRID_EXPORT_SIM:
                     dispatcher_send(
-                        self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET}"
+                        self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_EXP}"
                     )
         else:
             _LOGGER.debug("No sensor state - presume new battery.")
             if self._sensor_type == GRID_IMPORT_SIM:
-                dispatcher_send(self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET}")
+                dispatcher_send(
+                    self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_IMP}"
+                )
             elif self._sensor_type == GRID_EXPORT_SIM:
-                dispatcher_send(self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET}")
+                dispatcher_send(
+                    self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_EXP}"
+                )
 
         async def async_update_state():
             """Update sensor state."""
@@ -213,7 +218,9 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
             await self.async_update_ha_state(True)
 
         async_dispatcher_connect(
-            self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_UPDATE}", async_update_state
+            self.hass,
+            f"{self._device_name}-{MESSAGE_TYPE_BATTERY_UPDATE}",
+            async_update_state,
         )
 
     @property
@@ -416,7 +423,7 @@ class BatteryStatus(SensorEntity):
     def __init__(self, handle, sensor_name):
         self.handle = handle
         self._date_recording_started = time.asctime()
-        self._name = handle._name + " - " + sensor_name
+        self._name = f"{handle._name} - {sensor_name}"
         self._device_name = handle._name
         self._sensor_type = sensor_name
 
@@ -429,7 +436,9 @@ class BatteryStatus(SensorEntity):
             await self.async_update_ha_state(True)
 
         async_dispatcher_connect(
-            self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_UPDATE}", async_update_state
+            self.hass,
+            f"{self._device_name}-{MESSAGE_TYPE_BATTERY_UPDATE}",
+            async_update_state,
         )
 
     @property

@@ -6,9 +6,10 @@ BATTERY_TYPE = "battery"
 
 BATTERY_PLATFORMS = ["sensor", "switch", "button"]
 
-MESSAGE_TYPE_GENERAL = 'BatteryResetMessage'
-MESSAGE_TYPE_BATTERY_RESET = 'BatteryResetSim'
-MESSAGE_TYPE_BATTERY_UPDATE = 'BatteryUpdateMessage'
+MESSAGE_TYPE_GENERAL = "BatteryResetMessage"
+MESSAGE_TYPE_BATTERY_RESET_IMP = "BatteryResetImportSim"
+MESSAGE_TYPE_BATTERY_RESET_EXP = "BatteryResetExportSim"
+MESSAGE_TYPE_BATTERY_UPDATE = "BatteryUpdateMessage"
 
 DATA_UTILITY = "battery_sim_data"
 
@@ -102,6 +103,24 @@ BATTERY_OPTIONS = {
         CONF_BATTERY_MAX_DISCHARGE_RATE: 4.2,
         CONF_BATTERY_MAX_CHARGE_RATE: 4.2,
         CONF_BATTERY_EFFICIENCY: 0.965,
+    },
+    "Enphase 3T (2nd Gen)": {
+        CONF_BATTERY_SIZE: 3.36,
+        CONF_BATTERY_MAX_DISCHARGE_RATE: 1.92,
+        CONF_BATTERY_MAX_CHARGE_RATE: 1.28,
+        CONF_BATTERY_EFFICIENCY: 0.965,
+    },
+    "Enphase 10T (2nd Gen)": {
+        CONF_BATTERY_SIZE: 10.08,
+        CONF_BATTERY_MAX_DISCHARGE_RATE: 5.0,
+        CONF_BATTERY_MAX_CHARGE_RATE: 3.84,
+        CONF_BATTERY_EFFICIENCY: 0.89,
+    },
+    "Enphase 5P (3rd Gen)": {
+        CONF_BATTERY_SIZE: 5.0,
+        CONF_BATTERY_MAX_DISCHARGE_RATE: 5.7,
+        CONF_BATTERY_MAX_CHARGE_RATE: 3.84,
+        CONF_BATTERY_EFFICIENCY: 0.90,
     },
     "Custom": {},
 }

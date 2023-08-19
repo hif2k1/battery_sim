@@ -6,7 +6,7 @@ import logging
 from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.dispatcher import dispatcher_send, async_dispatcher_connect
 
-from .const import DOMAIN, CONF_BATTERY, RESET_BATTERY, MESSAGE_TYPE_BATTERY_RESET
+from .const import DOMAIN, CONF_BATTERY, RESET_BATTERY, MESSAGE_TYPE_GENERAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,13 +23,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add the Wiser System Switch entities."""
     handle = hass.data[DOMAIN][config_entry.entry_id]  # Get Handler
 
-    # Add Defined Buttons
-    battery_buttons = []
-    for button in BATTERY_BUTTONS:
-        battery_buttons.append(
-            BatteryButton(handle, button["name"], button["key"], button["icon"])
-        )
-
+    battery_buttons = [
+        BatteryButton(handle, button["name"], button["key"], button["icon"])
+        for button in BATTERY_BUTTONS
+    ]
     async_add_entities(battery_buttons)
 
     return True
@@ -46,12 +43,10 @@ async def async_setup_platform(
         battery = conf[CONF_BATTERY]
         handle = hass.data[DOMAIN][battery]
 
-    battery_buttons = []
-    for button in BATTERY_BUTTONS:
-        battery_buttons.append(
-            BatteryButton(handle, button["name"], button["key"], button["icon"])
-        )
-
+    battery_buttons = [
+        BatteryButton(handle, button["name"], button["key"], button["icon"])
+        for button in BATTERY_BUTTONS
+    ]
     async_add_entities(battery_buttons)
     return True
 
@@ -66,7 +61,7 @@ class BatteryButton(ButtonEntity):
         self._icon = icon
         self._button_type = button_type
         self._device_name = handle._name
-        self._name = handle._name + " - " + button_type
+        self._name = f"{handle._name} - {button_type}"
         self._type = type
 
     @property
@@ -96,4 +91,4 @@ class BatteryButton(ButtonEntity):
         return False
 
     async def async_press(self):
-        dispatcher_send(self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET}")
+        dispatcher_send(self.hass, f"{self._device_name}-{MESSAGE_TYPE_GENERAL}")

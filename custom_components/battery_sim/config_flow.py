@@ -46,18 +46,15 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             if user_input[BATTERY_TYPE] == "Custom":
                 return await self.async_step_custom()
-            else:
-                self._data = BATTERY_OPTIONS[user_input[BATTERY_TYPE]]
-                self._data[SETUP_TYPE] = CONFIG_FLOW
-                self._data[CONF_NAME] = DOMAIN + ": " + user_input[BATTERY_TYPE]
-                await self.async_set_unique_id(self._data[CONF_NAME])
-                self._abort_if_unique_id_configured()
-                return await self.async_step_metertype()
+            
+            self._data = BATTERY_OPTIONS[user_input[BATTERY_TYPE]]
+            self._data[SETUP_TYPE] = CONFIG_FLOW
+            self._data[CONF_NAME] = f"{DOMAIN}: { user_input[BATTERY_TYPE]}"
+            await self.async_set_unique_id(self._data[CONF_NAME])
+            self._abort_if_unique_id_configured()
+            return await self.async_step_metertype()
 
-        battery_options_names = []
-        for battery in BATTERY_OPTIONS:
-            battery_options_names.append(battery)
-
+        battery_options_names = list(BATTERY_OPTIONS)
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
@@ -71,7 +68,7 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._data = user_input
             self._data[SETUP_TYPE] = CONFIG_FLOW
-            self._data[CONF_NAME] = DOMAIN + ": " + self._data[CONF_UNIQUE_NAME]
+            self._data[CONF_NAME] = f"{DOMAIN}: {self._data[CONF_UNIQUE_NAME]}"
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
             return await self.async_step_metertype()
