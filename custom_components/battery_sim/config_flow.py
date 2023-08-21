@@ -46,7 +46,7 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             if user_input[BATTERY_TYPE] == "Custom":
                 return await self.async_step_custom()
-            
+
             self._data = BATTERY_OPTIONS[user_input[BATTERY_TYPE]]
             self._data[SETUP_TYPE] = CONFIG_FLOW
             self._data[CONF_NAME] = f"{DOMAIN}: { user_input[BATTERY_TYPE]}"
@@ -117,20 +117,28 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    async def async_step_connectsensors(self, user_input = None):
+    async def async_step_connectsensors(self, user_input=None):
         if user_input is not None:
             self._data[CONF_IMPORT_SENSOR] = user_input[CONF_IMPORT_SENSOR]
             self._data[CONF_EXPORT_SENSOR] = user_input[CONF_EXPORT_SENSOR]
             if self._data[METER_TYPE] == TWO_IMPORT_ONE_EXPORT_METER:
-                self._data[CONF_SECOND_IMPORT_SENSOR] = user_input[CONF_SECOND_IMPORT_SENSOR]
+                self._data[CONF_SECOND_IMPORT_SENSOR] = user_input[
+                    CONF_SECOND_IMPORT_SENSOR
+                ]
             if self._data[METER_TYPE] == TWO_IMPORT_TWO_EXPORT_METER:
-                self._data[CONF_SECOND_IMPORT_SENSOR] = user_input[CONF_SECOND_IMPORT_SENSOR]
-                self._data[CONF_SECOND_EXPORT_SENSOR] = user_input[CONF_SECOND_EXPORT_SENSOR]
+                self._data[CONF_SECOND_IMPORT_SENSOR] = user_input[
+                    CONF_SECOND_IMPORT_SENSOR
+                ]
+                self._data[CONF_SECOND_EXPORT_SENSOR] = user_input[
+                    CONF_SECOND_EXPORT_SENSOR
+                ]
             if self._data[TARIFF_TYPE] == NO_TARIFF_INFO:
-                return self.async_create_entry(title=self._data["name"], data=self._data)
+                return self.async_create_entry(
+                    title=self._data["name"], data=self._data
+                )
             else:
                 return await self.async_step_connecttariffsensors()
-    
+
         if self._data[METER_TYPE] == ONE_IMPORT_ONE_EXPORT_METER:
             schema = {
                 vol.Required(CONF_IMPORT_SENSOR): EntitySelector(

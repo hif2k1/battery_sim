@@ -77,7 +77,7 @@ async def async_setup_platform(
         async_add_entities(sensors)
 
 
-async def define_sensors(hass, handle): 
+async def define_sensors(hass, handle):
     sensors = []
     sensors.append(
         DisplayOnlySensor(
@@ -131,7 +131,7 @@ async def define_sensors(hass, handle):
     )
 
     sensors.append(DisplayOnlySensor(handle, BATTERY_CYCLES, None, None))
-    if handle._import_tariff_sensor_id != None:
+    if handle._import_tariff_sensor_id is not None:
         sensors.append(
             DisplayOnlySensor(
                 handle,
@@ -148,7 +148,7 @@ async def define_sensors(hass, handle):
                 hass.config.currency,
             )
         )
-    if handle._export_tariff_sensor_id != None:
+    if handle._export_tariff_sensor_id is not None:
         sensors.append(
             DisplayOnlySensor(
                 handle,
@@ -195,11 +195,13 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
                 _LOGGER.debug("Sensor state not restored properly.")
                 if self._sensor_type == GRID_IMPORT_SIM:
                     dispatcher_send(
-                        self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_IMP}"
+                        self.hass,
+                        f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_IMP}",
                     )
                 elif self._sensor_type == GRID_EXPORT_SIM:
                     dispatcher_send(
-                        self.hass, f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_EXP}"
+                        self.hass,
+                        f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_EXP}",
                     )
         else:
             _LOGGER.debug("No sensor state - presume new battery.")
