@@ -305,12 +305,12 @@ class SimulatedBatteryHandle:
                 collection,
                 async_track_state_change_event(
                     self._hass,
-                    [sensor_id], # List, so could there be more?
+                    [sensor_id],
                     lambda event: reading_function(event, is_import),
                 )
             )
             
-            _LOGGER.debug("<%s> monitoring %s", self._name, sensor_id)
+            _LOGGER.debug("(%s) monitoring %s", self._name, sensor_id)
 
         start_sensor_tracking(
             sensor_id = self._import_sensor_id, 
@@ -339,11 +339,11 @@ class SimulatedBatteryHandle:
                 sensor_id = self._second_export_sensor_id, 
                 collection = '_export_collection_secondary',
                 reading_function= self.async_reading_handler, 
-                is_import=True
+                is_import=False
             )  
 
         _LOGGER.debug(
-            "<%s> monitoring %s", self._name, "Done adding the Sensor tracking ... "
+            "(%s) monitoring %s", self._name, "Done adding the Sensor tracking ... "
         )
 
     @callback
@@ -368,30 +368,38 @@ class SimulatedBatteryHandle:
             or new_state is None
             or old_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]
             or new_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]
-            or old_state == new_state
         ):
-            _LOGGER.debug("(%s) No change in readings .. ", self._name)
+            # Incorrect Setup or Sensors are not ready
             return
 
         units = self._hass.states.get(sensor_id).attributes.get(
             ATTR_UNIT_OF_MEASUREMENT
         )
 
+        # TODO: Find logic to determine this once at Initialization
         if units not in [UnitOfEnergy.KILO_WATT_HOUR, UnitOfEnergy.WATT_HOUR]:
             _LOGGER.warning(
                 "Units of %s sensor not recognized - may give wrong results",
                 sensor_type,
             )
 
+        # TODO: Find logic to determine this once at Initialization
         conversion_factor = 1.0 if units == UnitOfEnergy.KILO_WATT_HOUR else 0.001
+        unit_of_energy = 'kWh' if units == UnitOfEnergy.KILO_WATT_HOUR else 'wH'
 
+        # TODO: Find logic to determine this once at Initialization (Conversion factor)
         new_state_value = float(new_state.state) * conversion_factor
         old_state_value = float(old_state.state) * conversion_factor
+
+
+        if new_state_value == old_state_value:
+            # _LOGGER.debug("(%s) No change in readings .. ", self._name)
+            return
 
         reading_variance = new_state_value - old_state_value
 
         _LOGGER.debug(
-            f"({self._name}) {sensor_id}: {old_state_value} => {new_state_value} = {reading_variance}"
+            f"({self._name}) {sensor_id} {is_import}: {old_state_value} {unit_of_energy} => {new_state_value} {unit_of_energy} = Δ {reading_variance} {unit_of_energy}"
         )
 
         if reading_variance < 0:
@@ -462,8 +470,10 @@ class SimulatedBatteryHandle:
         time_since_last_battery_update = time_now - time_last_update
 
         _LOGGER.debug(
-            "(%s) Timing: %s = Now / %s = Last Update / %s Time (sec).",
+            "(%s) Import: (%s) Export: (%s) .... Timing: %s = Now / %s = Last Update / %s Time (sec).",
             self._name,
+            import_amount,
+            export_amount,
             time_now,
             time_last_update,
             time_since_last_battery_update,
@@ -471,29 +481,15 @@ class SimulatedBatteryHandle:
 
         max_discharge = time_since_last_battery_update * self._max_discharge_rate / 3600
         max_charge = time_since_last_battery_update * self._max_charge_rate / 3600
-        
-        # _LOGGER.debug(
-        #     "(%s) Battery Timings %s = Max Charge / %s = Max Discharge",
-        #     self._name,
-        #     max_charge,
-        #     max_discharge,
-        # )
 
         available_capacity_to_charge = self._battery_size - float(self._charge_state)
         available_capacity_to_discharge = float(self._charge_state) * float(
             self._battery_efficiency
         )
-        
-        # _LOGGER.debug(
-        #     "(%s) Battery Cap. %s = Ava. to Charge / %s = Ava. to Discharge",
-        #     self._name,
-        #     available_capacity_to_charge,
-        #     available_capacity_to_discharge,
-        # )
 
         if not any(self._switches.values()):
             _LOGGER.debug("(%s) Battery normal mode.", self._name)
-           
+
             amount_to_charge = min(
                 export_amount, max_charge, available_capacity_to_charge
             )
@@ -618,5 +614,107 @@ class SimulatedBatteryHandle:
         dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
         
         _LOGGER.debug(
-            "(%s) Battery update complete. Net Import: %s / Net Export %s", self._name, net_import, net_import
+            "(%s) Battery update complete.", self._name
         )
+
+    def update_battery_new(self, import_amount, export_amount):
+        time_now = time.time()
+        time_last_update = self._last_battery_update_time
+        time_since_last_battery_update = time_now - time_last_update
+
+        # Calculate maximum possible charge and discharge
+        max_discharge = time_since_last_battery_update * self._max_discharge_rate / 3600
+        max_charge = time_since_last_battery_update * self._max_charge_rate / 3600
+
+        # Initialize variables
+        amount_to_charge = 0.0
+        amount_to_discharge = 0.0
+        net_export = 0.0
+        net_import = 0.0
+        current_import_tariff = self.get_tarrif_information(self._import_tariff_sensor_id)
+        current_export_tariff = self.get_tarrif_information(self._export_tariff_sensor_id)
+
+        # Update battery mode
+        battery_mode = MODE_IDLE  # Default mode
+
+        if not any(self._switches.values()):
+            amount_to_charge = min(export_amount, max_charge, self._battery_size - self._charge_state)
+            amount_to_discharge = min(import_amount, max_discharge, self._charge_state * self._battery_efficiency)
+            net_import = import_amount - amount_to_discharge
+            net_export = export_amount - amount_to_charge
+            battery_mode = MODE_CHARGING if amount_to_charge > amount_to_discharge else MODE_DISCHARGING
+
+        elif self._switches[PAUSE_BATTERY]:
+            net_export = export_amount
+            net_import = import_amount
+            battery_mode = MODE_IDLE
+
+        elif self._switches[OVERIDE_CHARGING]:
+            amount_to_charge = min(max_charge, self._battery_size - self._charge_state)
+            net_export = max(export_amount - amount_to_charge, 0)
+            net_import = max(amount_to_charge - export_amount, 0) + import_amount
+            self._charging = True
+            battery_mode = MODE_FORCE_CHARGING
+
+        elif self._switches[FORCE_DISCHARGE]:
+            amount_to_discharge = min(max_discharge, available_capacity_to_discharge)
+            net_export = max(amount_to_discharge - import_amount, 0) + export_amount
+            net_import = max(import_amount - amount_to_discharge, 0)
+            battery_mode = MODE_FORCE_DISCHARGING
+
+        elif self._switches[CHARGE_ONLY]:
+            amount_to_charge: float = min( export_amount, max_charge, available_capacity_to_charge )
+            net_import = import_amount
+            net_export = export_amount - amount_to_charge
+            if amount_to_charge > amount_to_discharge:
+                self._sensors[BATTERY_MODE] = MODE_CHARGING
+            else:
+                self._sensors[BATTERY_MODE] = MODE_IDLE
+        
+        else:
+            return
+
+        # Update cost savings based on tariff information
+        if current_import_tariff is not None:
+            self._sensors[ATTR_MONEY_SAVED_IMPORT] += (import_amount - net_import) * current_import_tariff
+        if current_export_tariff is not None:
+            self._sensors[ATTR_MONEY_SAVED_EXPORT] += (net_export - export_amount) * current_export_tariff
+        if self._tariff_type is not NO_TARIFF_INFO:
+            self._sensors[ATTR_MONEY_SAVED] = self._sensors[ATTR_MONEY_SAVED_IMPORT] + self._sensors[ATTR_MONEY_SAVED_EXPORT]
+
+        # Update sensor values
+        self._sensors[GRID_IMPORT_SIM] += net_import
+        self._sensors[GRID_EXPORT_SIM] += net_export
+        self._sensors[ATTR_ENERGY_SAVED] += import_amount - net_import
+        self._sensors[ATTR_ENERGY_BATTERY_IN] += amount_to_charge
+        self._sensors[ATTR_ENERGY_BATTERY_OUT] += amount_to_discharge
+        
+        self._sensors[CHARGING_RATE] = amount_to_charge / (time_since_last_battery_update / 3600)
+        self._sensors[DISCHARGING_RATE] = amount_to_discharge / (time_since_last_battery_update / 3600)
+
+        #TODO: How is a cycle defined, if you stop at 20% and 80% it will significalty improve the life
+        self._sensors[BATTERY_CYCLES] = self._sensors[ATTR_ENERGY_BATTERY_IN] / self._battery_size
+        
+        self._charge_state += amount_to_charge - (amount_to_discharge / self._battery_efficiency)
+        self._charge_percentage = round(100 * self._charge_state / self._battery_size)
+
+        # Update battery mode based on charge percentage
+        if self._charge_percentage < 2:
+            battery_mode = MODE_EMPTY
+        elif self._charge_percentage > 98:
+            battery_mode = MODE_FULL
+
+        # Reset day/week/month counters
+        if time.strftime("%w", time_now) != time.strftime("%w", time.gmtime(time_last_update)):
+            self._energy_saved_today = 0
+        if time.strftime("%U", time_now) != time.strftime("%U", time.gmtime(time_last_update)):
+            self._energy_saved_week = 0
+        if time.strftime("%m", time_now) != time.strftime("%m", time.gmtime(time_last_update)):
+            self._energy_saved_month = 0
+
+        # Update last battery update time
+        self._last_battery_update_time = time_now
+
+        # Send update signal
+        dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
+        _LOGGER.debug("(%s) Battery update complete.", self._name)
