@@ -68,7 +68,7 @@ from .const import (
     TARIFF_TYPE,
 )
 
-_LOGGER = logging.getLogger(__name__)
+
 
 BATTERY_CONFIG_SCHEMA = vol.Schema(
     vol.All(
@@ -91,6 +91,7 @@ CONFIG_SCHEMA = vol.Schema(
     {DOMAIN: vol.Schema({cv.slug: BATTERY_CONFIG_SCHEMA})}, extra=vol.ALLOW_EXTRA
 )
 
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup(hass, config):
     """Set up battery platforms from a YAML."""
@@ -144,85 +145,74 @@ class SimulatedBatteryHandle:
     def __init__(self, config, hass):
         """Initialize the Battery."""
         self._hass = hass
-        self._import_sensor_id = config[CONF_IMPORT_SENSOR]
-        self._export_sensor_id = config[CONF_EXPORT_SENSOR]
-
-        self._second_import_sensor_id = (
-            config.get(CONF_SECOND_IMPORT_SENSOR)
-            if len(config.get(CONF_SECOND_IMPORT_SENSOR, "")) > 6
-            else None
-        )
-
-        self._second_export_sensor_id = (
-            config.get(CONF_SECOND_EXPORT_SENSOR)
-            if len(config.get(CONF_SECOND_EXPORT_SENSOR, "")) > 6
-            else None
-        )
-
-        units = self._hass.states.get(self._import_sensor_id).attributes.get(
-            ATTR_UNIT_OF_MEASUREMENT
-        )
-
-        if units in [UnitOfEnergy.KILO_WATT_HOUR, UnitOfEnergy.WATT_HOUR]:
-            self._conversion_factor = (
-                1.0 if units == UnitOfEnergy.KILO_WATT_HOUR else 0.001
-            )
-            self._unit_of_energy = (
-                "kWh" if units == UnitOfEnergy.KILO_WATT_HOUR else "wH"
-            )
-
-        self._second_import_configured = bool(self._second_import_sensor_id)
-        self._second_export_configured = bool(self._second_export_sensor_id)
-
-        """Defalt to sensor entites for backwards compatibility"""
-        self._tariff_type = TARIFF_SENSOR_ENTITIES
-
-        if TARIFF_TYPE in config:
-            self._tariff_type = config[TARIFF_TYPE]
-
-        self._import_tariff_sensor_id = None
-        if CONF_ENERGY_IMPORT_TARIFF in config:
-            self._import_tariff_sensor_id = config[CONF_ENERGY_IMPORT_TARIFF]
-        elif CONF_ENERGY_TARIFF in config:
-            """For backwards compatibility"""
-            self._import_tariff_sensor_id = config[CONF_ENERGY_TARIFF]
-
-        self._export_tariff_sensor_id = None
-        if CONF_ENERGY_EXPORT_TARIFF in config:
-            self._export_tariff_sensor_id = config[CONF_ENERGY_EXPORT_TARIFF]
-
         self._date_recording_started = time.asctime()
-        self._import_collection_primary = None
-        self._export_collection_primary = None
-
-        self._import_collection_secondary = None
-        self._export_collection_secondary = None
-        self._charging = False
-
+        
         self._name = config[CONF_NAME]
         self._battery_size = config[CONF_BATTERY_SIZE]
         self._max_discharge_rate = config[CONF_BATTERY_MAX_DISCHARGE_RATE]
         self._max_charge_rate = config[CONF_BATTERY_MAX_CHARGE_RATE]
         self._battery_efficiency = config[CONF_BATTERY_EFFICIENCY]
 
+        self._export_sensor_id: str = config[CONF_EXPORT_SENSOR]
+        self._export_tariff_sensor_id: str = None
+        self._export_collection_primary = None
+        self._export_collection_secondary = None
+
+        self._import_sensor_id: str = config[CONF_IMPORT_SENSOR]
+        self._import_tariff_sensor_id: str = None
+        self._import_collection_primary = None
+        self._import_collection_secondary = None
+
+        self._charging: bool = False
+
         self._last_import_reading_time = time.time()
         self._last_export_reading_time = time.time()
         self._last_battery_update_time = time.time()
 
-        self._max_discharge = 0.0
-        self._charge_percentage = 0.0
-        self._charge_state = 0.0
-        self._last_export_reading = 0.0
-        self._last_import_cumulative_reading = 1.0
+        self._max_discharge: float = 0.0
+        self._charge_percentage: float = 0.0
+        self._charge_state: float = 0.0
+        self._last_export_reading: float = 0.0
+        self._last_import_cumulative_reading: float = 1.0
 
-        self._switches = {
+        self._second_import_sensor_id: str = (
+            config.get(CONF_SECOND_IMPORT_SENSOR)
+            if len(config.get(CONF_SECOND_IMPORT_SENSOR, "")) > 6
+            else None
+        )
+
+        self._second_export_sensor_id: str = (
+            config.get(CONF_SECOND_EXPORT_SENSOR)
+            if len(config.get(CONF_SECOND_EXPORT_SENSOR, "")) > 6
+            else None
+        )
+
+        self._second_import_configured: bool = bool(self._second_import_sensor_id)
+        self._second_export_configured: bool = bool(self._second_export_sensor_id)
+
+        """Defalt to sensor entites for backwards compatibility"""
+        self._tariff_type: str = TARIFF_SENSOR_ENTITIES
+
+        if TARIFF_TYPE in config:
+            self._tariff_type = config[TARIFF_TYPE]
+
+        if CONF_ENERGY_IMPORT_TARIFF in config:
+            self._import_tariff_sensor_id = config[CONF_ENERGY_IMPORT_TARIFF]
+        elif CONF_ENERGY_TARIFF in config:
+            """For backwards compatibility"""
+            self._import_tariff_sensor_id = config[CONF_ENERGY_TARIFF]
+
+        if CONF_ENERGY_EXPORT_TARIFF in config:
+            self._export_tariff_sensor_id = config[CONF_ENERGY_EXPORT_TARIFF]
+
+        self._switches: dict = {
             OVERIDE_CHARGING: False,
             PAUSE_BATTERY: False,
             FORCE_DISCHARGE: False,
             CHARGE_ONLY: False,
         }
 
-        self._sensors = {
+        self._sensors: dict = {
             ATTR_ENERGY_SAVED: 0.0,
             ATTR_ENERGY_BATTERY_OUT: 0.0,
             ATTR_ENERGY_BATTERY_IN: 0.0,
@@ -287,9 +277,7 @@ class SimulatedBatteryHandle:
         dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
         return
 
-    def reset_sim_sensor(
-        self, target_sensor_key, primary_sensor_id, secondary_sensor_id
-    ):
+    def reset_sim_sensor(self, target_sensor_key, primary_sensor_id, secondary_sensor_id):
         _LOGGER.debug(f"Reset {target_sensor_key} sim sensor")
 
         sensor_ids = [primary_sensor_id]
@@ -338,7 +326,7 @@ class SimulatedBatteryHandle:
             sensor_id=self._export_sensor_id,
             collection="_export_collection_primary",
             reading_function=self.async_reading_handler,
-            is_import=True,
+            is_import=False,
         )
 
         if self._second_import_sensor_id is not None:
@@ -387,9 +375,21 @@ class SimulatedBatteryHandle:
             # Incorrect Setup or Sensors are not ready
             return
 
-        # TODO: Find logic to determine this once at Initialization (Conversion factor)
-        new_state_value = float(new_state.state) * self._conversion_factor
-        old_state_value = float(old_state.state) * self._conversion_factor
+        units = self._hass.states.get(sensor_id).attributes.get(
+            ATTR_UNIT_OF_MEASUREMENT
+        )
+
+        if units in [UnitOfEnergy.KILO_WATT_HOUR, UnitOfEnergy.WATT_HOUR]:
+            conversion_factor = (
+                1.0 if units == UnitOfEnergy.KILO_WATT_HOUR else 0.001
+            )
+            unit_of_energy = (
+                "kWh" if units == UnitOfEnergy.KILO_WATT_HOUR else "Wh"
+            )
+
+
+        new_state_value = float(new_state.state) * conversion_factor
+        old_state_value = float(old_state.state) * conversion_factor
 
         if new_state_value == old_state_value:
             # _LOGGER.debug("(%s) No change in readings .. ", self._name)
@@ -398,7 +398,7 @@ class SimulatedBatteryHandle:
         reading_variance = new_state_value - old_state_value
 
         _LOGGER.debug(
-            f"({self._name}) {sensor_id} {is_import}: {old_state_value} {self._unit_of_energy} => {new_state_value} {self._unit_of_energy} = Δ {reading_variance} {self._unit_of_energy}"
+            f"({self._name}) {sensor_id} {is_import}: {old_state_value} {unit_of_energy} => {new_state_value} {unit_of_energy} = Δ {reading_variance} {unit_of_energy}"
         )
 
         if reading_variance < 0:
