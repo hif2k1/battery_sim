@@ -190,7 +190,7 @@ class SimulatedBatteryHandle:
         self._second_import_configured: bool = bool(self._second_import_sensor_id)
         self._second_export_configured: bool = bool(self._second_export_sensor_id)
 
-        """Defalt to sensor entites for backwards compatibility"""
+        """Default sensor entities for backwards compatibility"""
         self._tariff_type: str = TARIFF_SENSOR_ENTITIES
 
         if TARIFF_TYPE in config:
