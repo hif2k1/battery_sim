@@ -1,6 +1,4 @@
-"""
-Switch  Platform Device for Battery Sim
-"""
+"""Switch  Platform Device for Battery Sim."""
 import logging
 
 from homeassistant.components.switch import SwitchEntity

@@ -514,10 +514,17 @@ class SimulatedBatteryHandle:
             time_since_last_battery_update,
         )
 
-        max_discharge = time_since_last_battery_update * self._max_discharge_rate / 3600
-        max_charge = time_since_last_battery_update * self._max_charge_rate / 3600
+        max_discharge = time_since_last_battery_update * (
+            self._max_discharge_rate / 3600
+        )
+        max_charge = time_since_last_battery_update * (
+            self._max_charge_rate / 3600
+        )
 
-        available_capacity_to_charge = self._battery_size - float(self._charge_state)
+        available_capacity_to_charge = (
+            self._battery_size - float(self._charge_state)
+        )
+
         available_capacity_to_discharge = float(self._charge_state) * float(
             self._battery_efficiency
         )
@@ -550,16 +557,25 @@ class SimulatedBatteryHandle:
             _LOGGER.debug("(%s) Battery overide charging.", self._name)
             amount_to_charge = min(max_charge, available_capacity_to_charge)
             amount_to_discharge = 0.0
-            net_export = max(export_amount - amount_to_charge, 0)
-            net_import = max(amount_to_charge - export_amount, 0) + import_amount
+            net_export = (
+                max(export_amount - amount_to_charge, 0)
+            )
+
+            net_import = (
+                max(amount_to_charge - export_amount, 0) + import_amount
+            )
             self._charging = True
             self._sensors[BATTERY_MODE] = MODE_FORCE_CHARGING
 
         if self._switches[FORCE_DISCHARGE]:
             _LOGGER.debug("(%s) Battery forced discharging.", self._name)
             amount_to_charge = 0.0
-            amount_to_discharge = min(max_discharge, available_capacity_to_discharge)
-            net_export = max(amount_to_discharge - import_amount, 0) + export_amount
+            amount_to_discharge = (
+                min(max_discharge, available_capacity_to_discharge)
+            )
+            net_export = (
+                max(amount_to_discharge - import_amount, 0) + export_amount
+            )
             net_import = max(import_amount - amount_to_discharge, 0)
             self._sensors[BATTERY_MODE] = MODE_FORCE_DISCHARGING
 
@@ -630,11 +646,20 @@ class SimulatedBatteryHandle:
             self._sensors[BATTERY_MODE] = MODE_FULL
 
         """Reset day/week/month counters"""
-        if time.strftime("%w") != time.strftime("%w", time.gmtime(time_last_update)):
+        if (
+            time.strftime("%w")
+            != time.strftime("%w", time.gmtime(time_last_update))
+        ):
             self._energy_saved_today = 0
-        if time.strftime("%U") != time.strftime("%U", time.gmtime(time_last_update)):
+        if (
+            time.strftime("%U")
+            != time.strftime("%U", time.gmtime(time_last_update))
+        ):
             self._energy_saved_week = 0
-        if time.strftime("%m") != time.strftime("%m", time.gmtime(time_last_update)):
+        if (
+            time.strftime("%m")
+            != time.strftime("%m", time.gmtime(time_last_update))
+        ):
             self._energy_saved_month = 0
 
         self._last_battery_update_time = time_now
