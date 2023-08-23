@@ -1,6 +1,4 @@
-"""
-Switch  Platform Device for Battery Sim
-"""
+"""Switch  Platform Device for Battery Sim."""
 import logging
 
 from homeassistant.components.switch import SwitchEntity
@@ -44,13 +42,10 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     """Add the Wiser System Switch entities."""
     handle = hass.data[DOMAIN][config_entry.entry_id]  # Get Handler
 
-    # Add Defined Switches
-    battery_switches = []
-    for switch in BATTERY_SWITCHES:
-        battery_switches.append(
-            BatterySwitch(handle, switch["name"], switch["key"], switch["icon"])
-        )
-
+    battery_switches = [
+        BatterySwitch(handle, switch["name"], switch["key"], switch["icon"])
+        for switch in BATTERY_SWITCHES
+    ]
     async_add_entities(battery_switches)
 
     return True
@@ -67,12 +62,10 @@ async def async_setup_platform(
         battery = conf[CONF_BATTERY]
         handle = hass.data[DOMAIN][battery]
 
-    battery_switches = []
-    for switch in BATTERY_SWITCHES:
-        battery_switches.append(
-            BatterySwitch(handle, switch["name"], switch["key"], switch["icon"])
-        )
-
+    battery_switches = [
+        BatterySwitch(handle, switch["name"], switch["key"], switch["icon"])
+        for switch in BATTERY_SWITCHES
+    ]
     async_add_entities(battery_switches)
     return True
 
@@ -87,7 +80,7 @@ class BatterySwitch(SwitchEntity):
         self._icon = icon
         self._switch_type = switch_type
         self._device_name = handle._name
-        self._name = handle._name + " - " + switch_type
+        self._name = f"{handle._name} - {switch_type}"
         self._is_on = False
         self._type = type
 

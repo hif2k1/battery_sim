@@ -1,6 +1,7 @@
+"""Configuration flow for the Battery."""
 import logging
 import voluptuous as vol
-from distutils import errors
+
 from homeassistant import config_entries
 from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
 from homeassistant.components.sensor import SensorDeviceClass
@@ -46,18 +47,15 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             if user_input[BATTERY_TYPE] == "Custom":
                 return await self.async_step_custom()
-            else:
-                self._data = BATTERY_OPTIONS[user_input[BATTERY_TYPE]]
-                self._data[SETUP_TYPE] = CONFIG_FLOW
-                self._data[CONF_NAME] = DOMAIN + ": " + user_input[BATTERY_TYPE]
-                await self.async_set_unique_id(self._data[CONF_NAME])
-                self._abort_if_unique_id_configured()
-                return await self.async_step_metertype()
 
-        battery_options_names = []
-        for battery in BATTERY_OPTIONS:
-            battery_options_names.append(battery)
+            self._data = BATTERY_OPTIONS[user_input[BATTERY_TYPE]]
+            self._data[SETUP_TYPE] = CONFIG_FLOW
+            self._data[CONF_NAME] = f"{DOMAIN}: { user_input[BATTERY_TYPE]}"
+            await self.async_set_unique_id(self._data[CONF_NAME])
+            self._abort_if_unique_id_configured()
+            return await self.async_step_metertype()
 
+        battery_options_names = list(BATTERY_OPTIONS)
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
@@ -71,11 +69,10 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._data = user_input
             self._data[SETUP_TYPE] = CONFIG_FLOW
-            self._data[CONF_NAME] = DOMAIN + ": " + self._data[CONF_UNIQUE_NAME]
+            self._data[CONF_NAME] = f"{DOMAIN}: {self._data[CONF_UNIQUE_NAME]}"
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
             return await self.async_step_metertype()
-        errors = {"base": "error message"}
 
         return self.async_show_form(
             step_id="custom",
@@ -108,7 +105,11 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             TWO_IMPORT_ONE_EXPORT_METER,
             TWO_IMPORT_TWO_EXPORT_METER,
         ]
-        tariff_types = [NO_TARIFF_INFO, FIXED_NUMERICAL_TARIFFS, TARIFF_SENSOR_ENTITIES]
+        tariff_types = [
+            NO_TARIFF_INFO,
+            FIXED_NUMERICAL_TARIFFS,
+            TARIFF_SENSOR_ENTITIES
+        ]
 
         return self.async_show_form(
             step_id="metertype",
@@ -127,6 +128,13 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if self._data[METER_TYPE] == TWO_IMPORT_ONE_EXPORT_METER:
                 self._data[CONF_SECOND_IMPORT_SENSOR] = user_input[
                     CONF_SECOND_IMPORT_SENSOR
+                ]
+            if self._data[METER_TYPE] == TWO_IMPORT_TWO_EXPORT_METER:
+                self._data[CONF_SECOND_IMPORT_SENSOR] = user_input[
+                    CONF_SECOND_IMPORT_SENSOR
+                ]
+                self._data[CONF_SECOND_EXPORT_SENSOR] = user_input[
+                    CONF_SECOND_EXPORT_SENSOR
                 ]
             if self._data[TARIFF_TYPE] == NO_TARIFF_INFO:
                 return self.async_create_entry(
@@ -185,7 +193,10 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._data[CONF_ENERGY_EXPORT_TARIFF] = user_input[
                     CONF_ENERGY_EXPORT_TARIFF
                 ]
-            return self.async_create_entry(title=self._data["name"], data=self._data)
+            return self.async_create_entry(
+                title=self._data["name"],
+                data=self._data
+            )
         if self._data[TARIFF_TYPE] == TARIFF_SENSOR_ENTITIES:
             schema = {
                 vol.Required(CONF_ENERGY_IMPORT_TARIFF): EntitySelector(
