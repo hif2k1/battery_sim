@@ -539,6 +539,14 @@ class SimulatedBatteryHandle:
             else:
                 self._sensors[BATTERY_MODE] = MODE_DISCHARGING
 
+        elif self._switches[PAUSE_BATTERY]:
+            _LOGGER.debug("(%s) Battery paused.", self._name)
+            amount_to_charge = 0.0
+            amount_to_discharge = 0.0
+            net_export = export_amount
+            net_import = import_amount
+            self._sensors[BATTERY_MODE] = MODE_IDLE
+
         elif self._switches[OVERIDE_CHARGING]:
             _LOGGER.debug("(%s) Battery overide charging.", self._name)
             amount_to_charge = min(max_charge, available_capacity_to_charge)
@@ -578,14 +586,6 @@ class SimulatedBatteryHandle:
                 self._sensors[BATTERY_MODE] = MODE_CHARGING
             else:
                 self._sensors[BATTERY_MODE] = MODE_IDLE
-
-        elif self._switches[PAUSE_BATTERY]:
-            _LOGGER.debug("(%s) Battery paused.", self._name)
-            amount_to_charge = 0.0
-            amount_to_discharge = 0.0
-            net_export = export_amount
-            net_import = import_amount
-            self._sensors[BATTERY_MODE] = MODE_IDLE
 
         current_import_tariff = self.get_tariff_information(
             self._import_tariff_sensor_id
