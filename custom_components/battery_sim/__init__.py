@@ -207,21 +207,24 @@ class SimulatedBatteryHandle:
             },
         ]
         if len(config.get(CONF_SECOND_IMPORT_SENSOR, "")) > 6:
-            self._inputs[2] = {
+            self._inputs.append({
                 SENSOR_ID: config[CONF_SECOND_IMPORT_SENSOR],
                 SENSOR_TYPE: IMPORT,
                 SIMULATED_SENSOR: GRID_SECOND_IMPORT_SIM,
                 TARIFF_TYPE: self._tariff_type,
                 TARIFF: None
-            }
+            })
         if len(config.get(CONF_SECOND_EXPORT_SENSOR, "")) > 6:
-            self._inputs[3] = {
+            self._inputs.append({
                 SENSOR_ID: config[CONF_SECOND_EXPORT_SENSOR],
                 SENSOR_TYPE: EXPORT,
                 SIMULATED_SENSOR: GRID_SECOND_EXPORT_SIM,
                 TARIFF_TYPE: self._tariff_type,
                 TARIFF: None
-            }
+            })
+        
+        self._last_import_reading_sensor_data = self._inputs[0]
+        self._last_export_reading_sensor_data = self._inputs[1]
 
         """Default sensor entities for backwards compatibility"""
         if CONF_ENERGY_IMPORT_TARIFF in config:
@@ -335,18 +338,13 @@ class SimulatedBatteryHandle:
     def async_source_tracking(self, event):
         """Wait for source to be ready, then start."""
 
-        reading_function=self.async_reading_handler            
-        collection="_sensor_collection",
         for input_details in self._inputs:
             """Start tracking state changes for a sensor."""
-            getattr(self, collection).append(
-                async_track_state_change_event(
-                    self._hass,
-                    [input_details[SENSOR_ID]],
-                    lambda event: reading_function(event, input_details),
-                )
+            listener_handle = async_track_state_change_event(
+                self._hass,
+                [input_details[SENSOR_ID]],
+                self.async_reading_handler
             )
-
             _LOGGER.debug("(%s) monitoring %s", self._name, input_details[SENSOR_ID])
 
         _LOGGER.debug(
@@ -358,16 +356,20 @@ class SimulatedBatteryHandle:
     def async_reading_handler(
         self,
         event,
-        input_details
     ):
+        sensor_id = event.data.get("entity_id")
+        for input_details in self._inputs:
+            if sensor_id == input_details[SENSOR_ID]: break
+        else:
+            _LOGGER.warning(f"Error reading input sensor {sensor_id} not found in input sensors")
+            return
+        
         """Handle the sensor state changes for import or export."""
         sensor_charge_rate = DISCHARGING_RATE if input_details[SENSOR_TYPE] == IMPORT else CHARGING_RATE
-
         last_reading_time = time.time()
 
         old_state = event.data.get("old_state")
         new_state = event.data.get("new_state")
-        sensor_id = event.data.get("entity_id")
 
         if (
             old_state is None

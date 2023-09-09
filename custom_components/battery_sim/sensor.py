@@ -41,6 +41,7 @@ from .const import (
     GRID_EXPORT_SIM,
     GRID_SECOND_EXPORT_SIM,
     GRID_SECOND_IMPORT_SIM,
+    SIMULATED_SENSOR,
     ICON_CHARGING,
     ICON_DISCHARGING,
     ICON_FULL,
@@ -54,6 +55,7 @@ from .const import (
     MESSAGE_TYPE_BATTERY_RESET_IMP,
     MESSAGE_TYPE_BATTERY_RESET_EXP,
     MESSAGE_TYPE_BATTERY_UPDATE,
+    SENSOR_ID
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -125,36 +127,11 @@ async def define_sensors(hass, handle):
             UnitOfPower.KILO_WATT
         )
     )
-    sensors.append(
-        DisplayOnlySensor(
-            handle,
-            GRID_EXPORT_SIM,
-            SensorDeviceClass.ENERGY,
-            UnitOfEnergy.KILO_WATT_HOUR,
-        )
-    )
-    sensors.append(
-        DisplayOnlySensor(
-            handle,
-            GRID_IMPORT_SIM,
-            SensorDeviceClass.ENERGY,
-            UnitOfEnergy.KILO_WATT_HOUR,
-        )
-    )
-    if handle._second_export_sensor_id is not None:
+    for input in handle._inputs:
         sensors.append(
             DisplayOnlySensor(
                 handle,
-                GRID_SECOND_EXPORT_SIM,
-                SensorDeviceClass.ENERGY,
-                UnitOfEnergy.KILO_WATT_HOUR,
-            )
-        )
-    if handle._second_import_sensor_id is not None:
-        sensors.append(
-            DisplayOnlySensor(
-                handle,
-                GRID_SECOND_IMPORT_SIM,
+                input[SIMULATED_SENSOR],
                 SensorDeviceClass.ENERGY,
                 UnitOfEnergy.KILO_WATT_HOUR,
             )
@@ -168,33 +145,31 @@ async def define_sensors(hass, handle):
             None)
     )
 
-    if handle._import_tariff_sensor_id is not None:
-        sensors.append(
-            DisplayOnlySensor(
-                handle,
-                ATTR_MONEY_SAVED_IMPORT,
-                SensorDeviceClass.MONETARY,
-                hass.config.currency,
-            )
+    sensors.append(
+        DisplayOnlySensor(
+            handle,
+            ATTR_MONEY_SAVED_IMPORT,
+            SensorDeviceClass.MONETARY,
+            hass.config.currency,
         )
-        sensors.append(
-            DisplayOnlySensor(
-                handle,
-                ATTR_MONEY_SAVED,
-                SensorDeviceClass.MONETARY,
-                hass.config.currency,
-            )
+    )
+    sensors.append(
+        DisplayOnlySensor(
+            handle,
+            ATTR_MONEY_SAVED,
+            SensorDeviceClass.MONETARY,
+            hass.config.currency,
         )
+    )
 
-    if handle._export_tariff_sensor_id is not None:
-        sensors.append(
-            DisplayOnlySensor(
-                handle,
-                ATTR_MONEY_SAVED_EXPORT,
-                SensorDeviceClass.MONETARY,
-                hass.config.currency,
-            )
+    sensors.append(
+        DisplayOnlySensor(
+            handle,
+            ATTR_MONEY_SAVED_EXPORT,
+            SensorDeviceClass.MONETARY,
+            hass.config.currency,
         )
+    )
     sensors.append(SimulatedBattery(handle))
     sensors.append(BatteryStatus(handle, BATTERY_MODE))
     return sensors
@@ -446,6 +421,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes of the sensor."""
+        for input in self.handle._inputs:
+            sensor_list = input[SENSOR_ID]
         return {
             ATTR_STATUS:
                 self.handle._sensors[BATTERY_MODE],
@@ -462,7 +439,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             CONF_BATTERY_MAX_CHARGE_RATE:
                 float(self.handle._max_charge_rate),
             ATTR_SOURCE_ID:
-                self.handle._export_sensor_id,
+                sensor_list,
         }
 
     @property
