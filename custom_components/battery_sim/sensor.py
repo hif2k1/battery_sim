@@ -39,6 +39,8 @@ from .const import (
     DISCHARGING_RATE,
     GRID_IMPORT_SIM,
     GRID_EXPORT_SIM,
+    GRID_SECOND_EXPORT_SIM,
+    GRID_SECOND_IMPORT_SIM,
     ICON_CHARGING,
     ICON_DISCHARGING,
     ICON_FULL,
@@ -139,8 +141,33 @@ async def define_sensors(hass, handle):
             UnitOfEnergy.KILO_WATT_HOUR,
         )
     )
+    if handle._second_export_sensor_id is not None:
+        sensors.append(
+            DisplayOnlySensor(
+                handle,
+                GRID_SECOND_EXPORT_SIM,
+                SensorDeviceClass.ENERGY,
+                UnitOfEnergy.KILO_WATT_HOUR,
+            )
+        )
+    if handle._second_import_sensor_id is not None:
+        sensors.append(
+            DisplayOnlySensor(
+                handle,
+                GRID_SECOND_IMPORT_SIM,
+                SensorDeviceClass.ENERGY,
+                UnitOfEnergy.KILO_WATT_HOUR,
+            )
+        )
 
-    sensors.append(DisplayOnlySensor(handle, BATTERY_CYCLES, None, None))
+    sensors.append(
+        DisplayOnlySensor(
+            handle, 
+            BATTERY_CYCLES, 
+            None, 
+            None)
+    )
+
     if handle._import_tariff_sensor_id is not None:
         sensors.append(
             DisplayOnlySensor(
@@ -158,6 +185,7 @@ async def define_sensors(hass, handle):
                 hass.config.currency,
             )
         )
+
     if handle._export_tariff_sensor_id is not None:
         sensors.append(
             DisplayOnlySensor(
