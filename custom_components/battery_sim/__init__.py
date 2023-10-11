@@ -46,6 +46,9 @@ from .const import (
     CONF_IMPORT_SENSOR,
     CONF_SECOND_EXPORT_SENSOR,
     CONF_SECOND_IMPORT_SENSOR,
+    CONF_UPDATE_FREQUENCY,
+    CONF_INPUT_LIST,
+    DISCHARGE_ONLY,
     DISCHARGING_RATE,
     DOMAIN,
     FIXED_NUMERICAL_TARIFFS,
@@ -54,8 +57,6 @@ from .const import (
     GRID_IMPORT_SIM,
     GRID_SECOND_EXPORT_SIM,
     GRID_SECOND_IMPORT_SIM,
-    MESSAGE_TYPE_BATTERY_RESET_IMP,
-    MESSAGE_TYPE_BATTERY_RESET_EXP,
     MESSAGE_TYPE_BATTERY_UPDATE,
     MESSAGE_TYPE_GENERAL,
     MODE_CHARGING,
@@ -68,11 +69,11 @@ from .const import (
     NO_TARIFF_INFO,
     OVERIDE_CHARGING,
     PAUSE_BATTERY,
-    TARIFF_SENSOR_ENTITIES,
+    FIXED_TARIFF,
     TARIFF_TYPE,
     SENSOR_ID,
     SENSOR_TYPE,
-    TARIFF,
+    TARIFF_SENSOR,
     CONF_SECOND_ENERGY_IMPORT_TARIFF,
     CONF_SECOND_ENERGY_EXPORT_TARIFF,
     IMPORT,
@@ -176,75 +177,28 @@ class SimulatedBatteryHandle:
 
         self._charging: bool = False
 
-        self._last_import_reading_time = time.time()
-        self._last_export_reading_time = time.time()
+        self._accumulated_import_reading: float = 0.0
         self._last_battery_update_time = time.time()
 
         self._max_discharge: float = 0.0
         self._charge_percentage: float = 0.0
         self._charge_state: float = 0.0
-        self._last_export_reading: float = 0.0
-        self._last_import_cumulative_reading: float = 1.0
+        self._accumulated_export_reading: float = 0.0
+        self._last_import_reading_sensor_data: str = None
+        self._last_export_reading_sensor_data: str = None
 
-        self._tariff_type: str = TARIFF_SENSOR_ENTITIES
-        if TARIFF_TYPE in config:
-            self._tariff_type = config[TARIFF_TYPE]
-
-        self._inputs = [
-            {
-                SENSOR_ID: config[CONF_IMPORT_SENSOR],
-                SENSOR_TYPE: IMPORT,
-                SIMULATED_SENSOR: GRID_IMPORT_SIM,
-                TARIFF_TYPE: self._tariff_type,
-                TARIFF: None
-            },
-            {
-                SENSOR_ID: config[CONF_EXPORT_SENSOR],
-                SENSOR_TYPE: EXPORT,
-                SIMULATED_SENSOR: GRID_EXPORT_SIM,
-                TARIFF_TYPE: self._tariff_type,
-                TARIFF: None
-            },
-        ]
-        if len(config.get(CONF_SECOND_IMPORT_SENSOR, "")) > 6:
-            self._inputs.append({
-                SENSOR_ID: config[CONF_SECOND_IMPORT_SENSOR],
-                SENSOR_TYPE: IMPORT,
-                SIMULATED_SENSOR: GRID_SECOND_IMPORT_SIM,
-                TARIFF_TYPE: self._tariff_type,
-                TARIFF: None
-            })
-        if len(config.get(CONF_SECOND_EXPORT_SENSOR, "")) > 6:
-            self._inputs.append({
-                SENSOR_ID: config[CONF_SECOND_EXPORT_SENSOR],
-                SENSOR_TYPE: EXPORT,
-                SIMULATED_SENSOR: GRID_SECOND_EXPORT_SIM,
-                TARIFF_TYPE: self._tariff_type,
-                TARIFF: None
-            })
-        
-        self._last_import_reading_sensor_data = self._inputs[0]
-        self._last_export_reading_sensor_data = self._inputs[1]
-
-        """Default sensor entities for backwards compatibility"""
-        if CONF_ENERGY_IMPORT_TARIFF in config:
-            self._inputs[0][TARIFF] = config[CONF_ENERGY_IMPORT_TARIFF]
-        elif CONF_ENERGY_TARIFF in config:
-            """For backwards compatibility"""
-            self._inputs[0][TARIFF] = config[CONF_ENERGY_TARIFF]
-
-        if CONF_ENERGY_EXPORT_TARIFF in config:
-            self._inputs[1][TARIFF] = config[CONF_ENERGY_EXPORT_TARIFF]
-        if CONF_SECOND_ENERGY_IMPORT_TARIFF in config:
-            self._inputs[2][TARIFF] = config[CONF_SECOND_ENERGY_IMPORT_TARIFF]
-        if CONF_SECOND_ENERGY_EXPORT_TARIFF in config:
-            self._inputs[3][TARIFF] = config[CONF_SECOND_ENERGY_EXPORT_TARIFF]
+        if CONF_INPUT_LIST in config:
+            self._inputs = config[CONF_INPUT_LIST]
+        else:
+            """Needed for backwards compatability"""
+            self.generate_input_list(config)
 
         self._switches: dict = {
             OVERIDE_CHARGING: False,
             PAUSE_BATTERY: False,
             FORCE_DISCHARGE: False,
             CHARGE_ONLY: False,
+            DISCHARGE_ONLY: False
         }
 
         self._sensors: dict = {
@@ -253,16 +207,14 @@ class SimulatedBatteryHandle:
             ATTR_ENERGY_BATTERY_IN: 0.0,
             CHARGING_RATE: 0.0,
             DISCHARGING_RATE: 0.0,
-            GRID_EXPORT_SIM: 0.0,
-            GRID_IMPORT_SIM: 0.0,
-            GRID_SECOND_EXPORT_SIM: 0.0,
-            GRID_SECOND_IMPORT_SIM: 0.0,
             ATTR_MONEY_SAVED: 0.0,
             BATTERY_MODE: MODE_IDLE,
             ATTR_MONEY_SAVED_IMPORT: 0.0,
             ATTR_MONEY_SAVED_EXPORT: 0.0,
             BATTERY_CYCLES: 0.0,
-        }
+        }        
+        for input_details in self._inputs:
+            self._sensors[input_details[SIMULATED_SENSOR]] = None
 
         async_at_start(self._hass, self.async_source_tracking)
 
@@ -272,25 +224,64 @@ class SimulatedBatteryHandle:
             self.async_reset_battery
         )
 
-        async_dispatcher_connect(
-            self._hass,
-            f"{self._name}-{MESSAGE_TYPE_BATTERY_RESET_IMP}",
-            self.reset_sim_sensor,
-        )
+    """For backwards compatability with old configs"""
+    def generate_input_list(self, config):
+        self._tariff_type: str = TARIFF_SENSOR
+        if TARIFF_TYPE in config:
+            if config[TARIFF_TYPE] == NO_TARIFF_INFO:
+                self._tariff_type = NO_TARIFF_INFO
+            elif config[TARIFF_TYPE] == FIXED_NUMERICAL_TARIFFS:
+                self._tariff_type = FIXED_TARIFF
 
-        async_dispatcher_connect(
-            self._hass,
-            f"{self._name}-{MESSAGE_TYPE_BATTERY_RESET_EXP}",
-            self.reset_sim_sensor,
-        )
+        self._inputs = [
+            {
+                SENSOR_ID: config[CONF_IMPORT_SENSOR],
+                SENSOR_TYPE: IMPORT,
+                SIMULATED_SENSOR: GRID_IMPORT_SIM,
+                TARIFF_TYPE: self._tariff_type
+            },
+            {
+                SENSOR_ID: config[CONF_EXPORT_SENSOR],
+                SENSOR_TYPE: EXPORT,
+                SIMULATED_SENSOR: GRID_EXPORT_SIM,
+                TARIFF_TYPE: self._tariff_type
+            },
+        ]
+        if len(config.get(CONF_SECOND_IMPORT_SENSOR, "")) > 6:
+            self._inputs.append({
+                SENSOR_ID: config[CONF_SECOND_IMPORT_SENSOR],
+                SENSOR_TYPE: IMPORT,
+                SIMULATED_SENSOR: GRID_SECOND_IMPORT_SIM,
+                TARIFF_TYPE: self._tariff_type
+            })
+        if len(config.get(CONF_SECOND_EXPORT_SENSOR, "")) > 6:
+            self._inputs.append({
+                SENSOR_ID: config[CONF_SECOND_EXPORT_SENSOR],
+                SENSOR_TYPE: EXPORT,
+                SIMULATED_SENSOR: GRID_SECOND_EXPORT_SIM,
+                TARIFF_TYPE: self._tariff_type
+            })
+
+        """Default sensor entities for backwards compatibility"""
+        if CONF_ENERGY_IMPORT_TARIFF in config:
+            self._inputs[0][self._tariff_type] = config[CONF_ENERGY_IMPORT_TARIFF]
+        elif CONF_ENERGY_TARIFF in config:
+            """For backwards compatibility"""
+            self._inputs[0][self._tariff_type] = config[CONF_ENERGY_TARIFF]
+
+        if CONF_ENERGY_EXPORT_TARIFF in config:
+            self._inputs[1][self._tariff_type] = config[CONF_ENERGY_EXPORT_TARIFF]
+        if CONF_SECOND_ENERGY_IMPORT_TARIFF in config:
+            self._inputs[2][self._tariff_type] = config[CONF_SECOND_ENERGY_IMPORT_TARIFF]
+        if CONF_SECOND_ENERGY_EXPORT_TARIFF in config:
+            self._inputs[3][self._tariff_type] = config[CONF_SECOND_ENERGY_EXPORT_TARIFF]
 
     def async_reset_battery(self):
         """Reset the battery to start over."""
         _LOGGER.debug("Reset battery")
         for input in self._inputs:
             self.reset_sim_sensor(
-                input[SIMULATED_SENSOR],
-                input[SENSOR_ID]
+                input[SIMULATED_SENSOR]
             )
 
         self._charge_state = 0.0
@@ -315,19 +306,21 @@ class SimulatedBatteryHandle:
 
     def reset_sim_sensor(
         self,
-        target_sensor_key,
-        real_sensor_id,
+        target_sensor_key
     ):
         """Reset the Simulated Sensor."""
         _LOGGER.debug(f"Reset {target_sensor_key} sim sensor")
 
         self._sensors[target_sensor_key] = 0.0
 
-        if self._hass.states.get(real_sensor_id).state not in [
-            STATE_UNAVAILABLE,
-            STATE_UNKNOWN,
-        ]:
-            self._sensors[target_sensor_key] = float(self._hass.states.get(real_sensor_id).state)
+        for input_details in self._inputs:
+            if input_details[SIMULATED_SENSOR] == target_sensor_key:
+                _LOGGER.warning(input_details[SENSOR_ID])
+                if self._hass.states.get(input_details[SENSOR_ID]).state not in [
+                    STATE_UNAVAILABLE,
+                    STATE_UNKNOWN
+                ]:
+                    self._sensors[target_sensor_key] = float(self._hass.states.get(input_details[SENSOR_ID]).state)
 
         dispatcher_send(
             self._hass,
@@ -358,6 +351,7 @@ class SimulatedBatteryHandle:
         event,
     ):
         sensor_id = event.data.get("entity_id")
+        _LOGGER.warning(f"event data {event}")
         for input_details in self._inputs:
             if sensor_id == input_details[SENSOR_ID]: break
         else:
@@ -366,7 +360,6 @@ class SimulatedBatteryHandle:
         
         """Handle the sensor state changes for import or export."""
         sensor_charge_rate = DISCHARGING_RATE if input_details[SENSOR_TYPE] == IMPORT else CHARGING_RATE
-        last_reading_time = time.time()
 
         old_state = event.data.get("old_state")
         new_state = event.data.get("new_state")
@@ -396,6 +389,9 @@ class SimulatedBatteryHandle:
         new_state_value = float(new_state.state) * conversion_factor
         old_state_value = float(old_state.state) * conversion_factor
 
+        if  self._sensors[input_details[SIMULATED_SENSOR]] is None:
+            self._sensors[input_details[SIMULATED_SENSOR]] = old_state_value
+
         if new_state_value == old_state_value:
             # _LOGGER.debug("(%s) No change in readings .. ", self._name)
             return
@@ -417,50 +413,44 @@ class SimulatedBatteryHandle:
 
         if input_details[SENSOR_TYPE] is IMPORT:
             self._last_import_reading_sensor_data = input_details
-            self.update_battery(
-                reading_variance,
-                self._last_export_reading
-            )
-            self._last_export_reading = 0.0
-            self._last_import_reading_time = last_reading_time
+            self._accumulated_import_reading += reading_variance
 
         if input_details[SENSOR_TYPE] is EXPORT:
             self._last_export_reading_sensor_data = input_details
-            if self._last_import_reading_time > self._last_export_reading_time:
-                if self._last_export_reading > 0:
-                    _LOGGER.warning(
-                        "(%s) Accumulated export reading not cleared error",
-                        self._last_export_reading,
-                    )
+            self._accumulated_export_reading += reading_variance
 
-                self._last_export_reading = reading_variance
-            else:
-                reading_variance += self._last_export_reading
-                self._last_export_reading = 0.0
-                self.update_battery(0.0, reading_variance)
-
-            self._last_export_reading_time = last_reading_time
+        time_since_battery_update = time.time() - self._last_battery_update_time
+        if time_since_battery_update > 60:
+            self.update_battery(
+                self._accumulated_import_reading,
+                self._accumulated_export_reading
+            )
+            self._accumulated_export_reading = 0.0
+            self._accumulated_import_reading = 0.0
 
         return
 
     def get_tariff_information(self, input_details):
+        if input_details is None:
+            return None
         """Get Tarrif information to be used for calculating."""
         if input_details[TARIFF_TYPE] == NO_TARIFF_INFO:
             return None
-        elif input_details[TARIFF_TYPE] == FIXED_NUMERICAL_TARIFFS:
-            return input_details[TARIFF]
+        elif input_details[TARIFF_TYPE] == FIXED_TARIFF:
+            return input_details[FIXED_TARIFF]
 
         # Default behavior - assume sensor entities
         if (
-            input_details[TARIFF] is None
-            or len(input_details[TARIFF]) < 6
-            or self._hass.states.get(input_details[TARIFF]) is None
-            or self._hass.states.get(input_details[TARIFF]).state
+            TARIFF_SENSOR not in input_details
+            or input_details[TARIFF_SENSOR] is None
+            or len(input_details[TARIFF_SENSOR]) < 6
+            or self._hass.states.get(input_details[TARIFF_SENSOR]) is None
+            or self._hass.states.get(input_details[TARIFF_SENSOR]).state
             in [STATE_UNAVAILABLE, STATE_UNKNOWN]
         ):
             return None
 
-        return float(self._hass.states.get(input_details[TARIFF]).state)
+        return float(self._hass.states.get(input_details[TARIFF_SENSOR]).state)
 
     def update_battery(self, import_amount, export_amount):
         """Update battery statistics based on the reading for Im- or Export."""
@@ -560,12 +550,24 @@ class SimulatedBatteryHandle:
             amount_to_charge: float = min(
                 export_amount, max_charge, available_capacity_to_charge
             )
-
             amount_to_discharge: float = 0.0
             net_import = import_amount
             net_export = export_amount - amount_to_charge
-            if amount_to_charge > amount_to_discharge:
+            if amount_to_charge > 0.0:
                 self._sensors[BATTERY_MODE] = MODE_CHARGING
+            else:
+                self._sensors[BATTERY_MODE] = MODE_IDLE
+
+        elif self._switches[DISCHARGE_ONLY]:
+            _LOGGER.debug("(%s) Battery discharge only mode.", self._name)
+            amount_to_charge: float = 0.0
+            amount_to_discharge = min(
+                import_amount, max_discharge, available_capacity_to_discharge
+            )
+            net_import = import_amount - amount_to_discharge
+            net_export = export_amount
+            if amount_to_discharge > 0.0:
+                self._sensors[BATTERY_MODE] = MODE_DISCHARGING
             else:
                 self._sensors[BATTERY_MODE] = MODE_IDLE
 
@@ -584,12 +586,11 @@ class SimulatedBatteryHandle:
             self._sensors[ATTR_MONEY_SAVED_EXPORT] += (
                 net_export - export_amount
             ) * current_export_tariff
-        if self._tariff_type is not NO_TARIFF_INFO:
-            self._sensors[ATTR_MONEY_SAVED] = (
-                self._sensors[ATTR_MONEY_SAVED_IMPORT]
-                + self._sensors[ATTR_MONEY_SAVED_EXPORT]
-            )
-
+        self._sensors[ATTR_MONEY_SAVED] = (
+            self._sensors[ATTR_MONEY_SAVED_IMPORT]
+            + self._sensors[ATTR_MONEY_SAVED_EXPORT]
+        )
+        
         self._charge_state = (
             float(self._charge_state)
             + amount_to_charge
@@ -597,8 +598,12 @@ class SimulatedBatteryHandle:
         )
 
         self._sensors[ATTR_ENERGY_SAVED] += import_amount - net_import
-        self._sensors[self._last_import_reading_sensor_data[SIMULATED_SENSOR]] += net_import
-        self._sensors[self._last_import_reading_sensor_data[SIMULATED_SENSOR]] += net_export
+
+        if self._last_import_reading_sensor_data is not None:
+            self._sensors[self._last_import_reading_sensor_data[SIMULATED_SENSOR]] += net_import
+        if self._last_export_reading_sensor_data is not None:
+            self._sensors[self._last_export_reading_sensor_data[SIMULATED_SENSOR]] += net_export
+
         self._sensors[ATTR_ENERGY_BATTERY_IN] += amount_to_charge
         self._sensors[ATTR_ENERGY_BATTERY_OUT] += amount_to_discharge
 

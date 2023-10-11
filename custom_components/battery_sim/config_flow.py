@@ -14,23 +14,24 @@ from .const import (
     CONF_BATTERY_MAX_DISCHARGE_RATE,
     CONF_BATTERY_MAX_CHARGE_RATE,
     CONF_BATTERY_EFFICIENCY,
+    CONF_INPUT_LIST,
     CONF_UNIQUE_NAME,
-    CONF_IMPORT_SENSOR,
-    CONF_SECOND_IMPORT_SENSOR,
-    CONF_EXPORT_SENSOR,
-    CONF_SECOND_EXPORT_SENSOR,
-    CONF_ENERGY_IMPORT_TARIFF,
-    CONF_ENERGY_EXPORT_TARIFF,
     SETUP_TYPE,
     CONFIG_FLOW,
-    METER_TYPE,
-    ONE_IMPORT_ONE_EXPORT_METER,
-    TWO_IMPORT_ONE_EXPORT_METER,
-    TWO_IMPORT_TWO_EXPORT_METER,
     TARIFF_TYPE,
     NO_TARIFF_INFO,
     TARIFF_SENSOR_ENTITIES,
     FIXED_NUMERICAL_TARIFFS,
+    IMPORT,
+    EXPORT,
+    SENSOR_ID,
+    SENSOR_TYPE,
+    NEXT_STEP,
+    ADD_ANOTHER,
+    ALL_DONE,
+    TARIFF_SENSOR,
+    FIXED_TARIFF,
+    SIMULATED_SENSOR
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,7 +54,8 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data[CONF_NAME] = f"{DOMAIN}: { user_input[BATTERY_TYPE]}"
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
-            return await self.async_step_metertype()
+            self._data[CONF_INPUT_LIST] = []
+            return await self.async_step_addmeter()
 
         battery_options_names = list(BATTERY_OPTIONS)
         return self.async_show_form(
@@ -72,7 +74,7 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data[CONF_NAME] = f"{DOMAIN}: {self._data[CONF_UNIQUE_NAME]}"
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
-            return await self.async_step_metertype()
+            return await self.async_step_addmeter()
 
         return self.async_show_form(
             step_id="custom",
@@ -88,134 +90,87 @@ class ExampleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ),
                     vol.Required(CONF_BATTERY_EFFICIENCY, default=0.9): vol.All(
                         vol.Coerce(float), vol.Range(min=0, max=1)
-                    ),
+                    )
                 }
-            ),
+            )
         )
 
-    async def async_step_metertype(self, user_input=None):
+    async def async_step_addmeter(self, user_input=None):
         """Handle a flow initialized by the user."""
+
+        errors = {}
         if user_input is not None:
-            self._data[METER_TYPE] = user_input[METER_TYPE]
-            self._data[TARIFF_TYPE] = user_input[TARIFF_TYPE]
-            return await self.async_step_connectsensors()
+            input_entry: dict = {
+                SENSOR_ID : user_input[SENSOR_ID],
+                SENSOR_TYPE : user_input[SENSOR_TYPE],
+                SIMULATED_SENSOR: f"simulated_{user_input[SENSOR_ID]}"
+            }
+            if user_input[TARIFF_TYPE] == NO_TARIFF_INFO:
+                input_entry[TARIFF_TYPE] = NO_TARIFF_INFO
+            elif user_input[TARIFF_TYPE] == FIXED_NUMERICAL_TARIFFS:
+                input_entry[TARIFF_TYPE] = FIXED_TARIFF
+                if FIXED_TARIFF in user_input:
+                    input_entry[FIXED_TARIFF] = user_input[FIXED_TARIFF]
+                else:
+                    errors["base"] = "Fixed tariff selected, but no number found."
+            elif user_input[TARIFF_TYPE] == TARIFF_SENSOR_ENTITIES:
+                input_entry[TARIFF_TYPE] = TARIFF_SENSOR
+                if TARIFF_SENSOR in user_input:
+                    input_entry[TARIFF_SENSOR] = user_input[TARIFF_SENSOR]
+                else:
+                    errors["base"] = "Tariff type sensor selected, but no sensor provided."
+
+            self._data[CONF_INPUT_LIST].append(input_entry)
+
+            if "base" not in errors and user_input[NEXT_STEP] == ADD_ANOTHER:
+                return await self.async_step_addmeter()
+            elif "base" not in errors and user_input[NEXT_STEP] == ALL_DONE:
+                import_meter: bool = False
+                export_meter: bool = False
+                for input in self._data[CONF_INPUT_LIST]:
+                    if input[SENSOR_TYPE] == IMPORT: import_meter = True
+                    if input[SENSOR_TYPE] == EXPORT: export_meter = True
+                if import_meter and export_meter:
+                    return self.async_create_entry(
+                        title = self._data[CONF_NAME],
+                        data = self._data
+                    )
+                else: 
+                    errors["base"] = "At least one import and one export meter are needed for the battery to work."
 
         meter_types = [
-            ONE_IMPORT_ONE_EXPORT_METER,
-            TWO_IMPORT_ONE_EXPORT_METER,
-            TWO_IMPORT_TWO_EXPORT_METER,
+            IMPORT,
+            EXPORT,
         ]
         tariff_types = [
             NO_TARIFF_INFO,
-            FIXED_NUMERICAL_TARIFFS,
-            TARIFF_SENSOR_ENTITIES
+            TARIFF_SENSOR_ENTITIES,
+            FIXED_NUMERICAL_TARIFFS
+        ]
+        next_step = [
+            ADD_ANOTHER,
+            ALL_DONE
         ]
 
-        return self.async_show_form(
-            step_id="metertype",
-            data_schema=vol.Schema(
+        data_schema = vol.Schema(
                 {
-                    vol.Required(METER_TYPE): vol.In(meter_types),
+                    vol.Required(SENSOR_ID): EntitySelector(
+                        EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
+                    ),
+                    vol.Required(SENSOR_TYPE): vol.In(meter_types),
                     vol.Required(TARIFF_TYPE): vol.In(tariff_types),
+                    vol.Optional(TARIFF_SENSOR): EntitySelector(
+                        EntitySelectorConfig()
+                    ),
+                    vol.Optional(FIXED_TARIFF): vol.All(
+                        vol.Coerce(float), vol.Range(min=0, max=10)
+                    ),
+                    vol.Required(NEXT_STEP): vol.In(next_step),
                 }
-            ),
-        )
-
-    async def async_step_connectsensors(self, user_input=None):
-        if user_input is not None:
-            self._data[CONF_IMPORT_SENSOR] = user_input[CONF_IMPORT_SENSOR]
-            self._data[CONF_EXPORT_SENSOR] = user_input[CONF_EXPORT_SENSOR]
-            if self._data[METER_TYPE] == TWO_IMPORT_ONE_EXPORT_METER:
-                self._data[CONF_SECOND_IMPORT_SENSOR] = user_input[
-                    CONF_SECOND_IMPORT_SENSOR
-                ]
-            if self._data[METER_TYPE] == TWO_IMPORT_TWO_EXPORT_METER:
-                self._data[CONF_SECOND_IMPORT_SENSOR] = user_input[
-                    CONF_SECOND_IMPORT_SENSOR
-                ]
-                self._data[CONF_SECOND_EXPORT_SENSOR] = user_input[
-                    CONF_SECOND_EXPORT_SENSOR
-                ]
-            if self._data[TARIFF_TYPE] == NO_TARIFF_INFO:
-                return self.async_create_entry(
-                    title=self._data["name"], data=self._data
-                )
-            else:
-                return await self.async_step_connecttariffsensors()
-
-        if self._data[METER_TYPE] == ONE_IMPORT_ONE_EXPORT_METER:
-            schema = {
-                vol.Required(CONF_IMPORT_SENSOR): EntitySelector(
-                    EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
-                ),
-                vol.Required(CONF_EXPORT_SENSOR): EntitySelector(
-                    EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
-                ),
-            }
-        elif self._data[METER_TYPE] == TWO_IMPORT_ONE_EXPORT_METER:
-            schema = {
-                vol.Required(CONF_IMPORT_SENSOR): EntitySelector(
-                    EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
-                ),
-                vol.Required(CONF_SECOND_IMPORT_SENSOR): EntitySelector(
-                    EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
-                ),
-                vol.Required(CONF_EXPORT_SENSOR): EntitySelector(
-                    EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
-                ),
-            }
-        elif self._data[METER_TYPE] == TWO_IMPORT_TWO_EXPORT_METER:
-            schema = {
-                vol.Required(CONF_IMPORT_SENSOR): EntitySelector(
-                    EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
-                ),
-                vol.Required(CONF_SECOND_IMPORT_SENSOR): EntitySelector(
-                    EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
-                ),
-                vol.Required(CONF_EXPORT_SENSOR): EntitySelector(
-                    EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
-                ),
-                vol.Required(CONF_SECOND_EXPORT_SENSOR): EntitySelector(
-                    EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
-                ),
-            }
-
-        return self.async_show_form(
-            step_id="connectsensors", data_schema=vol.Schema(schema)
-        )
-
-    async def async_step_connecttariffsensors(self, user_input=None):
-        if user_input is not None:
-            self._data[CONF_ENERGY_IMPORT_TARIFF] = user_input[
-                CONF_ENERGY_IMPORT_TARIFF
-            ]
-            if CONF_ENERGY_EXPORT_TARIFF in user_input:
-                self._data[CONF_ENERGY_EXPORT_TARIFF] = user_input[
-                    CONF_ENERGY_EXPORT_TARIFF
-                ]
-            return self.async_create_entry(
-                title=self._data["name"],
-                data=self._data
             )
-        if self._data[TARIFF_TYPE] == TARIFF_SENSOR_ENTITIES:
-            schema = {
-                vol.Required(CONF_ENERGY_IMPORT_TARIFF): EntitySelector(
-                    EntitySelectorConfig()
-                ),
-                vol.Optional(CONF_ENERGY_EXPORT_TARIFF): EntitySelector(
-                    EntitySelectorConfig()
-                ),
-            }
-        elif self._data[TARIFF_TYPE] == FIXED_NUMERICAL_TARIFFS:
-            schema = {
-                vol.Required(CONF_ENERGY_IMPORT_TARIFF, default=0.3): vol.All(
-                    vol.Coerce(float), vol.Range(min=0, max=10)
-                ),
-                vol.Optional(CONF_ENERGY_EXPORT_TARIFF, default=0.3): vol.All(
-                    vol.Coerce(float), vol.Range(min=0, max=10)
-                ),
-            }
-
+        
         return self.async_show_form(
-            step_id="connecttariffsensors", data_schema=vol.Schema(schema)
+            step_id = "addmeter",
+            data_schema = data_schema,
+            errors = errors
         )

@@ -10,6 +10,7 @@ from .const import (
     PAUSE_BATTERY,
     FORCE_DISCHARGE,
     CHARGE_ONLY,
+    DISCHARGE_ONLY
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,6 +35,11 @@ BATTERY_SWITCHES = [
         "name": CHARGE_ONLY,
         "key": "charge_only_enabled",
         "icon": "mdi:home-import-outline",
+    },
+    {
+        "name": DISCHARGE_ONLY,
+        "key": "discharge_only_enabled",
+        "icon": "mdi:home-export-outline",
     },
 ]
 

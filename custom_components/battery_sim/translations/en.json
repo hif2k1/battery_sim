@@ -26,32 +26,22 @@
         },
         "description": "Set the speciffications of the battery. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
       },
-      "metertype": {
-        "title": "Energy meter type",
+      "addmeter": {
+        "title": "Add meter to battery",
         "data": {
-          "one_import_one_export": "One import and one export meter",
-          "two_import_one_export": "Two import and one export meter",
-          "two_import_two_export": "Two import and two export meter"
+          "sensor_id": "Energy meter sensor",
+          "sensor_type": "Type of meter",
+          "tariff_type": "Type of tariff for this meter (if any)",
+          "tariff_sensor": "Sensor that shows current tariff (if applcable)",
+          "fixed_tariff": "Fixed tariff value (if applcable)",
+          "next_step": "Next step"
         },
-        "description": "Select the type of energy meter you have. Import meters measure energy coming into your home from the grid. You may have two of these e.g. one for day time and one for night. Export meters measure energy leaving your house to the grid e.g. excess solar generation."
-      },
-      "connectsensors": {
-        "title": "Connect battery to energy meter sensors",
-        "data": {
-          "import_sensor": "Import sensor/meter - energy coming into house",
-          "second_import_sensor": "Second import sensor/meter - e.g. night time or Economy 7",
-          "export_sensor": "Export sensor/meter - energy sent to grid",
-          "second_export_sensor": "Second export sensor/meter - e.g. night time or Economy 7"
+        "error" : {
+          "no_fixed": "Fixed tariff selected, but no number found.",
+          "no_tariff_sensor": "Tariff type sensor selected, but no sensor provided.",
+          "no_import_or_export": "At least one import and one export meter are needed for the battery to work."
         },
-        "description": "When export sensor shows energy leaving the house battery will charge. When import sensor shows energy entering the house from the grid the battery will discharge."
-      },
-      "connecttariffsensors": {
-        "title": "Connect sensors or specify fixed value for energy tariffs",
-        "data": {
-          "energy_import_tariff": "Import tariff/rate - cost of energy from the grid (£/kWh)",
-          "energy_export_tariff": "Export tariff/rate - payment for energy exported to grid (£/kWh)"
-        },
-        "description": "Currency is determined in home assistant location settings and is usually in base unit (e.g. euro) not subunit (e.g. cents) so tariff is usualy in the form 0.33 or similar."
+        "description": "Add each meter that monitors electricity coming into and going out of your house. Import meters measure energy coming into your home from the grid and will be used to discharge the battery. Export meters measure energy leaving your house to the grid and will be used to charge the battery. The battery shouldn't monitor solar generation directly, only import and export."
       }
     }
   }
