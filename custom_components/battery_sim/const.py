@@ -4,7 +4,7 @@ DOMAIN = "battery_sim"
 
 BATTERY_TYPE = "battery"
 
-BATTERY_PLATFORMS = ["sensor", "switch", "button"]
+BATTERY_PLATFORMS = ["sensor", "switch", "button", "select"]
 
 MESSAGE_TYPE_GENERAL = "BatteryResetMessage"
 MESSAGE_TYPE_BATTERY_RESET_IMP = "BatteryResetImportSim"
@@ -77,6 +77,7 @@ CHARGE_ONLY = "charge_only"
 DISCHARGE_ONLY = "discharge_only"
 PAUSE_BATTERY = "pause_battery"
 RESET_BATTERY = "reset_battery"
+DEFAULT_MODE = "default_mode"
 PERCENTAGE_ENERGY_IMPORT_SAVED = "percentage_import_energy_saved"
 BATTERY_CYCLES = "battery_cycles"
 SENSOR_ID = "sensor_id"
@@ -139,6 +140,12 @@ BATTERY_OPTIONS = {
         CONF_BATTERY_MAX_DISCHARGE_RATE: 5.7,
         CONF_BATTERY_MAX_CHARGE_RATE: 3.84,
         CONF_BATTERY_EFFICIENCY: 0.90,
+    },
+    "Sessy": {
+        CONF_BATTERY_SIZE: 5.0,
+        CONF_BATTERY_EFFICIENCY: 0.81,
+        CONF_BATTERY_MAX_CHARGE_RATE: 2.2,
+        CONF_BATTERY_MAX_DISCHARGE_RATE: 1.7
     },
     "Custom": {},
 }

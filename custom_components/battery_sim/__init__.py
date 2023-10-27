@@ -4,6 +4,7 @@ import time
 
 import voluptuous as vol
 
+from types import SimpleNamespace
 from homeassistant.core import callback
 from homeassistant.helpers import discovery
 import homeassistant.helpers.config_validation as cv
@@ -116,12 +117,12 @@ async def async_setup(hass, config):
         return True
 
     for battery, conf in config.get(DOMAIN).items():
+        configuration = SimpleNamespace(data = conf, options = {})
         _LOGGER.debug("Setup %s.%s", DOMAIN, battery)
-        handle = SimulatedBatteryHandle(conf, hass)
+        handle = SimulatedBatteryHandle(configuration, hass)
         if battery in hass.data[DOMAIN]:
             _LOGGER.warning("Battery name not unique - not able to create.")
             continue
-
         hass.data[DOMAIN][battery] = handle
 
         for platform in BATTERY_PLATFORMS:
@@ -148,16 +149,19 @@ async def async_setup_entry(hass, entry) -> bool:
 
     _LOGGER.debug("Setup %s.%s", DOMAIN, entry.data[CONF_NAME])
 
-    handle = SimulatedBatteryHandle(entry.data, hass)
+    handle = SimulatedBatteryHandle(entry, hass)
     hass.data[DOMAIN][entry.entry_id] = handle
-
-    # Forward the setup to the sensor platform.
+    entry.async_on_unload(entry.add_update_listener(async_update_settings))
+    
     for platform in BATTERY_PLATFORMS:
         hass.async_create_task(
             hass.config_entries.async_forward_entry_setup(entry, platform)
-        )
+    )
     return True
 
+async def async_update_settings(hass, entry):
+    handle = hass.data[DOMAIN][entry.entry_id]
+    handle.update_settings(entry)
 
 class SimulatedBatteryHandle:
     """Representation of the battery itself."""
@@ -166,20 +170,11 @@ class SimulatedBatteryHandle:
         """Initialize the Battery."""
         self._hass = hass
         self._date_recording_started = time.asctime()
-
-        self._name = config[CONF_NAME]
-        self._battery_size = config[CONF_BATTERY_SIZE]
-        self._max_discharge_rate = config[CONF_BATTERY_MAX_DISCHARGE_RATE]
-        self._max_charge_rate = config[CONF_BATTERY_MAX_CHARGE_RATE]
-        self._battery_efficiency = config[CONF_BATTERY_EFFICIENCY]
-
+        self._name = config.data[CONF_NAME]        
         self._sensor_collection: list = []
-
         self._charging: bool = False
-
         self._accumulated_import_reading: float = 0.0
         self._last_battery_update_time = time.time()
-
         self._max_discharge: float = 0.0
         self._charge_percentage: float = 0.0
         self._charge_state: float = 0.0
@@ -187,11 +182,7 @@ class SimulatedBatteryHandle:
         self._last_import_reading_sensor_data: str = None
         self._last_export_reading_sensor_data: str = None
 
-        if CONF_INPUT_LIST in config:
-            self._inputs = config[CONF_INPUT_LIST]
-        else:
-            """Needed for backwards compatability"""
-            self.generate_input_list(config)
+        self.update_settings(config)
 
         self._switches: dict = {
             OVERIDE_CHARGING: False,
@@ -223,6 +214,21 @@ class SimulatedBatteryHandle:
             f"{self._name}-{MESSAGE_TYPE_GENERAL}",
             self.async_reset_battery
         )
+
+    """Called at startup and if configuration is changed"""
+    def update_settings(self, config):
+        self._battery_size = config.options.get(CONF_BATTERY_SIZE, config.data[CONF_BATTERY_SIZE])
+        if self._charge_state > self._battery_size:
+            self._charge_state = self._battery_size
+        self._max_discharge_rate = config.options.get(CONF_BATTERY_MAX_DISCHARGE_RATE, config.data[CONF_BATTERY_MAX_DISCHARGE_RATE])
+        self._max_charge_rate = config.options.get(CONF_BATTERY_MAX_CHARGE_RATE, config.data[CONF_BATTERY_MAX_CHARGE_RATE])
+        self._battery_efficiency = config.options.get(CONF_BATTERY_EFFICIENCY, config.data[CONF_BATTERY_EFFICIENCY])
+        if CONF_INPUT_LIST in config.data:
+            self._inputs = config.data[CONF_INPUT_LIST]
+        else:
+            """Needed for backwards compatability"""
+            self.generate_input_list(config.data)
+        return True
 
     """For backwards compatability with old configs"""
     def generate_input_list(self, config):
@@ -351,7 +357,6 @@ class SimulatedBatteryHandle:
         event,
     ):
         sensor_id = event.data.get("entity_id")
-        _LOGGER.warning(f"event data {event}")
         for input_details in self._inputs:
             if sensor_id == input_details[SENSOR_ID]: break
         else:
@@ -398,7 +403,7 @@ class SimulatedBatteryHandle:
 
         reading_variance = new_state_value - old_state_value
 
-        _LOGGER.debug(
+        _LOGGER.warning(
             f"({self._name}) {sensor_id} {input_details[SENSOR_TYPE]}: {old_state_value} {unit_of_energy} => {new_state_value} {unit_of_energy} = Δ {reading_variance} {unit_of_energy}"
         )
 
@@ -411,11 +416,11 @@ class SimulatedBatteryHandle:
             self._sensors[sensor_charge_rate] = 0
             return
 
-        if input_details[SENSOR_TYPE] is IMPORT:
+        if input_details[SENSOR_TYPE] == IMPORT:
             self._last_import_reading_sensor_data = input_details
             self._accumulated_import_reading += reading_variance
 
-        if input_details[SENSOR_TYPE] is EXPORT:
+        if input_details[SENSOR_TYPE] == EXPORT:
             self._last_export_reading_sensor_data = input_details
             self._accumulated_export_reading += reading_variance
 
@@ -453,6 +458,9 @@ class SimulatedBatteryHandle:
         return float(self._hass.states.get(input_details[TARIFF_SENSOR]).state)
 
     def update_battery(self, import_amount, export_amount):
+        _LOGGER.warning(
+            f"Update Battery ({self._name})"
+        )
         """Update battery statistics based on the reading for Im- or Export."""
         amount_to_charge: float = 0.0
         amount_to_discharge: float = 0.0

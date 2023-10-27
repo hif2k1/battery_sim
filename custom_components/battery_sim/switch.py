@@ -45,7 +45,6 @@ BATTERY_SWITCHES = [
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Add the Wiser System Switch entities."""
     handle = hass.data[DOMAIN][config_entry.entry_id]  # Get Handler
 
     battery_switches = [
@@ -110,11 +109,6 @@ class BatterySwitch(SwitchEntity):
     def icon(self):
         """Return icon."""
         return self._icon
-
-    @property
-    def should_poll(self):
-        """Return the polling state."""
-        return False
 
     @property
     def is_on(self):
