@@ -1,6 +1,7 @@
 """Configuration flow for the Battery."""
 import logging
 import voluptuous as vol
+import time
 
 from homeassistant import config_entries
 from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
@@ -29,6 +30,7 @@ from .const import (
     FIXED_TARIFF,
     SIMULATED_SENSOR
 )
+from .helpers import generate_input_list
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -208,39 +210,37 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self, config_entry: config_entries.ConfigEntry):
         """Initialize options flow."""
         self.config_entry = config_entry
+        self.updated_entry = config_entry.data.copy()
+        if CONF_INPUT_LIST not in self.updated_entry:
+            self.updated_entry[CONF_INPUT_LIST] = generate_input_list(config = self.updated_entry)
 
     async def async_step_init(self, user_input=None):
         """Handle options flow."""
         return self.async_show_menu(
-            step_id="init", menu_options=["main_params", "input_sensors"]
+            step_id="init", menu_options=["main_params", "input_sensors", "all_done"]
         )
 
     async def async_step_main_params(self, user_input=None):
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
-        current_values = {CONF_BATTERY_SIZE: None,
-                          CONF_BATTERY_MAX_CHARGE_RATE: None,
-                          CONF_BATTERY_MAX_DISCHARGE_RATE: None,
-                          CONF_BATTERY_EFFICIENCY: None
-                          }
-        for parameter in current_values:
-            if parameter in self.config_entry.options:
-                current_values[parameter] = self.config_entry.options[parameter]
-            else:
-                current_values[parameter] = self.config_entry.data[parameter]
+            self.updated_entry[CONF_BATTERY_SIZE] = user_input[CONF_BATTERY_SIZE]
+            self.updated_entry[CONF_BATTERY_MAX_CHARGE_RATE] = user_input[CONF_BATTERY_MAX_CHARGE_RATE]
+            self.updated_entry[CONF_BATTERY_MAX_DISCHARGE_RATE] = user_input[CONF_BATTERY_MAX_DISCHARGE_RATE]
+            self.updated_entry[CONF_BATTERY_EFFICIENCY] = user_input[CONF_BATTERY_EFFICIENCY]
+            self.hass.config_entries.async_update_entry(self.config_entry, data=self.updated_entry, options=self.config_entry.options)
+            return await self.async_step_init()
 
         data_schema = {
             vol.Required(CONF_BATTERY_SIZE, 
-                         default=current_values[CONF_BATTERY_SIZE]): 
+                         default=self.updated_entry[CONF_BATTERY_SIZE]): 
                          vol.All(vol.Coerce(float)),
             vol.Required(CONF_BATTERY_MAX_CHARGE_RATE, 
-                         default=current_values[CONF_BATTERY_MAX_CHARGE_RATE]): 
+                         default=self.updated_entry[CONF_BATTERY_MAX_CHARGE_RATE]): 
                          vol.All(vol.Coerce(float)),
             vol.Required(CONF_BATTERY_MAX_DISCHARGE_RATE, 
-                         default=current_values[CONF_BATTERY_MAX_DISCHARGE_RATE]): 
+                         default=self.updated_entry[CONF_BATTERY_MAX_DISCHARGE_RATE]): 
                          vol.All(vol.Coerce(float)),
             vol.Required(CONF_BATTERY_EFFICIENCY, 
-                         default=current_values[CONF_BATTERY_EFFICIENCY]): 
+                         default=self.updated_entry[CONF_BATTERY_EFFICIENCY]): 
                          vol.All(vol.Coerce(float)),
         }
         return self.async_show_form(
@@ -250,29 +250,44 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_input_sensors(self, user_input=None):
         """Handle options flow."""
         return self.async_show_menu(
-            step_id="input_sensors", menu_options=["add_import_meter", "add_export_meter", "edit_input", "delete_input"]
+            step_id="input_sensors", menu_options=["add_import_meter", "add_export_meter", "edit_input_tariff", "delete_input"]
         )
 
-    async def async_step_edit_input(self, user_input=None):
+    async def async_step_delete_input(self, user_input=None):
         if user_input is not None:
-            for input in self.config_entry.data[CONF_INPUT_LIST]:
+            for input in self.updated_entry[CONF_INPUT_LIST]:
                 if input[SENSOR_ID] == user_input[CONF_INPUT_LIST]:
-                    self.selected_input = input
-            if self.selected_input[SENSOR_TYPE] == IMPORT:
-                return await self.async_step_add_import_meter()
-            else:
-                return await self.async_step_add_export_meter()
+                    self.updated_entry[CONF_INPUT_LIST].remove(input)
+            self.hass.config_entries.async_update_entry(self.config_entry, data=self.updated_entry, options=self.config_entry.options)
+            return await self.async_step_init()
 
         list_of_inputs = []
-        if CONF_INPUT_LIST in self.config_entry.data:
-            for input in self.config_entry.data[CONF_INPUT_LIST]:
-                list_of_inputs.append(input[SENSOR_ID])
+        for input in self.updated_entry[CONF_INPUT_LIST]:
+            list_of_inputs.append(input[SENSOR_ID])
 
         data_schema = {
             vol.Required(CONF_INPUT_LIST): vol.In(list_of_inputs),
         }
         return self.async_show_form(
-            step_id="edit_input", data_schema=vol.Schema(data_schema)
+            step_id="delete_input", data_schema=vol.Schema(data_schema)
+        )
+    
+    async def async_step_edit_input_tariff(self, user_input=None):
+        if user_input is not None:
+            for input in self.updated_entry[CONF_INPUT_LIST]:
+                if input[SENSOR_ID] == user_input[CONF_INPUT_LIST]:
+                    self.current_input_entry = input
+            return await self.async_tariff_menu()
+
+        list_of_inputs = []
+        for input in self.updated_entry[CONF_INPUT_LIST]:
+            list_of_inputs.append(input[SENSOR_ID])
+
+        data_schema = {
+            vol.Required(CONF_INPUT_LIST): vol.In(list_of_inputs),
+        }
+        return self.async_show_form(
+            step_id="edit_input_tariff", data_schema=vol.Schema(data_schema)
         )
 
     async def async_step_add_import_meter(self, user_input=None):
@@ -282,14 +297,15 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 SENSOR_TYPE : IMPORT,
                 SIMULATED_SENSOR: f"simulated_{user_input[SENSOR_ID]}"
             }
+            self.updated_entry[CONF_INPUT_LIST].append(self.current_input_entry)
             return await self.async_tariff_menu()
-        
+
         return self.async_show_form(
             step_id = "add_import_meter",
             data_schema = vol.Schema(
                 {
                     vol.Required(SENSOR_ID): EntitySelector(
-                        EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY, default=self.selected_input[SENSOR_ID])
+                        EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
                     ),
                 }
             )
@@ -302,6 +318,7 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 SENSOR_TYPE : EXPORT,
                 SIMULATED_SENSOR: f"simulated_{user_input[SENSOR_ID]}"
             }
+            self.updated_entry[CONF_INPUT_LIST].append(self.current_input_entry)
             return await self.async_tariff_menu()
         
         return self.async_show_form(
@@ -322,22 +339,24 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
     
     async def async_step_no_tariff_info(self, user_input=None):
         self.current_input_entry[TARIFF_TYPE] = NO_TARIFF_INFO
-        self._data[CONF_INPUT_LIST].append(self.current_input_entry)
-        return await self.async_meter_menu()
+        self.hass.config_entries.async_update_entry(self.config_entry, data=self.updated_entry, options=self.config_entry.options)
+        return await self.async_step_init()
 
     async def async_step_fixed_tariff(self, user_input=None):
         if user_input is not None:
             self.current_input_entry[TARIFF_TYPE] = FIXED_TARIFF
             self.current_input_entry[FIXED_TARIFF] = user_input[FIXED_TARIFF]
-            self._data[CONF_INPUT_LIST].append(self.current_input_entry)
-            return await self.async_meter_menu()
-        
+            self.hass.config_entries.async_update_entry(self.config_entry, data=self.updated_entry, options=self.config_entry.options)
+            return await self.async_step_init()
+
+        current_val = self.current_input_entry.get(FIXED_TARIFF, None)
+
         return self.async_show_form(
             step_id = "fixed_tariff",
             data_schema = vol.Schema(
                 {
-                    vol.Optional(FIXED_TARIFF): vol.All(
-                        vol.Coerce(float), vol.Range(min=0, max=10)
+                    vol.Optional(FIXED_TARIFF, default=current_val): vol.All(
+                        vol.Coerce(float), vol.Range(min=0, max=10),
                     )
                 }
             )
@@ -347,9 +366,11 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             self.current_input_entry[TARIFF_TYPE] = TARIFF_SENSOR
             self.current_input_entry[TARIFF_SENSOR] = user_input[TARIFF_SENSOR]
-            self._data[CONF_INPUT_LIST].append(self.current_input_entry)
-            return await self.async_meter_menu()
-        
+            self.hass.config_entries.async_update_entry(self.config_entry, data=self.updated_entry, options=self.config_entry.options)
+            return await self.async_step_init()
+
+        current_val = self.current_input_entry.get(TARIFF_SENSOR, None)
+
         return self.async_show_form(
             step_id = "tariff_sensor",
             data_schema = vol.Schema(
@@ -360,9 +381,7 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 }
             )
         )
-
+    
     async def async_step_all_done(self, user_input=None):
-        return self.async_create_entry(
-            title = self._data[CONF_NAME],
-            data = self._data
-        )
+        data = {"time": time.asctime()}
+        return self.async_create_entry(title = "", data = data)

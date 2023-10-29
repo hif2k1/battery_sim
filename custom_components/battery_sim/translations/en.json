@@ -81,7 +81,8 @@
         "description": "Select parameters to amend",
         "menu_options": {
           "main_params": "Main Parameters",
-          "input_sensors": "Edit Meters/Sensors"
+          "input_sensors": "Edit Meters/Sensors",
+          "all_done": "All done"
         }
       },
       "main_params": {
@@ -99,7 +100,7 @@
         "menu_options": {
           "add_import_meter": "Add import meter (measuring energy coming into home from the grid)",
           "add_export_meter": "Add export meter (measuring energy leaving into home to the grid)",
-          "edit_input": "Edit a meter",
+          "edit_input_tariff": "Edit tariff details for a meter",
           "delete_input": "Delete a meter"
           },
         "description": "At least one import and one export meter are required. Meters monitoring solar generation direcly shouldn't be added."
