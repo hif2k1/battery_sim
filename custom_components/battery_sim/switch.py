@@ -10,7 +10,7 @@ from .const import (
     PAUSE_BATTERY,
     FORCE_DISCHARGE,
     CHARGE_ONLY,
-    DISCHARGE_ONLY
+    DISCHARGE_ONLY,
 )
 
 _LOGGER = logging.getLogger(__name__)

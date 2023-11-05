@@ -12,10 +12,11 @@ from .const import (
     CHARGE_ONLY,
     DISCHARGE_ONLY,
     DEFAULT_MODE,
-    ICON_FULL
+    ICON_FULL,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     handle = hass.data[DOMAIN][config_entry.entry_id]  # Get Handler
@@ -56,7 +57,7 @@ class BatteryMode(SelectEntity):
             PAUSE_BATTERY,
             FORCE_DISCHARGE,
             CHARGE_ONLY,
-            DISCHARGE_ONLY
+            DISCHARGE_ONLY,
         ]
         self._current_option = DEFAULT_MODE
 
@@ -85,7 +86,7 @@ class BatteryMode(SelectEntity):
     def current_option(self):
         """Return the state of the sensor."""
         return self._current_option
-    
+
     @property
     def options(self):
         return self._options
@@ -98,4 +99,3 @@ class BatteryMode(SelectEntity):
         self.handle._switches[option] = True
         self.schedule_update_ha_state(True)
         return True
-    
