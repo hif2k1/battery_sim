@@ -13,7 +13,7 @@
         "data": {
           "battery": "Battery model"
         },
-        "description": "Select a battery model to simulate from the list or select custom to create one."
+        "description": "Select a battery model to simulate from the list or select Custom to create one."
       },
       "custom": {
         "title": "Custom Battery",
@@ -36,7 +36,7 @@
         "description": "At least one import and one export meter are required. Meters monitoring solar generation direcly shouldn't be added."
       },
       "tariffMenu": {
-        "title": "Select tariff type",
+        "title": "Select Tariff Type",
         "menu_options": {
           "no_tariff_info": "No tariff for this meter",
           "fixed_tariff": "A constant fixed number for the tariff",
@@ -45,14 +45,14 @@
         "description": ""
       },
       "add_import_meter": {
-        "title": "Add import meter to battery",
+        "title": "Add Import Meter To Battery",
         "data": {
           "sensor_id": "Energy meter sensor"
         },
         "description": "Select meter sensor"
       },
       "add_export_meter": {
-        "title": "Add export meter to battery",
+        "title": "Add Export Meter To Battery",
         "data": {
           "sensor_id": "Energy meter sensor"
         },
@@ -99,46 +99,56 @@
         "title": "Edit Meters/Sensors",
         "menu_options": {
           "add_import_meter": "Add import meter (measuring energy coming into home from the grid)",
-          "add_export_meter": "Add export meter (measuring energy leaving into home to the grid)",
+          "add_export_meter": "Add export meter (measuring energy leaving home to the grid)",
           "edit_input_tariff": "Edit tariff details for a meter",
           "delete_input": "Delete a meter"
           },
-        "description": "At least one import and one export meter are required. Meters monitoring solar generation direcly shouldn't be added."
+        "description": "At least one import and one export meter are required. Meters monitoring solar generation directly shouldn't be used."
       },
       "tariffMenu": {
-        "title": "Select tariff type",
+        "title": "Select Tariff Type",
         "menu_options": {
           "no_tariff_info": "No tariff for this meter",
-          "fixed_tariff": "A constant fixed number for the tariff",
-          "tariff_sensor": "A sensor that contains the value of a tariff varying over time"
+          "fixed_tariff": "A constant fixed price for the tariff",
+          "tariff_sensor": "A sensor that represents the value of a tariff varying over time"
         },
         "description": ""
       },
       "add_import_meter": {
-        "title": "Add import meter to battery",
+        "title": "Add Import Meter To Battery",
         "data": {
           "sensor_id": "Energy meter sensor"
         },
         "description": "Select meter sensor"
       },
       "add_export_meter": {
-        "title": "Add export meter to battery",
+        "title": "Add Export Meter To Battery",
         "data": {
           "sensor_id": "Energy meter sensor"
         },
         "description": "Select meter sensor"
       },
+      "delete_input": {
+        "title": "Select Meter To Delete",
+        "data": {},
+        "description": ""
+      },
+      "edit_input_tariff": {
+        "title": "Select Meter To Edit Tariff For",
+        "data": {},
+        "description": ""
+      },
       "fixed_tariff": {
-        "title": "Add Fixed Tariff Details",
+        "title": "Add Fixed Tariff",
         "data": {
-          "fixed_tariff": "Fixed tariff value (if applcable)"
+          "fixed_tariff": "Fixed tariff value"
         },
         "description": ""
       },
       "tariff_sensor": {
-        "title": "Add Tariff Sensor Details",
+        "title": "Add Tariff Sensor",
         "data": {
-          "tariff_sensor": "Sensor that shows current tariff (if applcable)"
+          "tariff_sensor": "Sensor that shows current tariff"
         },
         "description": ""
       }
