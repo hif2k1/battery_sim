@@ -3,10 +3,7 @@ import time
 import logging
 
 import homeassistant.util.dt as dt_util
-from homeassistant.helpers.dispatcher import (
-    dispatcher_send,
-    async_dispatcher_connect
-)
+from homeassistant.helpers.dispatcher import dispatcher_send, async_dispatcher_connect
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -14,8 +11,13 @@ from homeassistant.components.sensor import (
     SensorStateClass,
     ATTR_LAST_RESET,
 )
-from homeassistant.const import UnitOfEnergy, UnitOfPower
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.const import (
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
+    UnitOfPower,
+    UnitOfEnergy,
+)
 
 from .const import (
     DOMAIN,
@@ -37,8 +39,9 @@ from .const import (
     ATTR_ENERGY_BATTERY_IN,
     CHARGING_RATE,
     DISCHARGING_RATE,
-    GRID_IMPORT_SIM,
-    GRID_EXPORT_SIM,
+    SENSOR_TYPE,
+    EXPORT,
+    SIMULATED_SENSOR,
     ICON_CHARGING,
     ICON_DISCHARGING,
     ICON_FULL,
@@ -49,9 +52,8 @@ from .const import (
     MODE_FULL,
     MODE_EMPTY,
     BATTERY_CYCLES,
-    MESSAGE_TYPE_BATTERY_RESET_IMP,
-    MESSAGE_TYPE_BATTERY_RESET_EXP,
     MESSAGE_TYPE_BATTERY_UPDATE,
+    SENSOR_ID,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -109,64 +111,51 @@ async def define_sensors(hass, handle):
     )
     sensors.append(
         DisplayOnlySensor(
+            handle, CHARGING_RATE, SensorDeviceClass.POWER, UnitOfPower.KILO_WATT
+        )
+    )
+    sensors.append(
+        DisplayOnlySensor(
+            handle, DISCHARGING_RATE, SensorDeviceClass.POWER, UnitOfPower.KILO_WATT
+        )
+    )
+    for input in handle._inputs:
+        sensors.append(
+            DisplayOnlySensor(
+                handle,
+                input[SIMULATED_SENSOR],
+                SensorDeviceClass.ENERGY,
+                UnitOfEnergy.KILO_WATT_HOUR,
+            )
+        )
+
+    sensors.append(DisplayOnlySensor(handle, BATTERY_CYCLES, None, None))
+
+    sensors.append(
+        DisplayOnlySensor(
             handle,
-            CHARGING_RATE,
-            SensorDeviceClass.POWER,
-            UnitOfPower.KILO_WATT
+            ATTR_MONEY_SAVED_IMPORT,
+            SensorDeviceClass.MONETARY,
+            hass.config.currency,
         )
     )
     sensors.append(
         DisplayOnlySensor(
             handle,
-            DISCHARGING_RATE,
-            SensorDeviceClass.POWER,
-            UnitOfPower.KILO_WATT
-        )
-    )
-    sensors.append(
-        DisplayOnlySensor(
-            handle,
-            GRID_EXPORT_SIM,
-            SensorDeviceClass.ENERGY,
-            UnitOfEnergy.KILO_WATT_HOUR,
-        )
-    )
-    sensors.append(
-        DisplayOnlySensor(
-            handle,
-            GRID_IMPORT_SIM,
-            SensorDeviceClass.ENERGY,
-            UnitOfEnergy.KILO_WATT_HOUR,
+            ATTR_MONEY_SAVED,
+            SensorDeviceClass.MONETARY,
+            hass.config.currency,
         )
     )
 
-    sensors.append(DisplayOnlySensor(handle, BATTERY_CYCLES, None, None))
-    if handle._import_tariff_sensor_id is not None:
-        sensors.append(
-            DisplayOnlySensor(
-                handle,
-                ATTR_MONEY_SAVED_IMPORT,
-                SensorDeviceClass.MONETARY,
-                hass.config.currency,
-            )
+    sensors.append(
+        DisplayOnlySensor(
+            handle,
+            ATTR_MONEY_SAVED_EXPORT,
+            SensorDeviceClass.MONETARY,
+            hass.config.currency,
         )
-        sensors.append(
-            DisplayOnlySensor(
-                handle,
-                ATTR_MONEY_SAVED,
-                SensorDeviceClass.MONETARY,
-                hass.config.currency,
-            )
-        )
-    if handle._export_tariff_sensor_id is not None:
-        sensors.append(
-            DisplayOnlySensor(
-                handle,
-                ATTR_MONEY_SAVED_EXPORT,
-                SensorDeviceClass.MONETARY,
-                hass.config.currency,
-            )
-        )
+    )
     sensors.append(SimulatedBattery(handle))
     sensors.append(BatteryStatus(handle, BATTERY_MODE))
     return sensors
@@ -198,44 +187,26 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         await super().async_added_to_hass()
 
         state = await self.async_get_last_state()
+
         if state:
             try:
                 self._handle._sensors[self._sensor_type] = float(state.state)
                 self._last_reset = dt_util.as_utc(
-                    dt_util.parse_datetime(
-                        state.attributes.get(ATTR_LAST_RESET)
-                    )
+                    dt_util.parse_datetime(state.attributes.get(ATTR_LAST_RESET))
                 )
                 self._available = True
                 await self.async_update_ha_state(True)
             except Exception:
                 _LOGGER.debug("Sensor state not restored properly.")
-                if self._sensor_type == GRID_IMPORT_SIM:
-                    dispatcher_send(
-                        self.hass,
-                        f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_IMP}",
-                    )
-                elif self._sensor_type == GRID_EXPORT_SIM:
-                    dispatcher_send(
-                        self.hass,
-                        f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_EXP}",
-                    )
+                self._available = False
         else:
             _LOGGER.debug("No sensor state - presume new battery.")
-            if self._sensor_type == GRID_IMPORT_SIM:
-                dispatcher_send(
-                    self.hass,
-                    f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_IMP}"
-                )
-            elif self._sensor_type == GRID_EXPORT_SIM:
-                dispatcher_send(
-                    self.hass,
-                    f"{self._device_name}-{MESSAGE_TYPE_BATTERY_RESET_EXP}"
-                )
+            self._available = False
 
         async def async_update_state():
             """Update sensor state."""
-            self._available = True
+            if self._handle._sensors[self._sensor_type] is not None:
+                self._available = True
             await self.async_update_ha_state(True)
 
         async_dispatcher_connect(
@@ -256,10 +227,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {
-            "name": self._device_name,
-            "identifiers": {(DOMAIN, self._device_name)}
-        }
+        return {"name": self._device_name, "identifiers": {(DOMAIN, self._device_name)}}
 
     @property
     def native_value(self):
@@ -288,25 +256,33 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     def extra_state_attributes(self):
         """Return the state attributes of the sensor."""
         state_attr = {}
-        if self._sensor_type == GRID_IMPORT_SIM:
-            real_world_import = self._handle._last_import_cumulative_reading
-            simulated_import = self._handle._sensors[GRID_IMPORT_SIM]
-            if real_world_import == 0:
+        for input in self._handle._inputs:
+            if self._sensor_type != input[SIMULATED_SENSOR]:
+                break
+            if input[SENSOR_TYPE] == EXPORT:
+                break
+            parent_sensor = input[SENSOR_ID]
+            if self.hass.states.get(parent_sensor) is None or self.hass.states.get(
+                parent_sensor
+            ).state in [STATE_UNAVAILABLE, STATE_UNKNOWN]:
+                break
+            real_world_value = float(self.hass.states.get(parent_sensor).state)
+            simulated_value = self._handle._sensors[self._sensor_type]
+            if real_world_value == 0:
                 _LOGGER.warning(
                     "Division by zero, real world: %s, simulated: %s, battery: %s",
-                    real_world_import,
-                    simulated_import,
+                    real_world_value,
+                    simulated_value,
                     self._name,
                 )
                 state_attr = {PERCENTAGE_ENERGY_IMPORT_SAVED: 0}
             else:
-                percentage_import_saved = (
-                    100 * (real_world_import - simulated_import)
-                    / real_world_import
+                percentage_value_saved = (
+                    100 * (real_world_value - simulated_value) / real_world_value
                 )
                 state_attr = {
                     PERCENTAGE_ENERGY_IMPORT_SAVED: round(
-                        float(percentage_import_saved), 0
+                        float(percentage_value_saved), 0
                     )
                 }
         return state_attr
@@ -318,7 +294,11 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        if self._sensor_type == ATTR_MONEY_SAVED:
+        if self._sensor_type in [
+            ATTR_MONEY_SAVED,
+            ATTR_MONEY_SAVED_EXPORT,
+            ATTR_MONEY_SAVED_IMPORT,
+        ]:
             return round(float(self._handle._sensors[self._sensor_type]), 2)
         else:
             return round(float(self._handle._sensors[self._sensor_type]), 3)
@@ -335,7 +315,6 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     @property
     def available(self) -> bool:
         """Needed to avoid spikes in energy dashboard on startup.
-
         Return True if entity is available.
         """
         return self._available
@@ -357,7 +336,9 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
         state = await self.async_get_last_state()
         if state:
-            self.handle._charge_state = float(state.state)
+            self.handle._charge_state = min(
+                float(state.state), self.handle._battery_size
+            )
             if ATTR_DATE_RECORDING_STARTED in state.attributes:
                 self.handle._date_recording_started = state.attributes[
                     ATTR_DATE_RECORDING_STARTED
@@ -368,9 +349,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             await self.async_update_ha_state(True)
 
         async_dispatcher_connect(
-            self.hass,
-            f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}",
-            async_update_state
+            self.hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}", async_update_state
         )
 
     @property
@@ -418,31 +397,24 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes of the sensor."""
+        sensor_list = ""
+        for input in self.handle._inputs:
+            sensor_list = f"{sensor_list}, {input[SENSOR_ID]}"
         return {
-            ATTR_STATUS:
-                self.handle._sensors[BATTERY_MODE],
-            ATTR_CHARGE_PERCENTAGE:
-                int(self.handle._charge_percentage),
-            ATTR_DATE_RECORDING_STARTED:
-                self.handle._date_recording_started,
-            CONF_BATTERY_SIZE:
-                self.handle._battery_size,
-            CONF_BATTERY_EFFICIENCY:
-                float(self.handle._battery_efficiency),
-            CONF_BATTERY_MAX_DISCHARGE_RATE:
-                float(self.handle._max_discharge_rate),
-            CONF_BATTERY_MAX_CHARGE_RATE:
-                float(self.handle._max_charge_rate),
-            ATTR_SOURCE_ID:
-                self.handle._export_sensor_id,
+            ATTR_STATUS: self.handle._sensors[BATTERY_MODE],
+            ATTR_CHARGE_PERCENTAGE: int(self.handle._charge_percentage),
+            ATTR_DATE_RECORDING_STARTED: self.handle._date_recording_started,
+            CONF_BATTERY_SIZE: self.handle._battery_size,
+            CONF_BATTERY_EFFICIENCY: float(self.handle._battery_efficiency),
+            CONF_BATTERY_MAX_DISCHARGE_RATE: float(self.handle._max_discharge_rate),
+            CONF_BATTERY_MAX_CHARGE_RATE: float(self.handle._max_charge_rate),
+            ATTR_SOURCE_ID: sensor_list,
         }
 
     @property
     def icon(self):
         """Return the icon to use in the frontend."""
-        if self.handle._sensors[BATTERY_MODE] in [
-            MODE_CHARGING, MODE_FORCE_CHARGING
-        ]:
+        if self.handle._sensors[BATTERY_MODE] in [MODE_CHARGING, MODE_FORCE_CHARGING]:
             return ICON_CHARGING
         if self.handle._sensors[BATTERY_MODE] == MODE_FULL:
             return ICON_FULL
@@ -494,10 +466,7 @@ class BatteryStatus(SensorEntity):
 
     @property
     def device_info(self):
-        return {
-            "name": self._device_name,
-            "identifiers": {(DOMAIN, self._device_name)}
-        }
+        return {"name": self._device_name, "identifiers": {(DOMAIN, self._device_name)}}
 
     @property
     def native_value(self):
@@ -517,10 +486,7 @@ class BatteryStatus(SensorEntity):
     @property
     def icon(self):
         """Return the icon to use in the frontend."""
-        if self.handle._sensors[BATTERY_MODE] in [
-            MODE_CHARGING,
-            MODE_FORCE_CHARGING
-        ]:
+        if self.handle._sensors[BATTERY_MODE] in [MODE_CHARGING, MODE_FORCE_CHARGING]:
             return ICON_CHARGING
         if self.handle._sensors[BATTERY_MODE] == MODE_FULL:
             return ICON_FULL

@@ -13,10 +13,10 @@
         "data": {
           "battery": "Battery model"
         },
-        "description": "Select a battery model to simulate from the list or select custom to create one."
+        "description": "Select a battery model to simulate from the list or select Custom to create one."
       },
       "custom": {
-        "title": "Custom battery",
+        "title": "Custom Battery",
         "data": {
           "unique_name": "Unique name",
           "size_kwh": "Battery size in kWh",
@@ -26,32 +26,131 @@
         },
         "description": "Set the speciffications of the battery. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
       },
-      "metertype": {
-        "title": "Energy meter type",
-        "data": {
-          "one_import_one_export": "One import and one export meter",
-          "two_import_one_export": "Two import and one export meter",
-          "two_import_two_export": "Two import and two export meter"
+      "meterMenu": {
+        "title": "Add Meters",
+        "menu_options": {
+          "add_import_meter": "Add import meter (measuring energy coming into home from the grid)",
+          "add_export_meter": "Add export meter (measuring energy leaving into home to the grid)",
+          "all_done": "All finished"
         },
-        "description": "Select the type of energy meter you have. Import meters measure energy coming into your home from the grid. You may have two of these e.g. one for day time and one for night. Export meters measure energy leaving your house to the grid e.g. excess solar generation."
+        "description": "At least one import and one export meter are required. Meters monitoring solar generation direcly shouldn't be added."
       },
-      "connectsensors": {
-        "title": "Connect battery to energy meter sensors",
-        "data": {
-          "import_sensor": "Import sensor/meter - energy coming into house",
-          "second_import_sensor": "Second import sensor/meter - e.g. night time or Economy 7",
-          "export_sensor": "Export sensor/meter - energy sent to grid",
-          "second_export_sensor": "Second export sensor/meter - e.g. night time or Economy 7"
+      "tariffMenu": {
+        "title": "Select Tariff Type",
+        "menu_options": {
+          "no_tariff_info": "No tariff for this meter",
+          "fixed_tariff": "A constant fixed number for the tariff",
+          "tariff_sensor": "A sensor that contains the value of a tariff varying over time"
         },
-        "description": "When export sensor shows energy leaving the house battery will charge. When import sensor shows energy entering the house from the grid the battery will discharge."
+        "description": ""
       },
-      "connecttariffsensors": {
-        "title": "Connect sensors or specify fixed value for energy tariffs",
+      "add_import_meter": {
+        "title": "Add Import Meter To Battery",
         "data": {
-          "energy_import_tariff": "Import tariff/rate - cost of energy from the grid (£/kWh)",
-          "energy_export_tariff": "Export tariff/rate - payment for energy exported to grid (£/kWh)"
+          "sensor_id": "Energy meter sensor"
         },
-        "description": "Currency is determined in home assistant location settings and is usually in base unit (e.g. euro) not subunit (e.g. cents) so tariff is usualy in the form 0.33 or similar."
+        "description": "Select meter sensor"
+      },
+      "add_export_meter": {
+        "title": "Add Export Meter To Battery",
+        "data": {
+          "sensor_id": "Energy meter sensor"
+        },
+        "description": "Select meter sensor"
+      },
+      "fixed_tariff": {
+        "title": "Add Fixed Tariff Details",
+        "data": {
+          "fixed_tariff": "Fixed tariff value (if applcable)"
+        },
+        "description": ""
+      },
+      "tariff_sensor": {
+        "title": "Add Tariff Sensor Details",
+        "data": {
+          "tariff_sensor": "Sensor that shows current tariff (if applcable)"
+        },
+        "description": ""
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Battery Options",
+        "description": "Select parameters to amend",
+        "menu_options": {
+          "main_params": "Main Parameters",
+          "input_sensors": "Edit Meters/Sensors",
+          "all_done": "All done"
+        }
+      },
+      "main_params": {
+        "title": "Main Battery Options",
+        "description": "Main Parameters",
+        "data": {
+          "size_kwh": "Battery size in kWh",
+          "max_discharge_rate_kw": "Maximum discharge rate in kW",
+          "max_charge_rate_kw": "Maximum charging rate in kW",
+          "efficiency": "Round trip efficiency (0 to 1)"
+        }
+      },
+      "input_sensors": {
+        "title": "Edit Meters/Sensors",
+        "menu_options": {
+          "add_import_meter": "Add import meter (measuring energy coming into home from the grid)",
+          "add_export_meter": "Add export meter (measuring energy leaving home to the grid)",
+          "edit_input_tariff": "Edit tariff details for a meter",
+          "delete_input": "Delete a meter"
+          },
+        "description": "At least one import and one export meter are required. Meters monitoring solar generation directly shouldn't be used."
+      },
+      "tariffMenu": {
+        "title": "Select Tariff Type",
+        "menu_options": {
+          "no_tariff_info": "No tariff for this meter",
+          "fixed_tariff": "A constant fixed price for the tariff",
+          "tariff_sensor": "A sensor that represents the value of a tariff varying over time"
+        },
+        "description": ""
+      },
+      "add_import_meter": {
+        "title": "Add Import Meter To Battery",
+        "data": {
+          "sensor_id": "Energy meter sensor"
+        },
+        "description": "Select meter sensor"
+      },
+      "add_export_meter": {
+        "title": "Add Export Meter To Battery",
+        "data": {
+          "sensor_id": "Energy meter sensor"
+        },
+        "description": "Select meter sensor"
+      },
+      "delete_input": {
+        "title": "Select Meter To Delete",
+        "data": {},
+        "description": ""
+      },
+      "edit_input_tariff": {
+        "title": "Select Meter To Edit Tariff For",
+        "data": {},
+        "description": ""
+      },
+      "fixed_tariff": {
+        "title": "Add Fixed Tariff",
+        "data": {
+          "fixed_tariff": "Fixed tariff value"
+        },
+        "description": ""
+      },
+      "tariff_sensor": {
+        "title": "Add Tariff Sensor",
+        "data": {
+          "tariff_sensor": "Sensor that shows current tariff"
+        },
+        "description": ""
       }
     }
   }
