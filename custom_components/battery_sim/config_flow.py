@@ -110,7 +110,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 export_meter = True
         if import_meter and export_meter:
             menu_options.append("all_done")
-        return self.async_show_menu(step_id="meterMenu", menu_options=menu_options)
+        return self.async_show_menu(step_id="meter_menu", menu_options=menu_options)
 
     async def async_step_add_import_meter(self, user_input=None):
         if user_input is not None:
@@ -154,7 +154,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_tariff_menu(self, user_input=None):
         return self.async_show_menu(
-            step_id="tariffMenu",
+            step_id="tariff_menu",
             menu_options=["no_tariff_info", "fixed_tariff", "tariff_sensor"],
         )
 

@@ -26,7 +26,7 @@
         },
         "description": "Set the speciffications of the battery. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
       },
-      "meterMenu": {
+      "meter_menu": {
         "title": "Add Meters",
         "menu_options": {
           "add_import_meter": "Add import meter (measuring energy coming into home from the grid)",
@@ -35,7 +35,7 @@
         },
         "description": "At least one import and one export meter are required. Meters monitoring solar generation direcly shouldn't be added."
       },
-      "tariffMenu": {
+      "tariff_menu": {
         "title": "Select Tariff Type",
         "menu_options": {
           "no_tariff_info": "No tariff for this meter",
