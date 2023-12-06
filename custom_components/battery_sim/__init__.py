@@ -539,9 +539,7 @@ class SimulatedBatteryHandle:
             self._sensors[
                 self._last_import_reading_sensor_data[SIMULATED_SENSOR]
             ] += net_import
-        _LOGGER.warning(f"Updating simulated export sensor: baterry: {self._name}, last_export_sensor:{self._last_export_reading_sensor_data}")
         if self._last_export_reading_sensor_data is not None:
-            _LOGGER.warning(f"Updating simulated export sensor: baterry: {self._name}, last_export_sensor:{self._last_export_reading_sensor_data}, last_export_sensor[simulated_sensor]:{self._last_export_reading_sensor_data[SIMULATED_SENSOR]}")
             self._sensors[
                 self._last_export_reading_sensor_data[SIMULATED_SENSOR]
             ] += net_export
