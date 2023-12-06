@@ -4,6 +4,8 @@
 
 Allows you to model how much energy you would save with a home battery if you currently export energy to the grid e.g. from solar panels. Requires an energy monitor that can measure import and export energy. Whenever you are exporting energy your simulated battery will charge up and whenevery you are importing it will discharge. Battery charge percentage and total energy saved are in the attributes. 
 
+Please note this is a simulation and a real battery may behave differently and not all batteries will support all the features available in this simulation. In particular battery_sim allows you to simulate batteries that charge and discharge across multiple phases and various modes including charge_only, discharge_only etc that may not be available in all real world batteries. 
+
 ## Setup
 
 The easiest way to get battery_sim is to use HACS to add it as an integration. If you don't want to use HACS you can just copy the code into the custom_components folder in your home assistant config folder. 
