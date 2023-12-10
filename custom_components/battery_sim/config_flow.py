@@ -59,7 +59,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
             self._data[CONF_INPUT_LIST] = []
-            return await self.async_meter_menu()
+            return await self.async_step_meter_menu()
 
         battery_options_names = list(BATTERY_OPTIONS)
         return self.async_show_form(
@@ -78,7 +78,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data[CONF_NAME] = f"{DOMAIN}: {self._data[CONF_UNIQUE_NAME]}"
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
-            return await self.async_meter_menu()
+            return await self.async_step_meter_menu()
 
         return self.async_show_form(
             step_id="custom",
@@ -99,7 +99,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    async def async_meter_menu(self, user_input=None):
+    async def async_step_meter_menu(self, user_input=None):
         menu_options = ["add_import_meter", "add_export_meter"]
         import_meter: bool = False
         export_meter: bool = False
@@ -119,7 +119,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 SENSOR_TYPE: IMPORT,
                 SIMULATED_SENSOR: f"simulated_{user_input[SENSOR_ID]}",
             }
-            return await self.async_tariff_menu()
+            return await self.async_step_tariff_menu()
 
         return self.async_show_form(
             step_id="add_import_meter",
@@ -139,7 +139,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 SENSOR_TYPE: EXPORT,
                 SIMULATED_SENSOR: f"simulated_{user_input[SENSOR_ID]}",
             }
-            return await self.async_tariff_menu()
+            return await self.async_step_tariff_menu()
 
         return self.async_show_form(
             step_id="add_export_meter",
@@ -152,7 +152,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
         )
 
-    async def async_tariff_menu(self, user_input=None):
+    async def async_step_tariff_menu(self, user_input=None):
         return self.async_show_menu(
             step_id="tariff_menu",
             menu_options=["no_tariff_info", "fixed_tariff", "tariff_sensor"],
@@ -161,14 +161,14 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_no_tariff_info(self, user_input=None):
         self.current_input_entry[TARIFF_TYPE] = NO_TARIFF_INFO
         self._data[CONF_INPUT_LIST].append(self.current_input_entry)
-        return await self.async_meter_menu()
+        return await self.async_step_meter_menu()
 
     async def async_step_fixed_tariff(self, user_input=None):
         if user_input is not None:
             self.current_input_entry[TARIFF_TYPE] = FIXED_TARIFF
             self.current_input_entry[FIXED_TARIFF] = user_input[FIXED_TARIFF]
             self._data[CONF_INPUT_LIST].append(self.current_input_entry)
-            return await self.async_meter_menu()
+            return await self.async_step_meter_menu()
 
         return self.async_show_form(
             step_id="fixed_tariff",
@@ -186,7 +186,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.current_input_entry[TARIFF_TYPE] = TARIFF_SENSOR
             self.current_input_entry[TARIFF_SENSOR] = user_input[TARIFF_SENSOR]
             self._data[CONF_INPUT_LIST].append(self.current_input_entry)
-            return await self.async_meter_menu()
+            return await self.async_step_meter_menu()
 
         return self.async_show_form(
             step_id="tariff_sensor",
@@ -298,7 +298,7 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             for input in self.updated_entry[CONF_INPUT_LIST]:
                 if input[SENSOR_ID] == user_input[CONF_INPUT_LIST]:
                     self.current_input_entry = input
-            return await self.async_tariff_menu()
+            return await self.async_step_tariff_menu()
 
         list_of_inputs = []
         for input in self.updated_entry[CONF_INPUT_LIST]:
@@ -319,7 +319,7 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 SIMULATED_SENSOR: f"simulated_{user_input[SENSOR_ID]}",
             }
             self.updated_entry[CONF_INPUT_LIST].append(self.current_input_entry)
-            return await self.async_tariff_menu()
+            return await self.async_step_tariff_menu()
 
         return self.async_show_form(
             step_id="add_import_meter",
@@ -340,7 +340,7 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 SIMULATED_SENSOR: f"simulated_{user_input[SENSOR_ID]}",
             }
             self.updated_entry[CONF_INPUT_LIST].append(self.current_input_entry)
-            return await self.async_tariff_menu()
+            return await self.async_step_tariff_menu()
 
         return self.async_show_form(
             step_id="add_export_meter",
@@ -353,9 +353,9 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             ),
         )
 
-    async def async_tariff_menu(self, user_input=None):
+    async def async_step_tariff_menu(self, user_input=None):
         return self.async_show_menu(
-            step_id="tariffMenu",
+            step_id="tariff_menu",
             menu_options=["no_tariff_info", "fixed_tariff", "tariff_sensor"],
         )
 

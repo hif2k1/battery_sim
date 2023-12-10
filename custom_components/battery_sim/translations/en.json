@@ -105,7 +105,7 @@
           },
         "description": "At least one import and one export meter are required. Meters monitoring solar generation directly shouldn't be used."
       },
-      "tariffMenu": {
+      "tariff_menu": {
         "title": "Select Tariff Type",
         "menu_options": {
           "no_tariff_info": "No tariff for this meter",
