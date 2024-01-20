@@ -76,6 +76,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data = user_input
             self._data[SETUP_TYPE] = CONFIG_FLOW
             self._data[CONF_NAME] = f"{DOMAIN}: {self._data[CONF_UNIQUE_NAME]}"
+            self._data[CONF_INPUT_LIST] = []
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
             return await self.async_step_meter_menu()
