@@ -24,7 +24,7 @@
           "max_charge_rate_kw": "Maximum charging rate in kW",
           "efficiency": "Round trip efficiency (0 to 1)"
         },
-        "description": "Set the speciffications of the battery. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
+        "description": "Set the specifications of the battery. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
       },
       "meter_menu": {
         "title": "Add Meters",
@@ -33,7 +33,7 @@
           "add_export_meter": "Add export meter (measuring energy leaving into home to the grid)",
           "all_done": "All finished"
         },
-        "description": "At least one import and one export meter are required. Meters monitoring solar generation direcly shouldn't be added."
+        "description": "At least one import and one export meter are required. Meters monitoring solar generation directly shouldn't be added."
       },
       "tariff_menu": {
         "title": "Select Tariff Type",
@@ -61,14 +61,14 @@
       "fixed_tariff": {
         "title": "Add Fixed Tariff Details",
         "data": {
-          "fixed_tariff": "Fixed tariff value (if applcable)"
+          "fixed_tariff": "Fixed tariff value (if applicable)"
         },
         "description": ""
       },
       "tariff_sensor": {
         "title": "Add Tariff Sensor Details",
         "data": {
-          "tariff_sensor": "Sensor that shows current tariff (if applcable)"
+          "tariff_sensor": "Sensor that shows current tariff (if applicable)"
         },
         "description": ""
       }
