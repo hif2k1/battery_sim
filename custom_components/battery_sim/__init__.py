@@ -351,7 +351,7 @@ class SimulatedBatteryHandle:
         )
 
         if reading_variance < 0:
-            _LOGGER.warning(
+            _LOGGER.debug(
                 "(%s) %s sensor value decreased - meter may have been reset",
                 self._name,
                 input_details[SENSOR_TYPE],
@@ -418,11 +418,12 @@ class SimulatedBatteryHandle:
         time_since_last_battery_update = time_now - time_last_update
 
         _LOGGER.debug(
-            "(%s), Size: (%s)kWh, Import: (%s), Export: (%s), .... Timing: %s = Now / %s = Last Update / %s Time (sec).",
+            "(%s), Size: (%s)kWh, Import: (%s), Export: (%s), Initial charge level: (%s) .... Timings: %s = Now / %s = Last Update / %s Time (sec).",
             self._name,
             self._battery_size,
             import_amount,
             export_amount,
+            self._charge_state,
             time_now,
             time_last_update,
             time_since_last_battery_update,
@@ -576,4 +577,4 @@ class SimulatedBatteryHandle:
 
         dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
 
-        _LOGGER.debug("(%s) Battery update complete.", self._name)
+        _LOGGER.debug("(%s) Battery update complete. New Charge level: (%s)", self._name, self._charge_state)
