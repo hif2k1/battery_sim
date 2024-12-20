@@ -133,10 +133,9 @@ async def async_setup_entry(hass, entry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = handle
     handle._listeners.append(entry.add_update_listener(async_update_settings))
 
-    for platform in BATTERY_PLATFORMS:
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, platform)
-        )
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setups(entry, BATTERY_PLATFORMS)
+    )
     return True
 
 
