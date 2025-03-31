@@ -184,8 +184,8 @@ class SimulatedBatteryHandle:
         self._accumulated_import_reading: float = 0.0
         self._last_battery_update_time = time.time()
         self._max_discharge: float = 0.0
-        self._charge_percentage: float = 0.0
-        self._charge_state: float = 0.0
+        self._charge_percentage: float = 50
+        self._charge_state: float = config[CONF_BATTERY_SIZE]*0.5
         self._accumulated_export_reading: float = 0.0
         self._last_import_reading_sensor_data: str = None
         self._last_export_reading_sensor_data: str = None
