@@ -4,7 +4,7 @@ DOMAIN = "battery_sim"
 
 BATTERY_TYPE = "battery"
 
-BATTERY_PLATFORMS = ["sensor", "switch", "button", "select"]
+BATTERY_PLATFORMS = ["sensor", "switch", "button", "select", "number"]
 
 MESSAGE_TYPE_GENERAL = "BatteryResetMessage"
 MESSAGE_TYPE_BATTERY_RESET_IMP = "BatteryResetImportSim"

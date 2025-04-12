@@ -186,6 +186,7 @@ class SimulatedBatteryHandle:
         self._max_discharge: float = 0.0
         self._charge_percentage: float = 0.0
         self._charge_state: float = 0.0
+        self._charge_limit: float = 0.0
         self._accumulated_export_reading: float = 0.0
         self._last_import_reading_sensor_data: str = None
         self._last_export_reading_sensor_data: str = None
@@ -398,6 +399,10 @@ class SimulatedBatteryHandle:
 
         return float(self._hass.states.get(input_details[TARIFF_SENSOR]).state)
 
+    def set_charge_limit(self, value: float):
+        """Called by slider to update internal charge limit."""
+        self._charge_limit = value
+
     def update_battery(self, import_amount, export_amount):
         """Update battery statistics based on the reading for Im- or Export."""
         amount_to_charge: float = 0.0
@@ -432,6 +437,8 @@ class SimulatedBatteryHandle:
             self._max_discharge_rate / 3600
         )
         max_charge = time_since_last_battery_update * (self._max_charge_rate / 3600)
+        
+        charge_limit = time_since_last_battery_update * (self._charge_limit / 3600)
 
         available_capacity_to_charge = self._battery_size - float(self._charge_state)
 
@@ -443,8 +450,11 @@ class SimulatedBatteryHandle:
             _LOGGER.debug("(%s) Battery normal mode.", self._name)
 
             amount_to_charge = min(
-                export_amount, max_charge, available_capacity_to_charge
+                export_amount, max_charge, available_capacity_to_charge, charge_limit
             )
+            # REMOVE
+            _LOGGER.debug("Charge limit: (%s) Amount to charge: (%s)", charge_limit, amount_to_charge)
+            
             amount_to_discharge = min(
                 import_amount, max_discharge, available_capacity_to_discharge
             )
@@ -465,7 +475,7 @@ class SimulatedBatteryHandle:
 
         elif self._switches[OVERIDE_CHARGING]:
             _LOGGER.debug("(%s) Battery overide charging.", self._name)
-            amount_to_charge = min(max_charge, available_capacity_to_charge)
+            amount_to_charge = min(max_charge, available_capacity_to_charge, charge_limit)
             amount_to_discharge = 0.0
             net_export = max(export_amount - amount_to_charge, 0)
 
@@ -484,7 +494,7 @@ class SimulatedBatteryHandle:
         elif self._switches[CHARGE_ONLY]:
             _LOGGER.debug("(%s) Battery charge only mode.", self._name)
             amount_to_charge: float = min(
-                export_amount, max_charge, available_capacity_to_charge
+                export_amount, max_charge, available_capacity_to_charge, charge_limit
             )
             amount_to_discharge: float = 0.0
             net_import = import_amount
