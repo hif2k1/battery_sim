@@ -452,8 +452,6 @@ class SimulatedBatteryHandle:
             amount_to_charge = min(
                 export_amount, max_charge, available_capacity_to_charge, charge_limit
             )
-            # REMOVE
-            _LOGGER.debug("Charge limit: (%s) Amount to charge: (%s)", charge_limit, amount_to_charge)
             
             amount_to_discharge = min(
                 import_amount, max_discharge, available_capacity_to_discharge
