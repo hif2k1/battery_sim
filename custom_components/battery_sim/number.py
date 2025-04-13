@@ -13,26 +13,12 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-BATTERY_SLIDERS = [
-    {
-        "name": CHARGE_LIMIT,
-        "key": "charge_limit",
-        "icon": "mdi:car-speed-limiter",
-    },
-# TODO
-#    {
-#        "name": DISCHARGE_LIMIT,
-#        "key": "discharge_limit",
-#        "icon": "mdi:car-speed-limiter",
-#    },
-]
  
 async def async_setup_entry(hass, config_entry, async_add_entities):
     handle = hass.data[DOMAIN][config_entry.entry_id]
-
+    
     sliders = [
-        BatterySlider(handle, slider["name"], slider["key"], slider["icon"])
-        for slider in BATTERY_SLIDERS
+        BatterySlider(handle, slider_type="Charge Limit", key="charge_limit", icon="mdi:battery-charging-100")
     ]
 
     async_add_entities(sliders)
