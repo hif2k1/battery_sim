@@ -56,7 +56,7 @@ class BatterySlider(RestoreNumber):
         self._slider_type = slider_type
         self._device_name = handle._name
         self._name = f"{handle._name} - {slider_type}"
-        self._max_value = handle._max_discharge_rate
+        self._max_value = handle._max_charge_rate
         self._value = self._max_value
         self._attr_icon = icon
         self._attr_unit_of_measurement = "kW"
