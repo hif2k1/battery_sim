@@ -18,7 +18,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     handle = hass.data[DOMAIN][config_entry.entry_id]
     
     sliders = [
-        BatterySlider(handle, slider_type="Charge Limit", key="charge_limit", icon="mdi:battery-charging-100")
+        BatterySlider(handle, slider_type="charge limit", key="charge_limit", icon="mdi:battery-charging-100")
     ]
 
     async_add_entities(sliders)
