@@ -1,0 +1,21 @@
+set_battery_charge_state:
+  name: Set Battery Charge
+  description: Set the battery charge state for a specific simulated battery
+  fields:
+    device_id:
+      name: Target Battery Device
+      description: Device to set battery charge for
+      required: true
+      selector:
+        device:
+          integration: battery_sim
+    charge_state:
+      name: Charge State
+      description: Value of charge in kWh
+      required: true
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 10000
+          step: 0.1
