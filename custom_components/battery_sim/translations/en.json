@@ -153,5 +153,21 @@
         "description": ""
       }
     }
+  },
+  "services": {
+    "set_battery_charge_state": {
+      "name": "Set Battery Charge",
+      "description": "Set the battery charge state for a specific simulated battery",
+      "fields": {
+        "device_id": {
+          "name": "Target Battery Device",
+          "description": "Device to set battery charge for"
+        },
+        "charge_state": {
+          "name": "Charge State",
+          "description": "Value of charge in kWh"
+        }
+      }
+    }
   }
 }

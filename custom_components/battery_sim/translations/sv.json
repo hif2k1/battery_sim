@@ -51,5 +51,21 @@
                 "description": "For static tariffs it is best to create a helper entity with a fixed value. Currency is determined in home assistant location settings and is usually in base unit (e.g. euro) not subunit (e.g. cents)."
             }
          }
+    },
+  "services": {
+    "set_battery_charge_state": {
+      "name": "Ange batteriladdning",
+      "description": "Ställ in batteriets laddningsnivå för en specifik simulerad enhet",
+      "fields": {
+        "device_id": {
+          "name": "Målenhet",
+          "description": "Enheten vars batteriladdning ska ställas in"
+        },
+        "charge_state": {
+          "name": "Laddningsnivå",
+          "description": "Värde på laddning i kWh"
+        }
+      }
     }
+  }
 }
