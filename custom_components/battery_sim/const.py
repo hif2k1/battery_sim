@@ -4,7 +4,7 @@ DOMAIN = "battery_sim"
 
 BATTERY_TYPE = "battery"
 
-BATTERY_PLATFORMS = ["sensor", "switch", "button", "select", "number"]
+BATTERY_PLATFORMS = ["sensor", "switch", "button", "select"]
 
 MESSAGE_TYPE_GENERAL = "BatteryResetMessage"
 MESSAGE_TYPE_BATTERY_RESET_IMP = "BatteryResetImportSim"
@@ -71,8 +71,6 @@ ICON_CHARGING = "mdi:battery-charging-50"
 ICON_DISCHARGING = "mdi:battery-50"
 ICON_FULL = "mdi:battery"
 ICON_EMPTY = "mdi:battery-outline"
-CHARGE_LIMIT = "charge_limit"
-DISCHARGE_LIMIT = "discharge_limit"
 OVERIDE_CHARGING = "force_charge"
 FORCE_DISCHARGE = "force_discharge"
 CHARGE_ONLY = "charge_only"
