@@ -6,6 +6,7 @@ import asyncio
 import voluptuous as vol
 
 from homeassistant.core import callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import discovery
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.start import async_at_start
@@ -126,18 +127,51 @@ async def async_setup(hass, config):
 async def async_setup_entry(hass, entry) -> bool:
     """Set up battery platforms from a Config Flow Entry."""
     hass.data.setdefault(DOMAIN, {})
-
+    
     _LOGGER.debug("Setup %s.%s", DOMAIN, entry.data[CONF_NAME])
 
     handle = SimulatedBatteryHandle(entry.data, hass)
     hass.data[DOMAIN][entry.entry_id] = handle
+
+    # Register service
+    async def handle_set_charge(call):
+        device_id = call.data.get("device_id")
+        state = call.data.get("charge_state")
+        _LOGGER.debug("Calling set_battery_charge_state with: %s", state)
+
+        # Lookup the device to get the correct handle
+        dev_reg = dr.async_get(hass)
+        device = dev_reg.async_get(device_id)
+        if not device:
+            _LOGGER.error("Device not found: %s", device_id)
+            return
+
+        # Match to correct handle by comparing identifiers
+        for handle_entry in hass.data[DOMAIN].values():
+            if (DOMAIN, handle_entry._name) in device.identifiers:
+                handle_entry.async_set_battery_charge_state(state)
+                _LOGGER.debug("Battery charge updated for device %s", handle_entry._name)
+                break
+        else:
+            _LOGGER.error("No handle matched for device_id: %s", device_id)
+
+    hass.services.async_register(
+        DOMAIN,
+        "set_battery_charge_state",
+        handle_set_charge,
+        schema=vol.Schema({
+            vol.Required("device_id"): str,
+            vol.Required("charge_state"): vol.All(vol.Coerce(float), vol.Range(min=0))
+        }),
+    )
+
     handle._listeners.append(entry.add_update_listener(async_update_settings))
 
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setups(entry, BATTERY_PLATFORMS)
     )
-    return True
 
+    return True
 
 async def async_update_settings(hass, entry):
     _LOGGER.warning(f"Config change detected {entry.data[CONF_NAME]}")
@@ -184,10 +218,11 @@ class SimulatedBatteryHandle:
         self._accumulated_import_reading: float = 0.0
         self._last_battery_update_time = time.time()
         self._max_discharge: float = 0.0
-        self._charge_percentage: float = 0.0
-        self._charge_state: float = 0.0
+
         self._charge_limit = config[CONF_BATTERY_MAX_CHARGE_RATE]
         self._discharge_limit = config[CONF_BATTERY_MAX_DISCHARGE_RATE]
+        self._charge_percentage: float = 50
+        self._charge_state: float = config[CONF_BATTERY_SIZE]*0.5
         self._accumulated_export_reading: float = 0.0
         self._last_import_reading_sensor_data: str = None
         self._last_export_reading_sensor_data: str = None
@@ -238,6 +273,20 @@ class SimulatedBatteryHandle:
             )
         )
 
+    def async_set_battery_charge_state(self, state: float):
+        """Reset the battery to start over."""
+        _LOGGER.debug("Set battery charge state")
+
+        if state <= 0:
+            self._charge_state = 0
+        elif state <= self._battery_size:
+            self._charge_state = state
+        else:
+            self._charge_state = self._battery_size
+            
+        dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
+        return
+        
     def async_reset_battery(self):
         """Reset the battery to start over."""
         _LOGGER.debug("Reset battery")
