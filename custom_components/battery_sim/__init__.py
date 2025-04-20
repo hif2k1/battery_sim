@@ -487,23 +487,7 @@ class SimulatedBatteryHandle:
             self._battery_efficiency
         )
 
-        if not any(self._switches.values()):
-            _LOGGER.debug("(%s) Battery normal mode.", self._name)
-
-            amount_to_charge = min(
-                export_amount, max_charge, available_capacity_to_charge
-            )
-            amount_to_discharge = min(
-                import_amount, max_discharge, available_capacity_to_discharge
-            )
-            net_import = import_amount - amount_to_discharge
-            net_export = export_amount - amount_to_charge
-            if amount_to_charge > amount_to_discharge:
-                self._sensors[BATTERY_MODE] = MODE_CHARGING
-            else:
-                self._sensors[BATTERY_MODE] = MODE_DISCHARGING
-
-        elif self._switches[PAUSE_BATTERY]:
+        if self._switches[PAUSE_BATTERY]:
             _LOGGER.debug("(%s) Battery paused.", self._name)
             amount_to_charge = 0.0
             amount_to_discharge = 0.0
@@ -554,6 +538,23 @@ class SimulatedBatteryHandle:
                 self._sensors[BATTERY_MODE] = MODE_DISCHARGING
             else:
                 self._sensors[BATTERY_MODE] = MODE_IDLE
+        else:
+            _LOGGER.debug("(%s) Battery normal mode.", self._name)
+
+            amount_to_charge = min(
+                export_amount, max_charge, available_capacity_to_charge
+            )
+            amount_to_discharge = min(
+                import_amount, max_discharge, available_capacity_to_discharge
+            )
+            net_import = import_amount - amount_to_discharge
+            net_export = export_amount - amount_to_charge
+            if amount_to_charge > amount_to_discharge:
+                self._sensors[BATTERY_MODE] = MODE_CHARGING
+            else:
+                self._sensors[BATTERY_MODE] = MODE_DISCHARGING
+
+
 
         current_import_tariff = self.get_tariff_information(
             self._last_import_reading_sensor_data
