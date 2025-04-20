@@ -1,0 +1,21 @@
+set_battery_charge_state:
+  name: battery_sim.set_battery_charge_state.name
+  description: battery_sim.set_battery_charge_state.description
+  fields:
+    device_id:
+      name: battery_sim.set_battery_charge_state.fields.device_id.name
+      description: battery_sim.set_battery_charge_state.fields.device_id.description
+      required: true
+      selector:
+        device:
+          integration: battery_sim
+    charge_state:
+      name: battery_sim.set_battery_charge_state.fields.charge_state.name
+      description: battery_sim.set_battery_charge_state.fields.charge_state.description
+      required: true
+      selector:
+        number:
+          mode: box
+          min: 0
+          max: 10000
+          step: 0.1
