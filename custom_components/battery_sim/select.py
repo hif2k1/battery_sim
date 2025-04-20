@@ -92,10 +92,20 @@ class BatteryMode(SelectEntity):
         return self._options
 
     async def async_select_option(self, option: str):
+        """Handle user selecting a new battery mode option."""
+
+        # Store the selected option locally and in the handle
         self._current_option = option
         self.handle._battery_mode = option
+
+        # Turn off all switches
         for switch in self.handle._switches:
             self.handle._switches[switch] = False
-        self.handle._switches[option] = True
+
+        # Only enable the selected switch if it exists
+        if option in self.handle._switches:
+            self.handle._switches[option] = True
+
+        # Notify Home Assistant to refresh the UI/state
         self.schedule_update_ha_state(True)
         return True
