@@ -557,10 +557,10 @@ class SimulatedBatteryHandle:
             _LOGGER.debug("(%s) Battery normal mode.", self._name)
 
             amount_to_charge = min(
-                export_amount, max_charge, available_capacity_to_charge
+                export_amount, max_charge, available_capacity_to_charge, charge_limit
             )
             amount_to_discharge = min(
-                import_amount, max_discharge, available_capacity_to_discharge
+                import_amount, max_discharge, available_capacity_to_discharge, discharge_limit
             )
             net_import = import_amount - amount_to_discharge
             net_export = export_amount - amount_to_charge
