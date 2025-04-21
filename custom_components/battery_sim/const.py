@@ -239,5 +239,11 @@ BATTERY_OPTIONS = {
         CONF_BATTERY_MAX_CHARGE_RATE: 0.8,
         CONF_BATTERY_MAX_DISCHARGE_RATE: 0.8,
     },
+    "The Infinite Battery": {
+        CONF_BATTERY_SIZE: 1000000,
+        CONF_BATTERY_EFFICIENCY: 1,
+        CONF_BATTERY_MAX_CHARGE_RATE: 100,
+        CONF_BATTERY_MAX_DISCHARGE_RATE: 100,
+    },
     "Custom": {},
 }
