@@ -91,18 +91,18 @@ class BatteryMode(SelectEntity):
     @property
     def current_option(self):
         """Return the label for the current selected internal option."""
-        return self._current_internal_option.replace("_", " ").title()
+        return self._current_internal_option.replace("_", " ").capitalize()
 
     @property
     def options(self):
         """Return the list of user-friendly labels."""
-        return [opt.replace("_", " ").title() for opt in self._internal_options]
+        return [opt.replace("_", " ").capitalize() for opt in self._internal_options]
 
     async def async_select_option(self, option: str):
         """Handle user selecting a new battery mode option."""
         # Convert the friendly label back to the internal option key
         internal_option = next(
-            (opt for opt in self._internal_options if opt.replace("_", " ").title() == option),
+            (opt for opt in self._internal_options if opt.replace("_", " ").capitalize() == option),
             None
         )
 

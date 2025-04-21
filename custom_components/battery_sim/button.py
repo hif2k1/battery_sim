@@ -59,7 +59,7 @@ class BatteryButton(ButtonEntity):
         self._icon = icon
         self._button_type = button_type
         self._device_name = handle._name
-        self._name = f"{button_type}".replace("_", " ").title()
+        self._name = f"{button_type}".replace("_", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {button_type}"
         self._type = type
 

@@ -175,7 +175,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         """Initialize the display only sensors for the battery."""
         self._handle = handle
         self._units = units
-        self._name = f"{sensor_name}".replace("_", " ").title()
+        self._name = f"{sensor_name}".replace("_", " ").replace(".", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {sensor_name}"
         self._device_name = handle._name
         self._sensor_type = sensor_name
@@ -329,7 +329,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     def __init__(self, handle):
         self.handle = handle
         self._date_recording_started = time.asctime()
-        self._name = f"{handle._name}".replace("_", " ").title()
+        self._name = f"{handle._name}".replace("_", " ")
         self._attr_unique_id = f"{handle._name}"
 
     async def async_added_to_hass(self):
@@ -357,7 +357,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def name(self):
         """Return the name of the sensor."""
-        return self.handle._name
+        return self._name
 
     @property
     def unique_id(self):
@@ -367,7 +367,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def device_info(self):
         return {
-            "name": self.handle._name,
+            "name": self._name,
             "identifiers": {(DOMAIN, self.handle._name)},
         }
 
@@ -438,7 +438,7 @@ class BatteryStatus(SensorEntity):
     def __init__(self, handle, sensor_name):
         self.handle = handle
         self._date_recording_started = time.asctime()
-        self._name = f"{sensor_name}".replace("_", " ").title()
+        self._name = f"{sensor_name}".replace("_", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {sensor_name}"
         self._device_name = handle._name
         self._sensor_type = sensor_name
