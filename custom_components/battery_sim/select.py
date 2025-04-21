@@ -50,7 +50,8 @@ class BatteryMode(SelectEntity):
         """Initialize the sensor."""
         self.handle = handle
         self._device_name = handle._name
-        self._name = f"{handle._name} - Battery Mode"
+        self._name = f"Battery Mode"
+        self._attr_unique_id = f"{handle._name} - Battery Mode"
         self._options = [
             DEFAULT_MODE,
             OVERIDE_CHARGING,
@@ -64,7 +65,7 @@ class BatteryMode(SelectEntity):
     @property
     def unique_id(self):
         """Return uniqueid."""
-        return self._name
+        return self._attr_unique_id
 
     @property
     def name(self):

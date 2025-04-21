@@ -71,7 +71,8 @@ class BatterySlider(RestoreNumber):
         self._icon = icon
         self._slider_type = slider_type
         self._device_name = handle._name
-        self._name = f"{handle._name} - {slider_type}"
+        self._name = f"{slider_type}".replace("_", " ").title()
+        self._attr_unique_id = f"{handle._name} - {slider_type}"
         if key == "charge_limit":
             self._max_value = handle._max_charge_rate
         elif key == "discharge_limit":               
@@ -86,7 +87,7 @@ class BatterySlider(RestoreNumber):
     @property
     def unique_id(self):
         """Return uniqueid."""
-        return self._name
+        return self._attr_unique_id
 
     @property
     def name(self):
