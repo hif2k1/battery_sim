@@ -235,7 +235,7 @@ BATTERY_OPTIONS = {
     },
     "HomeWizard Energy Plug-in Battery 2.7kWh": {
         CONF_BATTERY_SIZE: 2.473,
-        CONF_BATTERY_EFFICIENCY: 0.95,
+        CONF_BATTERY_EFFICIENCY: 0.75,
         CONF_BATTERY_MAX_CHARGE_RATE: 0.8,
         CONF_BATTERY_MAX_DISCHARGE_RATE: 0.8,
     },
