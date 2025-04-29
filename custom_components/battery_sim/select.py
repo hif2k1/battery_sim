@@ -44,14 +44,17 @@ async def async_setup_platform(
 
 
 class BatteryMode(SelectEntity):
-    """Switch to set the status of the Wiser Operation Mode (Away/Normal)."""
+    """Select to set the battery operating mode."""
 
     def __init__(self, handle):
-        """Initialize the sensor."""
+        """Initialize the select entity."""
         self.handle = handle
         self._device_name = handle._name
-        self._name = f"{handle._name} - Battery Mode"
-        self._options = [
+        self._name = f"{handle._name} ".replace("_", " ") + "Battery Mode"
+        self._attr_unique_id = f"{handle._name} - Battery Mode"
+
+        # Internal options
+        self._internal_options = [
             DEFAULT_MODE,
             OVERIDE_CHARGING,
             PAUSE_BATTERY,
@@ -59,15 +62,18 @@ class BatteryMode(SelectEntity):
             CHARGE_ONLY,
             DISCHARGE_ONLY,
         ]
-        self._current_option = DEFAULT_MODE
+
+        # Current selected internal option
+        self._current_internal_option = DEFAULT_MODE
 
     @property
     def unique_id(self):
-        """Return uniqueid."""
-        return self._name
+        """Return unique ID."""
+        return self._attr_unique_id
 
     @property
     def name(self):
+        """Return name."""
         return self._name
 
     @property
@@ -84,28 +90,37 @@ class BatteryMode(SelectEntity):
 
     @property
     def current_option(self):
-        """Return the state of the sensor."""
-        return self._current_option
+        """Return the label for the current selected internal option."""
+        return self._current_internal_option.replace("_", " ").capitalize()
 
     @property
     def options(self):
-        return self._options
+        """Return the list of user-friendly labels."""
+        return [opt.replace("_", " ").capitalize() for opt in self._internal_options]
 
     async def async_select_option(self, option: str):
         """Handle user selecting a new battery mode option."""
+        # Convert the friendly label back to the internal option key
+        internal_option = next(
+            (opt for opt in self._internal_options if opt.replace("_", " ").capitalize() == option),
+            None
+        )
 
-        # Store the selected option locally and in the handle
-        self._current_option = option
-        self.handle._battery_mode = option
+        if internal_option is None:
+            _LOGGER.warning("Invalid option selected: %s", option)
+            return
 
-        # Turn off all switches
+        # Store internal option
+        self._current_internal_option = internal_option
+        self.handle._battery_mode = internal_option
+
+        # Reset all switches
         for switch in self.handle._switches:
             self.handle._switches[switch] = False
 
-        # Only enable the selected switch if it exists
-        if option in self.handle._switches:
-            self.handle._switches[option] = True
+        # Enable the selected switch, if it exists
+        if internal_option in self.handle._switches:
+            self.handle._switches[internal_option] = True
 
-        # Notify Home Assistant to refresh the UI/state
+        # Update Home Assistant state
         self.schedule_update_ha_state(True)
-        return True
