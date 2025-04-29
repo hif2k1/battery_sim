@@ -92,7 +92,7 @@ class BatterySlider(RestoreNumber):
         self._slider_type = slider_type
         self._precision = precision
         self._device_name = handle._name
-        self._name = f"{handle._name} ".replace("_", " ") + f"{slider_type}".replace("_", " ").capitalize()
+        self._name = f"{slider_type}".replace("_", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {slider_type}"
         if key == "charge_limit":
             self._max_value = handle._max_charge_rate
