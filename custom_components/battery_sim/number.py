@@ -93,8 +93,12 @@ class BatterySlider(RestoreNumber):
             self._max_value = handle._max_charge_rate
         elif key == "discharge_limit":               
             self._max_value = handle._max_discharge_rate
-        else:
+        elif key == "minimum_soc":               
+            self._max_value = 0
+        elif key == "maximum_soc":               
             self._max_value = 100
+        else:
+            _LOGGER.debug("Reached undefined state in number.py")
         self._value = self._max_value
         self._attr_icon = icon
         self._attr_unit_of_measurement = unit
