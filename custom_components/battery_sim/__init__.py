@@ -221,6 +221,8 @@ class SimulatedBatteryHandle:
 
         self._charge_limit = config[CONF_BATTERY_MAX_CHARGE_RATE]
         self._discharge_limit = config[CONF_BATTERY_MAX_DISCHARGE_RATE]
+        self._minimum_soc: float = 0
+        self._maximum_soc: float = 100
         self._charge_percentage: float = 50
         self._charge_state: float = config[CONF_BATTERY_SIZE]*0.5
         self._accumulated_export_reading: float = 0.0
@@ -455,6 +457,10 @@ class SimulatedBatteryHandle:
             self._charge_limit = value
         elif key == "discharge_limit":        
             self._discharge_limit = value
+        elif key == "minimum_soc":        
+            self._minimum_soc = value
+        elif key == "maximum_soc":        
+            self._maximum_soc = value
         else:
             _LOGGER.error("Unknown slider type in __init__.py")
         
@@ -496,12 +502,12 @@ class SimulatedBatteryHandle:
         charge_limit = time_since_last_battery_update * (self._charge_limit / 3600)
         discharge_limit = time_since_last_battery_update * (self._discharge_limit / 3600)
 
-        available_capacity_to_charge = self._battery_size - float(self._charge_state)
+        #available_capacity_to_charge = self._battery_size - float(self._charge_state)
+        available_capacity_to_charge = max((float(self._battery_size) * float(self._maximum_soc) / 100) - float(self._charge_state), 0)
 
-        available_capacity_to_discharge = float(self._charge_state) * float(
-            self._battery_efficiency
-        )
-
+        #available_capacity_to_discharge = float(self._charge_state) * float(self._battery_efficiency)
+        available_capacity_to_discharge = max((float(self._charge_state) - (float(self._battery_size) * float(self._minimum_soc) / 100)), 0) * float(self._battery_efficiency)
+        
         if self._switches[PAUSE_BATTERY]:
             _LOGGER.debug("(%s) Battery paused.", self._name)
             amount_to_charge = 0.0
