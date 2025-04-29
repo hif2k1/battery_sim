@@ -11,6 +11,8 @@ from .const import (
     DOMAIN,
     CHARGE_LIMIT,
     DISCHARGE_LIMIT,
+    MINIMUM_SOC,
+    MAXIMUM_SOC,
 )
  
 import logging
@@ -22,11 +24,25 @@ BATTERY_SLIDERS = [
         "name": CHARGE_LIMIT,
         "key": "charge_limit",
         "icon": "mdi:car-speed-limiter",
+        "unit": "kW",
     },
     {
         "name": DISCHARGE_LIMIT,
         "key": "discharge_limit",
         "icon": "mdi:car-speed-limiter",
+        "unit": "kW",
+    },
+    {
+        "name": MINIMUM_SOC,
+        "key": "minimum_soc",
+        "icon": "mdi:battery-10",
+        "unit": "%",
+    },
+    {
+        "name": MAXIMUM_SOC,
+        "key": "maximum_soc",
+        "icon": "mdi:battery-100",
+        "unit": "%",
     },
 ]
  
@@ -34,7 +50,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     handle = hass.data[DOMAIN][config_entry.entry_id]
 
     sliders = [
-        BatterySlider(handle, slider["name"], slider["key"], slider["icon"])
+        BatterySlider(handle, slider["name"], slider["key"], slider["icon"], slider["unit"])
         for slider in BATTERY_SLIDERS
     ]
 
@@ -52,7 +68,7 @@ async def async_setup_platform( hass, configuration, async_add_entities, discove
         handle = hass.data[DOMAIN][battery]
 
     sliders = [
-        BatterySlider(handle, slider["name"], slider["key"], slider["icon"])
+        BatterySlider(handle, slider["name"], slider["key"], slider["icon"], slider["unit"])
         for slider in BATTERY_SLIDERS
     ]
 
@@ -64,7 +80,7 @@ async def async_setup_platform( hass, configuration, async_add_entities, discove
 class BatterySlider(RestoreNumber):
     """Slider to set a numeric parameter for the simulated battery."""
 
-    def __init__(self, handle, slider_type, key, icon):
+    def __init__(self, handle, slider_type, key, icon, unit):
         """Initialize the slider."""
         self.handle = handle
         self._key = key
@@ -78,10 +94,10 @@ class BatterySlider(RestoreNumber):
         elif key == "discharge_limit":               
             self._max_value = handle._max_discharge_rate
         else:
-            _LOGGER.error("Unknown slider type in number.py")
+            self._max_value = 100
         self._value = self._max_value
         self._attr_icon = icon
-        self._attr_unit_of_measurement = "kW"
+        self._attr_unit_of_measurement = unit
         self._attr_mode = "box"
         
     @property
