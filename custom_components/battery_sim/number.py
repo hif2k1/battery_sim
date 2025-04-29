@@ -84,7 +84,7 @@ async def async_setup_platform( hass, configuration, async_add_entities, discove
 class BatterySlider(RestoreNumber):
     """Slider to set a numeric parameter for the simulated battery."""
 
-    def __init__(self, handle, slider_type, key, icon, unit):
+    def __init__(self, handle, slider_type, key, icon, unit, precision):
         """Initialize the slider."""
         self.handle = handle
         self._key = key
