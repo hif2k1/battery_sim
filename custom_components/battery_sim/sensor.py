@@ -175,7 +175,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         """Initialize the display only sensors for the battery."""
         self._handle = handle
         self._units = units
-        self._name = f"{handle._name} ".replace("_", " ") + f"{sensor_name}".replace("_", " ").replace(".", " ").capitalize()
+        self._name = f"{handle._name} ".replace("_", " ") + f"{sensor_name}".replace("_", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {sensor_name}"
         self._device_name = handle._name
         self._sensor_type = sensor_name
@@ -329,7 +329,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     def __init__(self, handle):
         self.handle = handle
         self._date_recording_started = time.asctime()
-        self._name = f"{handle._name} ".replace("_", " ") + f"{handle._name}".replace("_", " ")
+        self._name = f"{handle._name}"
         self._attr_unique_id = f"{handle._name}"
 
     async def async_added_to_hass(self):
