@@ -72,7 +72,7 @@ async def async_setup_platform( hass, configuration, async_add_entities, discove
         handle = hass.data[DOMAIN][battery]
 
     sliders = [
-        BatterySlider(handle, slider["name"], slider["key"], slider["icon"], slider["unit"])
+        BatterySlider(handle, slider["name"], slider["key"], slider["icon"], slider["unit"], slider["precision"])
         for slider in BATTERY_SLIDERS
     ]
 
