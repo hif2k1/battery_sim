@@ -85,7 +85,7 @@ class BatterySwitch(SwitchEntity):
         self._icon = icon
         self._switch_type = switch_type
         self._device_name = handle._name
-        self._name = f"{switch_type}".replace("_", " ").capitalize()
+        self._name = f"{handle._name} ".replace("_", " ") + f"{switch_type}".replace("_", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {switch_type}"
         self._is_on = False
         self._type = type
