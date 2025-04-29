@@ -41,7 +41,7 @@ BATTERY_SLIDERS = [
     {
         "name": MAXIMUM_SOC,
         "key": "maximum_soc",
-        "icon": "mdi:battery-100",
+        "icon": "mdi:battery-full",
         "unit": "%",
     },
 ]
