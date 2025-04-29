@@ -50,7 +50,7 @@ class BatteryMode(SelectEntity):
         """Initialize the select entity."""
         self.handle = handle
         self._device_name = handle._name
-        self._name = "Battery Mode"
+        self._name = f"{handle._name} ".replace("_", " ") + "Battery Mode"
         self._attr_unique_id = f"{handle._name} - Battery Mode"
 
         # Internal options
