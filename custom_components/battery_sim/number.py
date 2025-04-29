@@ -25,24 +25,28 @@ BATTERY_SLIDERS = [
         "key": "charge_limit",
         "icon": "mdi:car-speed-limiter",
         "unit": "kW",
+        "precision": 0.01,
     },
     {
         "name": DISCHARGE_LIMIT,
         "key": "discharge_limit",
         "icon": "mdi:car-speed-limiter",
         "unit": "kW",
+        "precision": 0.01,
     },
     {
         "name": MINIMUM_SOC,
         "key": "minimum_soc",
         "icon": "mdi:battery-10",
         "unit": "%",
+        "precision": 1,
     },
     {
         "name": MAXIMUM_SOC,
         "key": "maximum_soc",
-        "icon": "mdi:battery-full",
+        "icon": "mdi:battery-90",
         "unit": "%",
+        "precision": 1,
     },
 ]
  
@@ -50,7 +54,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     handle = hass.data[DOMAIN][config_entry.entry_id]
 
     sliders = [
-        BatterySlider(handle, slider["name"], slider["key"], slider["icon"], slider["unit"])
+        BatterySlider(handle, slider["name"], slider["key"], slider["icon"], slider["unit"], slider["precision"])
         for slider in BATTERY_SLIDERS
     ]
 
@@ -86,6 +90,7 @@ class BatterySlider(RestoreNumber):
         self._key = key
         self._icon = icon
         self._slider_type = slider_type
+        self._precision = precision
         self._device_name = handle._name
         self._name = f"{slider_type}".replace("_", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {slider_type}"
@@ -130,7 +135,7 @@ class BatterySlider(RestoreNumber):
 
     @property
     def native_step(self):
-        return 0.01
+        return self._precision
 
     @property
     def native_value(self):
