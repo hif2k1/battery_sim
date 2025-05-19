@@ -59,13 +59,14 @@ class BatteryButton(ButtonEntity):
         self._icon = icon
         self._button_type = button_type
         self._device_name = handle._name
-        self._name = f"{handle._name} - {button_type}"
+        self._name = f"{handle._name} ".replace("_", " ") + f"{button_type}".replace("_", " ").capitalize()
+        self._attr_unique_id = f"{handle._name} - {button_type}"
         self._type = type
 
     @property
     def unique_id(self):
         """Return uniqueid."""
-        return self._name
+        return self._attr_unique_id
 
     @property
     def name(self):
