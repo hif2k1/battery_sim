@@ -1,6 +1,6 @@
 {
   "domain": "battery_sim",
-  "name": "Battery Simulation",
+  "name": "Home Battery Simulation",
   "codeowners": ["@hif2k1"],
   "config_flow": true,
   "documentation": "https://github.com/hif2k1/battery_sim/",
