@@ -11,6 +11,8 @@ from .const import (
     DOMAIN,
     CHARGE_LIMIT,
     DISCHARGE_LIMIT,
+    MINIMUM_SOC,
+    MAXIMUM_SOC,
 )
  
 import logging
@@ -22,11 +24,29 @@ BATTERY_SLIDERS = [
         "name": CHARGE_LIMIT,
         "key": "charge_limit",
         "icon": "mdi:car-speed-limiter",
+        "unit": "kW",
+        "precision": 0.01,
     },
     {
         "name": DISCHARGE_LIMIT,
         "key": "discharge_limit",
         "icon": "mdi:car-speed-limiter",
+        "unit": "kW",
+        "precision": 0.01,
+    },
+    {
+        "name": MINIMUM_SOC,
+        "key": "minimum_soc",
+        "icon": "mdi:battery-10",
+        "unit": "%",
+        "precision": 1,
+    },
+    {
+        "name": MAXIMUM_SOC,
+        "key": "maximum_soc",
+        "icon": "mdi:battery-90",
+        "unit": "%",
+        "precision": 1,
     },
 ]
  
@@ -34,7 +54,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     handle = hass.data[DOMAIN][config_entry.entry_id]
 
     sliders = [
-        BatterySlider(handle, slider["name"], slider["key"], slider["icon"])
+        BatterySlider(handle, slider["name"], slider["key"], slider["icon"], slider["unit"], slider["precision"])
         for slider in BATTERY_SLIDERS
     ]
 
@@ -52,7 +72,7 @@ async def async_setup_platform( hass, configuration, async_add_entities, discove
         handle = hass.data[DOMAIN][battery]
 
     sliders = [
-        BatterySlider(handle, slider["name"], slider["key"], slider["icon"])
+        BatterySlider(handle, slider["name"], slider["key"], slider["icon"], slider["unit"], slider["precision"])
         for slider in BATTERY_SLIDERS
     ]
 
@@ -64,29 +84,38 @@ async def async_setup_platform( hass, configuration, async_add_entities, discove
 class BatterySlider(RestoreNumber):
     """Slider to set a numeric parameter for the simulated battery."""
 
-    def __init__(self, handle, slider_type, key, icon):
+    def __init__(self, handle, slider_type, key, icon, unit, precision):
         """Initialize the slider."""
         self.handle = handle
         self._key = key
         self._icon = icon
         self._slider_type = slider_type
+        self._precision = precision
         self._device_name = handle._name
-        self._name = f"{handle._name} - {slider_type}"
+        self._name = f"{handle._name} ".replace("_", " ") + f"{slider_type}".replace("_", " ").capitalize()
+        self._attr_unique_id = f"{handle._name} - {slider_type}"
         if key == "charge_limit":
             self._max_value = handle._max_charge_rate
+            self._value = self._max_value
         elif key == "discharge_limit":               
             self._max_value = handle._max_discharge_rate
+            self._value = self._max_value
+        elif key == "minimum_soc":               
+            self._max_value = 100          
+            self._value = 0
+        elif key == "maximum_soc":               
+            self._max_value = 100
+            self._value = self._max_value
         else:
-            _LOGGER.error("Unknown slider type in number.py")
-        self._value = self._max_value
+            _LOGGER.debug("Reached undefined state in number.py")
         self._attr_icon = icon
-        self._attr_unit_of_measurement = "kW"
+        self._attr_unit_of_measurement = unit
         self._attr_mode = "box"
         
     @property
     def unique_id(self):
         """Return uniqueid."""
-        return self._name
+        return self._attr_unique_id
 
     @property
     def name(self):
@@ -109,7 +138,7 @@ class BatterySlider(RestoreNumber):
 
     @property
     def native_step(self):
-        return 0.01
+        return self._precision
 
     @property
     def native_value(self):

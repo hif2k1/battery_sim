@@ -55,7 +55,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             self._data = BATTERY_OPTIONS[user_input[BATTERY_TYPE]]
             self._data[SETUP_TYPE] = CONFIG_FLOW
-            self._data[CONF_NAME] = f"{DOMAIN}: { user_input[BATTERY_TYPE]}"
+            self._data[CONF_NAME] = f"{user_input[BATTERY_TYPE]}"
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
             self._data[CONF_INPUT_LIST] = []
@@ -75,7 +75,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._data = user_input
             self._data[SETUP_TYPE] = CONFIG_FLOW
-            self._data[CONF_NAME] = f"{DOMAIN}: {self._data[CONF_UNIQUE_NAME]}"
+            self._data[CONF_NAME] = f"{self._data[CONF_UNIQUE_NAME]}"
             self._data[CONF_INPUT_LIST] = []
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
