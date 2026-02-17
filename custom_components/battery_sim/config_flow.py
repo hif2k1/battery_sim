@@ -39,13 +39,11 @@ _LOGGER = logging.getLogger(__name__)
 class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow."""
 
-    VERSION = 1
-
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
         """Return flow options."""
-        return BatteryOptionsFlowHandler(config_entry)
+        return BatteryOptionsFlowHandler()
 
     async def async_step_user(self, user_input):
         """Handle a flow initialized by the user."""
@@ -203,17 +201,17 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle a option flow for battery."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry):
+    def __init__(self):
         """Initialize options flow."""
-        self.config_entry = config_entry
-        self.updated_entry = config_entry.data.copy()
+
+    async def async_step_init(self, user_input=None):
+        """Handle options flow."""
+        self.updated_entry = self.config_entry.data.copy()
         if CONF_INPUT_LIST not in self.updated_entry:
             self.updated_entry[CONF_INPUT_LIST] = generate_input_list(
                 config=self.updated_entry
             )
 
-    async def async_step_init(self, user_input=None):
-        """Handle options flow."""
         return self.async_show_menu(
             step_id="init", menu_options=["main_params", "input_sensors", "all_done"]
         )
