@@ -1,0 +1,173 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Dieses Gerät ist bereits konfiguriert."
+    },
+    "error": {
+      "not_float": "Muss eine Zahl sein"
+    },
+    "flow_title": "Neue simulierte Batterie einrichten",
+    "step": {
+      "user": {
+        "title": "Batterie auswählen",
+        "data": {
+          "battery": "Batteriemodell"
+        },
+        "description": "Wähle ein zu simulierendes Batteriemodell aus der Liste oder wähle 'Benutzerdefiniert', um eines zu erstellen."
+      },
+      "custom": {
+        "title": "Benutzerdefinierte Batterie",
+        "data": {
+          "unique_name": "Eindeutiger Name",
+          "size_kwh": "Batteriegröße in kWh",
+          "max_discharge_rate_kw": "Maximale Entladerate in kW",
+          "max_charge_rate_kw": "Maximale Laderate in kW",
+          "efficiency": "Wirkungsgrad (0 bis 1)"
+        },
+        "description": "Lege die Spezifikationen der Batterie fest. Bitte erwäge, Details der von dir simulierten Batterie auf unserem GitHub zu veröffentlichen, damit wir sie zur Vorlagenliste hinzufügen können."
+      },
+      "meter_menu": {
+        "title": "Zähler hinzufügen",
+        "menu_options": {
+          "add_import_meter": "Bezugszähler hinzufügen (misst Energie, die vom Netz ins Haus kommt)",
+          "add_export_meter": "Einspeisezähler hinzufügen (misst Energie, die vom Haus ins Netz geht)",
+          "all_done": "Alles erledigt"
+        },
+        "description": "Es sind mindestens ein Bezugs- und ein Einspeisezähler erforderlich. Zähler, die die Solarerzeugung direkt überwachen, sollten nicht hinzugefügt werden."
+      },
+      "tariff_menu": {
+        "title": "Tarifart auswählen",
+        "menu_options": {
+          "no_tariff_info": "Kein Tarif für diesen Zähler",
+          "fixed_tariff": "Ein konstanter Festpreis für den Tarif",
+          "tariff_sensor": "Ein Sensor, der den Wert eines zeitlich variablen Tarifs enthält"
+        },
+        "description": ""
+      },
+      "add_import_meter": {
+        "title": "Bezugszähler zur Batterie hinzufügen",
+        "data": {
+          "sensor_id": "Energiezählersensor"
+        },
+        "description": "Zählersensor auswählen"
+      },
+      "add_export_meter": {
+        "title": "Einspeisezähler zur Batterie hinzufügen",
+        "data": {
+          "sensor_id": "Energiezählersensor"
+        },
+        "description": "Zählersensor auswählen"
+      },
+      "fixed_tariff": {
+        "title": "Details zum Festpreistarif hinzufügen",
+        "data": {
+          "fixed_tariff": "Fester Tarifwert (falls zutreffend)"
+        },
+        "description": ""
+      },
+      "tariff_sensor": {
+        "title": "Details zum Tarifsensor hinzufügen",
+        "data": {
+          "tariff_sensor": "Sensor, der den aktuellen Tarif anzeigt (falls zutreffend)"
+        },
+        "description": ""
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Batterie-Optionen",
+        "description": "Zu ändernde Parameter auswählen",
+        "menu_options": {
+          "main_params": "Hauptparameter",
+          "input_sensors": "Zähler/Sensoren bearbeiten",
+          "all_done": "Alles erledigt"
+        }
+      },
+      "main_params": {
+        "title": "Haupt-Batterieoptionen",
+        "description": "Hauptparameter",
+        "data": {
+          "size_kwh": "Batteriegröße in kWh",
+          "max_discharge_rate_kw": "Maximale Entladerate in kW",
+          "max_charge_rate_kw": "Maximale Laderate in kW",
+          "efficiency": "Wirkungsgrad (Roundtrip) (0 bis 1)"
+        }
+      },
+      "input_sensors": {
+        "title": "Zähler/Sensoren bearbeiten",
+        "menu_options": {
+          "add_import_meter": "Bezugszähler hinzufügen (misst Energie, die vom Netz ins Haus kommt)",
+          "add_export_meter": "Einspeisezähler hinzufügen (misst Energie, die vom Haus ins Netz geht)",
+          "edit_input_tariff": "Tarifdetails für einen Zähler bearbeiten",
+          "delete_input": "Einen Zähler löschen"
+        },
+        "description": "Es sind mindestens ein Bezugs- und ein Einspeisezähler erforderlich. Zähler, die die Solarerzeugung direkt überwachen, sollten nicht verwendet werden."
+      },
+      "tariff_menu": {
+        "title": "Tarifart auswählen",
+        "menu_options": {
+          "no_tariff_info": "Kein Tarif für diesen Zähler",
+          "fixed_tariff": "Ein konstanter Festpreis für den Tarif",
+          "tariff_sensor": "Ein Sensor, der den Wert eines zeitlich variablen Tarifs darstellt"
+        },
+        "description": ""
+      },
+      "add_import_meter": {
+        "title": "Bezugszähler zur Batterie hinzufügen",
+        "data": {
+          "sensor_id": "Energiezählersensor"
+        },
+        "description": "Zählersensor auswählen"
+      },
+      "add_export_meter": {
+        "title": "Einspeisezähler zur Batterie hinzufügen",
+        "data": {
+          "sensor_id": "Energiezählersensor"
+        },
+        "description": "Zählersensor auswählen"
+      },
+      "delete_input": {
+        "title": "Zu löschenden Zähler auswählen",
+        "data": {},
+        "description": ""
+      },
+      "edit_input_tariff": {
+        "title": "Zähler auswählen, für den der Tarif bearbeitet werden soll",
+        "data": {},
+        "description": ""
+      },
+      "fixed_tariff": {
+        "title": "Festpreistarif hinzufügen",
+        "data": {
+          "fixed_tariff": "Fester Tarifwert"
+        },
+        "description": ""
+      },
+      "tariff_sensor": {
+        "title": "Tarifsensor hinzufügen",
+        "data": {
+          "tariff_sensor": "Sensor, der den aktuellen Tarif anzeigt"
+        },
+        "description": ""
+      }
+    }
+  },
+  "services": {
+    "set_battery_charge_state": {
+      "name": "Batterieladung einstellen",
+      "description": "Stellt den Ladezustand für eine bestimmte simulierte Batterie ein",
+      "fields": {
+        "device_id": {
+          "name": "Ziel-Batteriegerät",
+          "description": "Gerät, für das die Batterieladung eingestellt werden soll"
+        },
+        "charge_state": {
+          "name": "Ladezustand",
+          "description": "Ladungswert in kWh"
+        }
+      }
+    }
+  }
+}
