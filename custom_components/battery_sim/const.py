@@ -243,7 +243,13 @@ BATTERY_OPTIONS = {
     },
     "Marstek Venus E 5.12kWh (2nd Gen)": {
         CONF_BATTERY_SIZE: 5.12,
-        CONF_BATTERY_EFFICIENCY: 0.90,
+        CONF_BATTERY_EFFICIENCY: 0.80,
+        CONF_BATTERY_MAX_CHARGE_RATE: 2.5,
+        CONF_BATTERY_MAX_DISCHARGE_RATE: 0.8,
+    },
+    "Marstek Venus E 5.12kWh (3nd Gen)": {
+        CONF_BATTERY_SIZE: 5.12,
+        CONF_BATTERY_EFFICIENCY: 0.83,
         CONF_BATTERY_MAX_CHARGE_RATE: 2.5,
         CONF_BATTERY_MAX_DISCHARGE_RATE: 0.8,
     },
