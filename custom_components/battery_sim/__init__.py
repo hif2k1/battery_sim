@@ -420,7 +420,7 @@ class SimulatedBatteryHandle:
             self._accumulated_export_reading += reading_variance
 
         time_since_battery_update = time.time() - self._last_battery_update_time
-        if time_since_battery_update > 60:
+        if time_since_battery_update > 20:
             self.update_battery(
                 self._accumulated_import_reading, self._accumulated_export_reading
             )
