@@ -271,15 +271,12 @@ BATTERY_OPTIONS = {
         CONF_BATTERY_MAX_CHARGE_RATE: 14.85,
         CONF_BATTERY_MAX_DISCHARGE_RATE: 14.85,
     },
-<<<<<<< HEAD
     "Solax 5.8kWh Master": {
         CONF_BATTERY_SIZE: 5.1,
         CONF_BATTERY_EFFICIENCY: 0.95,
         CONF_BATTERY_MAX_CHARGE_RATE: 4,
         CONF_BATTERY_MAX_DISCHARGE_RATE: 4,
     },
-=======
->>>>>>> parent of 0ef6e10 (alfabetic order after adding Solax batteries)
     "SolaX X3-IES-P 5kW": {
         CONF_BATTERY_SIZE: 5.1,
         CONF_BATTERY_EFFICIENCY: 0.98,
