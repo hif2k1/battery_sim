@@ -174,7 +174,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Optional(FIXED_TARIFF): vol.All(
-                        vol.Coerce(float), vol.Range(min=0, max=10)
+                        vol.Coerce(float), vol.Range(min=0, max=100)
                     )
                 }
             ),
@@ -386,7 +386,7 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 {
                     vol.Optional(FIXED_TARIFF, default=current_val): vol.All(
                         vol.Coerce(float),
-                        vol.Range(min=0, max=10),
+                        vol.Range(min=0, max=100),
                     )
                 }
             ),
