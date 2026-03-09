@@ -16,6 +16,7 @@ from .const import (
     CONF_BATTERY_MAX_DISCHARGE_RATE,
     CONF_BATTERY_MAX_CHARGE_RATE,
     CONF_BATTERY_EFFICIENCY,
+    CONF_UPDATE_FREQUENCY,
     CONF_INPUT_LIST,
     CONF_UNIQUE_NAME,
     SETUP_TYPE,
@@ -54,6 +55,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data = BATTERY_OPTIONS[user_input[BATTERY_TYPE]]
             self._data[SETUP_TYPE] = CONFIG_FLOW
             self._data[CONF_NAME] = f"{user_input[BATTERY_TYPE]}"
+            self._data[CONF_UPDATE_FREQUENCY] = 60
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
             self._data[CONF_INPUT_LIST] = []
@@ -93,6 +95,9 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     ),
                     vol.Required(CONF_BATTERY_EFFICIENCY, default=0.9): vol.All(
                         vol.Coerce(float), vol.Range(min=0, max=1)
+                    ),
+                    vol.Required(CONF_UPDATE_FREQUENCY, default=60): vol.All(
+                        vol.Coerce(int), vol.Range(min=1)
                     ),
                 }
             ),
@@ -228,6 +233,9 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             self.updated_entry[CONF_BATTERY_EFFICIENCY] = user_input[
                 CONF_BATTERY_EFFICIENCY
             ]
+            self.updated_entry[CONF_UPDATE_FREQUENCY] = user_input[
+                CONF_UPDATE_FREQUENCY
+            ]
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data=self.updated_entry,
@@ -251,6 +259,10 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_BATTERY_EFFICIENCY,
                 default=self.updated_entry[CONF_BATTERY_EFFICIENCY],
             ): vol.All(vol.Coerce(float)),
+            vol.Required(
+                CONF_UPDATE_FREQUENCY,
+                default=self.updated_entry.get(CONF_UPDATE_FREQUENCY, 60),
+            ): vol.All(vol.Coerce(int), vol.Range(min=1)),
         }
         return self.async_show_form(
             step_id="main_params", data_schema=vol.Schema(data_schema)
