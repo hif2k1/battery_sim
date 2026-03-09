@@ -123,4 +123,6 @@ class BatteryMode(SelectEntity):
             self.handle._switches[internal_option] = True
 
         # Update Home Assistant state
+        # Recompute immediately so the battery reacts even if meters are quiet.
+        self.handle.async_trigger_update()
         self.schedule_update_ha_state(True)
