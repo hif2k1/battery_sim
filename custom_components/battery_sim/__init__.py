@@ -570,10 +570,12 @@ class SimulatedBatteryHandle:
             )
             net_import = import_amount - amount_to_discharge
             net_export = export_amount - amount_to_charge
-            if amount_to_charge > amount_to_discharge:
+            if amount_to_charge > 0.0 and amount_to_charge >= amount_to_discharge:
                 self._sensors[BATTERY_MODE] = MODE_CHARGING
-            else:
+            elif amount_to_discharge > 0.0:
                 self._sensors[BATTERY_MODE] = MODE_DISCHARGING
+            else:
+                self._sensors[BATTERY_MODE] = MODE_IDLE
 
 
 
