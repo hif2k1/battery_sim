@@ -122,10 +122,14 @@ class BatterySwitch(SwitchEntity):
             self.handle._switches[FORCE_DISCHARGE] = False
         elif self._switch_type == FORCE_DISCHARGE:
             self.handle._switches[CHARGE_ONLY] = False
+        # Recompute immediately so the battery reacts even if meters are quiet.
+        self.handle.async_trigger_update()
         self.schedule_update_ha_state(True)
         return True
 
     async def async_turn_off(self, **kwargs):
         self.handle._switches[self._switch_type] = False
+        # Recompute immediately so the battery reacts even if meters are quiet.
+        self.handle.async_trigger_update()
         self.schedule_update_ha_state(True)
         return True

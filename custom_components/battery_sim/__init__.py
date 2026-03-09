@@ -466,6 +466,15 @@ class SimulatedBatteryHandle:
         else:
             _LOGGER.error("Unknown slider type in __init__.py")
         
+    @callback
+    def async_trigger_update(self):
+        """Apply pending readings and current controls immediately."""
+        self.update_battery(
+            self._accumulated_import_reading, self._accumulated_export_reading
+        )
+        self._accumulated_export_reading = 0.0
+        self._accumulated_import_reading = 0.0
+
     def update_battery(self, import_amount, export_amount):
         """Update battery statistics based on the reading for Im- or Export."""
         amount_to_charge: float = 0.0

@@ -148,6 +148,8 @@ class BatterySlider(RestoreNumber):
         self._value = value
      
         self.handle.set_slider_limit(value, self._key)
+        # Recompute immediately so UI/control changes take effect right away.
+        self.handle.async_trigger_update()
         self.async_write_ha_state()
 
     async def async_added_to_hass(self):
