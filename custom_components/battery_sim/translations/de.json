@@ -22,7 +22,8 @@
           "size_kwh": "Batteriegröße in kWh",
           "max_discharge_rate_kw": "Maximale Entladerate in kW",
           "max_charge_rate_kw": "Maximale Laderate in kW",
-          "efficiency": "Wirkungsgrad (0 bis 1)"
+          "discharge_efficiency": "Entladewirkungsgrad (0 bis 1)",
+          "charge_efficiency": "Ladewirkungsgrad (0 bis 1)"
         },
         "description": "Lege die Spezifikationen der Batterie fest. Bitte erwäge, Details der von dir simulierten Batterie auf unserem GitHub zu veröffentlichen, damit wir sie zur Vorlagenliste hinzufügen können."
       },
@@ -92,7 +93,8 @@
           "size_kwh": "Batteriegröße in kWh",
           "max_discharge_rate_kw": "Maximale Entladerate in kW",
           "max_charge_rate_kw": "Maximale Laderate in kW",
-          "efficiency": "Wirkungsgrad (Roundtrip) (0 bis 1)"
+          "discharge_efficiency": "Entladewirkungsgrad (0 bis 1)",
+          "charge_efficiency": "Ladewirkungsgrad (0 bis 1)"
         }
       },
       "input_sensors": {
