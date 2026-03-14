@@ -25,6 +25,7 @@ from .const import (
     ATTR_ENERGY_BATTERY_IN,
     ATTR_ENERGY_BATTERY_OUT,
     ATTR_ENERGY_SAVED,
+    ATTR_STATUS,
     ATTR_MONEY_SAVED_EXPORT,
     ATTR_MONEY_SAVED_IMPORT,
     ATTR_MONEY_SAVED,
@@ -258,6 +259,7 @@ class SimulatedBatteryHandle:
             DISCHARGING_RATE: 0.0,
             ATTR_MONEY_SAVED: 0.0,
             BATTERY_MODE: MODE_IDLE,
+            ATTR_STATUS: "Normal",
             ATTR_MONEY_SAVED_IMPORT: 0.0,
             ATTR_MONEY_SAVED_EXPORT: 0.0,
             BATTERY_CYCLES: 0.0,
@@ -640,10 +642,13 @@ class SimulatedBatteryHandle:
 
         self._charge_percentage = round(100 * self._charge_state / self._battery_size)
 
+        # Keep "mode" (how the battery operates) separate from capacity "status".
         if self._charge_percentage < 2:
-            self._sensors[BATTERY_MODE] = MODE_EMPTY
+            self._sensors[ATTR_STATUS] = MODE_EMPTY
         elif self._charge_percentage > 98:
-            self._sensors[BATTERY_MODE] = MODE_FULL
+            self._sensors[ATTR_STATUS] = MODE_FULL
+        else:
+            self._sensors[ATTR_STATUS] = "Normal"
 
         """Reset day/week/month counters"""
         if time.strftime("%w") != time.strftime("%w", time.gmtime(time_last_update)):

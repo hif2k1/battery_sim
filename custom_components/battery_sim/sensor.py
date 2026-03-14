@@ -484,17 +484,21 @@ class BatteryStatus(SensorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes of the sensor."""
-        return {}
+        return {
+            ATTR_STATUS: self.handle._sensors.get(ATTR_STATUS),
+            ATTR_CHARGE_PERCENTAGE: getattr(self.handle, "_charge_percentage", None),
+        }
 
     @property
     def icon(self):
         """Return the icon to use in the frontend."""
+        status = self.handle._sensors.get(ATTR_STATUS)
+        if status == MODE_FULL:
+            return ICON_FULL
+        if status == MODE_EMPTY:
+            return ICON_EMPTY
         if self.handle._sensors[BATTERY_MODE] in [MODE_CHARGING, MODE_FORCE_CHARGING]:
             return ICON_CHARGING
-        if self.handle._sensors[BATTERY_MODE] == MODE_FULL:
-            return ICON_FULL
-        if self.handle._sensors[BATTERY_MODE] == MODE_EMPTY:
-            return ICON_EMPTY
         return ICON_DISCHARGING
 
     @property
