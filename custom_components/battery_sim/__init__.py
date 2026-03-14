@@ -541,10 +541,7 @@ class SimulatedBatteryHandle:
         charge_limit = time_since_last_battery_update * (self._charge_limit / 3600)
         discharge_limit = time_since_last_battery_update * (self._discharge_limit / 3600)
 
-        #available_capacity_to_charge = self._battery_size - float(self._charge_state)
         available_capacity_to_charge = max((float(self._battery_size) * float(self._maximum_soc) / 100) - float(self._charge_state), 0)
-
-        #available_capacity_to_discharge = float(self._charge_state) * float(self._battery_efficiency)
         available_capacity_to_discharge = max((float(self._charge_state) - (float(self._battery_size) * float(self._minimum_soc) / 100)), 0) * float(self._battery_discharge_efficiency)
         
         if self._switches[PAUSE_BATTERY]:
