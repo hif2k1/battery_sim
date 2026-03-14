@@ -62,14 +62,13 @@ battery_sim:
 
 ## Battery Efficiencies
 
-This integration allows separate charge and discharge efficiencies because they sometime are heavily dependent on the dis-/charge speed.
-In other words, dis-/charging at low speed lowers the efficiency significantly and depending on the use case it might be worth lowering
-the discharge efficiency well below manufacturer data.
+This integration allows separate charge and discharge efficiencies because they are dependent on the dis-/charge speed and low speeds
+lower the effective values. If you usually discharge the battery below 500 W, consider lowering the discharge efficiency below manufacturer data.
 
-The predefined settings refer to the datasheets, so consider them as optimistic: there are reports of batteries rated at 93.5% discharge efficiency
-which at low power levels can achieve only 80%.
+The predefined settings provided refer to the datasheets, so consider them as optimistic: there are reports of batteries rated at 93.5% 
+discharge efficiency for 800-2500 W which at very low power levels (100-150 W) can achieve only 80%.
 
-When reading datasheet to decide which value you want to use be smart: sometimes a high efficiency is given but it refers only to the inverter
+When reading a datasheet to decide which value you want to use be smart: sometimes a high efficiency is given but it refers only to the inverter
 (so, from charge in the battery to AC), omitting completely the charge efficiency (DC to battery, or AC to battery). Be conservative.
 
 ## Energy Dashboard
