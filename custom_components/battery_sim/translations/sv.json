@@ -21,35 +21,35 @@
           "size_kwh": "Batteristorlek i kWh",
           "max_discharge_rate_kw": "Max urladdningshastighet i kW",
           "max_charge_rate_kw": "Max laddningshastighet i kW",
-          "discharge_efficiency": "Discharge efficiency (0 to 1)",
-          "charge_efficiency": "Charge efficiency (0 to 1)"
+          "discharge_efficiency": "Urladdningseffektivitet (0 till 1)",
+          "charge_efficiency": "Laddningseffektivitet (0 till 1)"
         },
         "description": "Ställ in specifikationerna för batteriet."
       },
       "metertype": {
-        "title": "Energy meter type",
+        "title": "Typ av energimätare",
         "data": {
-          "one_import_one_export": "One import and one export meter",
-          "two_import_one_export": "Two import and one export meter"
+          "one_import_one_export": "En import- och en exportmätare",
+          "two_import_one_export": "Två importmätare och en exportmätare"
         },
-        "description": "Select the type of energy meter you have. Import meters measure energy coming into your home from the grid. You may have two of these e.g. one for day time and one for night. Export meters measure energy leaving your house to the grid e.g. excess solar generation."
+        "description": "Välj vilken typ av energimätare du har. Importmätare mäter energi som kommer in i ditt hem från elnätet. Du kan ha två sådana, till exempel en för dagtid och en för natt. Exportmätare mäter energi som lämnar ditt hem till elnätet, till exempel överskottsel från solproduktion."
       },
       "connectsensors": {
-        "title": "Anslut batteri eller energi mätarare",
+        "title": "Anslut batteriet till energimätarsensorer",
         "data": {
-          "import_sensor": "Importera senor/mätare - inkommande energi",
-          "second_import_sensor": "Second import sensor/meter - e.g. night time or Economy 7",
-          "export_sensor": "Exportera sensor/mätare - producering till elnätet"
+          "import_sensor": "Importsensor/-mätare - inkommande energi från elnätet",
+          "second_import_sensor": "Andra importsensor/-mätare - till exempel nattaxa eller Economy 7",
+          "export_sensor": "Exportsensor/-mätare - energi som matas ut till elnätet"
         },
         "description": "När exportsensorn visar energi som lämnar huset laddas batteriet. När importsensorn visar energi som kommer in i huset från nätet laddas batteriet ur."
       },
       "connecttariffsensors": {
-        "title": "Connect sensors for energy tariffs",
+        "title": "Anslut sensorer för energitariffer",
         "data": {
-          "energy_import_tariff": "Import tariff/rate - cost of energy from the grid (£/kWh)",
-          "energy_export_tariff": "Export tariff/rate - payment for energy exported to grid (£/kWh)"
+          "energy_import_tariff": "Importtariff/pris - kostnad för energi från elnätet (£/kWh)",
+          "energy_export_tariff": "Exporttariff/pris - ersättning för energi som exporteras till elnätet (£/kWh)"
         },
-        "description": "For static tariffs it is best to create a helper entity with a fixed value. Currency is determined in home assistant location settings and is usually in base unit (e.g. euro) not subunit (e.g. cents)."
+        "description": "För fasta tariffer är det bäst att skapa en hjälpentitet med ett fast värde. Valutan bestäms av platsinställningarna i Home Assistant och anges vanligtvis i basenheten (till exempel euro) och inte i underenheten (till exempel cent)."
       }
     }
   },
