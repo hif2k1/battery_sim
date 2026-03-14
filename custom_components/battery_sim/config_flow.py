@@ -276,7 +276,7 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_BATTERY_CHARGE_EFFICIENCY,
                 default=self.updated_entry.get(
                     CONF_BATTERY_CHARGE_EFFICIENCY,
-                    self.updated_entry.get(CONF_BATTERY_EFFICIENCY, 0.9),
+                    1.0,
                 ),
             ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
             vol.Required(

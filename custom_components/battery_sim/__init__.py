@@ -246,12 +246,12 @@ class SimulatedBatteryHandle:
             self._charge_state = self._battery_size
         self._max_discharge_rate = config[CONF_BATTERY_MAX_DISCHARGE_RATE]
         self._max_charge_rate = config[CONF_BATTERY_MAX_CHARGE_RATE]
-        default_efficiency = config.get(CONF_BATTERY_EFFICIENCY, 1.0)
+        default_discharge_efficiency = config.get(CONF_BATTERY_EFFICIENCY, 1.0)
         self._battery_discharge_efficiency = config.get(
-            CONF_BATTERY_DISCHARGE_EFFICIENCY, default_efficiency
+            CONF_BATTERY_DISCHARGE_EFFICIENCY, default_discharge_efficiency
         )
         self._battery_charge_efficiency = config.get(
-            CONF_BATTERY_CHARGE_EFFICIENCY, default_efficiency
+            CONF_BATTERY_CHARGE_EFFICIENCY, 1.0
         )
         if CONF_INPUT_LIST in config:
             self._inputs = config[CONF_INPUT_LIST]
