@@ -20,7 +20,7 @@ The relevant parameters are:
 - size_kwh: the maximum usable capacity of the battery in kwh - must be floating point number (with a decimal point e.g. 5.0)
 - max_discharge_rate_kw: how fast the battery can discharge in kw - must be floating point number (with a decimal point e.g. 5.0)
 - max_charge_rate_kw: how fast the battery can charge in kw - must be floating point number (with a decimal point e.g. 5.0)
-- efficiency - the round trip efficiency of the battery (0-1). This factor is applied on discharging the battery.
+- discharge_efficiency and charge_efficiency - the two efficiencies of the battery (0-1). This factor is applied at charge and discharge of the battery. See below.
 - energy_tariff - (optional) the sensor that tracks the energy tarriff - units not supported at present.
 
 ```yaml
@@ -59,6 +59,17 @@ battery_sim:
     max_charge_rate_kw: 4.2
     efficiency: 0.965
    ```
+
+## Battery Efficiencies
+
+This integration allows separate charge and discharge efficiencies because they are dependent on the dis-/charge speed and low speeds
+lower the effective values. If you usually discharge the battery below 500 W, consider lowering the discharge efficiency below manufacturer data.
+
+The predefined settings provided refer to the datasheets, so consider them as optimistic: there are reports of batteries rated at 93.5% 
+discharge efficiency for 800-2500 W which at very low power levels (100-150 W) can achieve only 80%.
+
+When reading a datasheet to decide which value you want to use be smart: sometimes a high efficiency is given but it refers only to the inverter
+(so, from charge in the battery to AC), omitting completely the charge efficiency (DC to battery, or AC to battery). Be conservative.
 
 ## Energy Dashboard
 
