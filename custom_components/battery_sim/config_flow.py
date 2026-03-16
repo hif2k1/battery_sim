@@ -245,6 +245,9 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             self.updated_entry[CONF_UPDATE_FREQUENCY] = user_input[
                 CONF_UPDATE_FREQUENCY
             ]
+            self.updated_entry[CONF_UPDATE_FREQUENCY] = user_input[
+                CONF_UPDATE_FREQUENCY
+            ]
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data=self.updated_entry,
