@@ -15,6 +15,8 @@ from .const import (
     CONF_BATTERY_SIZE,
     CONF_BATTERY_MAX_DISCHARGE_RATE,
     CONF_BATTERY_MAX_CHARGE_RATE,
+    CONF_BATTERY_CHARGE_EFFICIENCY,
+    CONF_BATTERY_DISCHARGE_EFFICIENCY,
     CONF_BATTERY_EFFICIENCY,
     CONF_UPDATE_FREQUENCY,
     CONF_INPUT_LIST,
@@ -93,7 +95,10 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_BATTERY_MAX_CHARGE_RATE): vol.All(
                         vol.Coerce(float)
                     ),
-                    vol.Required(CONF_BATTERY_EFFICIENCY, default=0.9): vol.All(
+                    vol.Required(CONF_BATTERY_DISCHARGE_EFFICIENCY, default=0.9): vol.All(
+                        vol.Coerce(float), vol.Range(min=0, max=1)
+                    ),
+                    vol.Required(CONF_BATTERY_CHARGE_EFFICIENCY, default=0.9): vol.All(
                         vol.Coerce(float), vol.Range(min=0, max=1)
                     ),
                     vol.Required(CONF_UPDATE_FREQUENCY, default=60): vol.All(
@@ -230,8 +235,15 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             self.updated_entry[CONF_BATTERY_MAX_DISCHARGE_RATE] = user_input[
                 CONF_BATTERY_MAX_DISCHARGE_RATE
             ]
-            self.updated_entry[CONF_BATTERY_EFFICIENCY] = user_input[
-                CONF_BATTERY_EFFICIENCY
+            self.updated_entry[CONF_BATTERY_DISCHARGE_EFFICIENCY] = user_input[
+                CONF_BATTERY_DISCHARGE_EFFICIENCY
+            ]
+            self.updated_entry[CONF_BATTERY_CHARGE_EFFICIENCY] = user_input[
+                CONF_BATTERY_CHARGE_EFFICIENCY
+            ]
+            self.updated_entry.pop(CONF_BATTERY_EFFICIENCY, None)
+            self.updated_entry[CONF_UPDATE_FREQUENCY] = user_input[
+                CONF_UPDATE_FREQUENCY
             ]
             self.updated_entry[CONF_UPDATE_FREQUENCY] = user_input[
                 CONF_UPDATE_FREQUENCY
@@ -255,10 +267,21 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_BATTERY_MAX_DISCHARGE_RATE,
                 default=self.updated_entry[CONF_BATTERY_MAX_DISCHARGE_RATE],
             ): vol.All(vol.Coerce(float)),
+            # Use .get() so existing entries using legacy `efficiency` keep working.
             vol.Required(
-                CONF_BATTERY_EFFICIENCY,
-                default=self.updated_entry[CONF_BATTERY_EFFICIENCY],
-            ): vol.All(vol.Coerce(float)),
+                CONF_BATTERY_DISCHARGE_EFFICIENCY,
+                default=self.updated_entry.get(
+                    CONF_BATTERY_DISCHARGE_EFFICIENCY,
+                    self.updated_entry.get(CONF_BATTERY_EFFICIENCY, 0.9),
+                ),
+            ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
+            vol.Required(
+                CONF_BATTERY_CHARGE_EFFICIENCY,
+                default=self.updated_entry.get(
+                    CONF_BATTERY_CHARGE_EFFICIENCY,
+                    1.0,
+                ),
+            ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
             vol.Required(
                 CONF_UPDATE_FREQUENCY,
                 default=self.updated_entry.get(CONF_UPDATE_FREQUENCY, 60),

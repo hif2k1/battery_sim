@@ -35,6 +35,8 @@ from .const import (
     BATTERY_PLATFORMS,
     CHARGE_ONLY,
     CHARGING_RATE,
+    CONF_BATTERY_CHARGE_EFFICIENCY,
+    CONF_BATTERY_DISCHARGE_EFFICIENCY,
     CONF_BATTERY_EFFICIENCY,
     CONF_BATTERY_MAX_CHARGE_RATE,
     CONF_BATTERY_MAX_DISCHARGE_RATE,
@@ -86,6 +88,8 @@ BATTERY_CONFIG_SCHEMA = vol.Schema(
             vol.Required(CONF_BATTERY_SIZE): vol.All(float),
             vol.Required(CONF_BATTERY_MAX_DISCHARGE_RATE): vol.All(float),
             vol.Optional(CONF_BATTERY_MAX_CHARGE_RATE, default=1.0): vol.All(float),
+            vol.Optional(CONF_BATTERY_DISCHARGE_EFFICIENCY): vol.All(float),
+            vol.Optional(CONF_BATTERY_CHARGE_EFFICIENCY): vol.All(float),
             vol.Optional(CONF_BATTERY_EFFICIENCY, default=1.0): vol.All(float),
             vol.Optional(CONF_UPDATE_FREQUENCY, default=60): vol.All(
                 vol.Coerce(int), vol.Range(min=1)
@@ -242,7 +246,13 @@ class SimulatedBatteryHandle:
             self._charge_state = self._battery_size
         self._max_discharge_rate = config[CONF_BATTERY_MAX_DISCHARGE_RATE]
         self._max_charge_rate = config[CONF_BATTERY_MAX_CHARGE_RATE]
-        self._battery_efficiency = config[CONF_BATTERY_EFFICIENCY]
+        default_discharge_efficiency = config.get(CONF_BATTERY_EFFICIENCY, 1.0)
+        self._battery_discharge_efficiency = config.get(
+            CONF_BATTERY_DISCHARGE_EFFICIENCY, default_discharge_efficiency
+        )
+        self._battery_charge_efficiency = config.get(
+            CONF_BATTERY_CHARGE_EFFICIENCY, 1.0
+        )
         if CONF_INPUT_LIST in config:
             self._inputs = config[CONF_INPUT_LIST]
         else:
@@ -531,11 +541,8 @@ class SimulatedBatteryHandle:
         charge_limit = time_since_last_battery_update * (self._charge_limit / 3600)
         discharge_limit = time_since_last_battery_update * (self._discharge_limit / 3600)
 
-        #available_capacity_to_charge = self._battery_size - float(self._charge_state)
         available_capacity_to_charge = max((float(self._battery_size) * float(self._maximum_soc) / 100) - float(self._charge_state), 0)
-
-        #available_capacity_to_discharge = float(self._charge_state) * float(self._battery_efficiency)
-        available_capacity_to_discharge = max((float(self._charge_state) - (float(self._battery_size) * float(self._minimum_soc) / 100)), 0) * float(self._battery_efficiency)
+        available_capacity_to_discharge = max((float(self._charge_state) - (float(self._battery_size) * float(self._minimum_soc) / 100)), 0) * float(self._battery_discharge_efficiency)
         
         if self._switches[PAUSE_BATTERY]:
             _LOGGER.debug("(%s) Battery paused.", self._name)
@@ -630,8 +637,8 @@ class SimulatedBatteryHandle:
 
         self._charge_state = (
             float(self._charge_state)
-            + amount_to_charge
-            - (amount_to_discharge / float(self._battery_efficiency))
+            + (amount_to_charge * float(self._battery_charge_efficiency))
+            - (amount_to_discharge / float(self._battery_discharge_efficiency))
         )
 
         self._sensors[ATTR_ENERGY_SAVED] += import_amount - net_import

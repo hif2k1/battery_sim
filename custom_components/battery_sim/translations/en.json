@@ -22,7 +22,8 @@
           "size_kwh": "Battery size in kWh",
           "max_discharge_rate_kw": "Maximum discharge rate in kW",
           "max_charge_rate_kw": "Maximum charging rate in kW",
-          "efficiency": "Round trip efficiency (0 to 1)"
+          "discharge_efficiency": "Discharge efficiency (0 to 1)",
+          "charge_efficiency": "Charge efficiency (0 to 1)"
         },
         "description": "Set the specifications of the battery. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
       },
@@ -92,7 +93,8 @@
           "size_kwh": "Battery size in kWh",
           "max_discharge_rate_kw": "Maximum discharge rate in kW",
           "max_charge_rate_kw": "Maximum charging rate in kW",
-          "efficiency": "Round trip efficiency (0 to 1)"
+          "discharge_efficiency": "Discharge efficiency (0 to 1)",
+          "charge_efficiency": "Charge efficiency (0 to 1)"
         }
       },
       "input_sensors": {
@@ -102,7 +104,7 @@
           "add_export_meter": "Add export meter (measuring energy leaving home to the grid)",
           "edit_input_tariff": "Edit tariff details for a meter",
           "delete_input": "Delete a meter"
-          },
+        },
         "description": "At least one import and one export meter are required. Meters monitoring solar generation directly shouldn't be used."
       },
       "tariff_menu": {
