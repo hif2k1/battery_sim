@@ -32,7 +32,8 @@ battery_sim:
     size_kwh: 13.5
     max_discharge_rate_kw: 5.0
     max_charge_rate_kw: 3.68
-    efficiency: 0.9
+    discharge_efficiency: 0.95
+    charge_efficiency: 0.95
     energy_tariff: 0.184
   lg_chem_resu10h:
     name: LG Chem
@@ -42,22 +43,8 @@ battery_sim:
     max_discharge_rate_kw: 5.0
     max_charge_rate_kw: 3.3
     efficiency: 0.95
-  sonnen_eco:
-    name: Sonnen Eco
-    import_sensor: sensor.circuitsetup_cumulative_import_energy_kwh
-    export_sensor: sensor.circuitsetup_cumulative_export_energy_kwh
-    size_kwh: 5.0
-    max_discharge_rate_kw: 2.5
-    max_charge_rate_kw: 2.5
-    efficiency: 0.9
-  pika_harbour:
-    name: Pika Harbour
-    import_sensor: sensor.circuitsetup_cumulative_import_energy_kwh
-    export_sensor: sensor.circuitsetup_cumulative_export_energy_kwh
-    size_kwh: 8.6
-    max_discharge_rate_kw: 4.2
-    max_charge_rate_kw: 4.2
-    efficiency: 0.965
+    discharge_efficiency: 0.795
+    charge_efficiency: 0.975
    ```
 
 ## Battery Efficiencies
