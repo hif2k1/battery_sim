@@ -2,6 +2,7 @@
 import logging
 import time
 import asyncio
+from datetime import timedelta
 
 import voluptuous as vol
 
@@ -10,7 +11,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import discovery
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.start import async_at_start
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import async_track_state_change_event, async_track_time_interval
 from homeassistant.helpers.dispatcher import dispatcher_send, async_dispatcher_connect
 
 from homeassistant.const import (
@@ -25,6 +26,7 @@ from .const import (
     ATTR_ENERGY_BATTERY_IN,
     ATTR_ENERGY_BATTERY_OUT,
     ATTR_ENERGY_SAVED,
+    ATTR_STATUS,
     ATTR_MONEY_SAVED_EXPORT,
     ATTR_MONEY_SAVED_IMPORT,
     ATTR_MONEY_SAVED,
@@ -85,6 +87,9 @@ BATTERY_CONFIG_SCHEMA = vol.Schema(
             vol.Required(CONF_BATTERY_MAX_DISCHARGE_RATE): vol.All(float),
             vol.Optional(CONF_BATTERY_MAX_CHARGE_RATE, default=1.0): vol.All(float),
             vol.Optional(CONF_BATTERY_EFFICIENCY, default=1.0): vol.All(float),
+            vol.Optional(CONF_UPDATE_FREQUENCY, default=60): vol.All(
+                vol.Coerce(int), vol.Range(min=1)
+            ),
         },
     )
 )
@@ -217,6 +222,8 @@ class SimulatedBatteryHandle:
         self._charging: bool = False
         self._accumulated_import_reading: float = 0.0
         self._last_battery_update_time = time.time()
+        # Periodic update cadence (seconds). Falls back to 60 for backwards compatibility.
+        self._update_frequency = config.get(CONF_UPDATE_FREQUENCY, 60)
         self._max_discharge: float = 0.0
 
         self._charge_limit = config[CONF_BATTERY_MAX_CHARGE_RATE]
@@ -258,6 +265,7 @@ class SimulatedBatteryHandle:
             DISCHARGING_RATE: 0.0,
             ATTR_MONEY_SAVED: 0.0,
             BATTERY_MODE: MODE_IDLE,
+            ATTR_STATUS: "Normal",
             ATTR_MONEY_SAVED_IMPORT: 0.0,
             ATTR_MONEY_SAVED_EXPORT: 0.0,
             BATTERY_CYCLES: 0.0,
@@ -343,7 +351,26 @@ class SimulatedBatteryHandle:
                 )
             )
         _LOGGER.debug(f"{self._name} monitoring {input_details[SENSOR_ID]}")
+
+        # Also update on a fixed cadence so the battery reacts even when meters
+        # publish infrequently or when only switches/controls change.
+        self._listeners.append(
+            async_track_time_interval(
+                self._hass,
+                self.async_periodic_update,
+                timedelta(seconds=int(self._update_frequency)),
+            )
+        )
         return
+
+    @callback
+    def async_periodic_update(self, now):
+        """Update battery on a fixed cadence using accumulated readings."""
+        self.update_battery(
+            self._accumulated_import_reading, self._accumulated_export_reading
+        )
+        self._accumulated_export_reading = 0.0
+        self._accumulated_import_reading = 0.0
 
     @callback
     def async_reading_handler(
@@ -419,14 +446,7 @@ class SimulatedBatteryHandle:
             self._last_export_reading_sensor_data = input_details
             self._accumulated_export_reading += reading_variance
 
-        time_since_battery_update = time.time() - self._last_battery_update_time
-        if time_since_battery_update > 60:
-            self.update_battery(
-                self._accumulated_import_reading, self._accumulated_export_reading
-            )
-            self._accumulated_export_reading = 0.0
-            self._accumulated_import_reading = 0.0
-
+        # NOTE: battery updates are handled by async_periodic_update().
         return
 
     def get_tariff_information(self, input_details):
@@ -464,6 +484,15 @@ class SimulatedBatteryHandle:
         else:
             _LOGGER.error("Unknown slider type in __init__.py")
         
+    @callback
+    def async_trigger_update(self):
+        """Apply pending readings and current controls immediately."""
+        self.update_battery(
+            self._accumulated_import_reading, self._accumulated_export_reading
+        )
+        self._accumulated_export_reading = 0.0
+        self._accumulated_import_reading = 0.0
+
     def update_battery(self, import_amount, export_amount):
         """Update battery statistics based on the reading for Im- or Export."""
         amount_to_charge: float = 0.0
@@ -570,10 +599,12 @@ class SimulatedBatteryHandle:
             )
             net_import = import_amount - amount_to_discharge
             net_export = export_amount - amount_to_charge
-            if amount_to_charge > amount_to_discharge:
+            if amount_to_charge > 0.0 and amount_to_charge >= amount_to_discharge:
                 self._sensors[BATTERY_MODE] = MODE_CHARGING
-            else:
+            elif amount_to_discharge > 0.0:
                 self._sensors[BATTERY_MODE] = MODE_DISCHARGING
+            else:
+                self._sensors[BATTERY_MODE] = MODE_IDLE
 
 
 
@@ -629,10 +660,13 @@ class SimulatedBatteryHandle:
 
         self._charge_percentage = round(100 * self._charge_state / self._battery_size)
 
+        # Keep "mode" (how the battery operates) separate from capacity "status".
         if self._charge_percentage < 2:
-            self._sensors[BATTERY_MODE] = MODE_EMPTY
+            self._sensors[ATTR_STATUS] = MODE_EMPTY
         elif self._charge_percentage > 98:
-            self._sensors[BATTERY_MODE] = MODE_FULL
+            self._sensors[ATTR_STATUS] = MODE_FULL
+        else:
+            self._sensors[ATTR_STATUS] = "Normal"
 
         """Reset day/week/month counters"""
         if time.strftime("%w") != time.strftime("%w", time.gmtime(time_last_update)):
