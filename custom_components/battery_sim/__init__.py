@@ -56,6 +56,7 @@ from .const import (
     CONF_EXPORT_SENSOR,
     CONF_IMPORT_SENSOR,
     CONF_SOLAR_ENERGY_SENSOR,
+    CONF_NOMINAL_INVERTER_POWER,
     CONF_UPDATE_FREQUENCY,
     CONF_INPUT_LIST,
     CONF_RATED_BATTERY_CYCLES,
@@ -100,6 +101,7 @@ BATTERY_CONFIG_SCHEMA = vol.Schema(
             vol.Required(CONF_IMPORT_SENSOR): cv.entity_id,
             vol.Required(CONF_EXPORT_SENSOR): cv.entity_id,
             vol.Optional(CONF_SOLAR_ENERGY_SENSOR): cv.entity_id,
+            vol.Optional(CONF_NOMINAL_INVERTER_POWER): vol.All(vol.Coerce(float), vol.Range(min=0)),
             vol.Optional(CONF_ENERGY_TARIFF): cv.entity_id,
             vol.Optional(CONF_ENERGY_EXPORT_TARIFF): cv.entity_id,
             vol.Optional(CONF_ENERGY_IMPORT_TARIFF): cv.entity_id,
@@ -329,6 +331,7 @@ class SimulatedBatteryHandle:
         self._energy_saved_week: float = 0.0
         self._energy_saved_month: float = 0.0
         self._solar_entity_id = config.get(CONF_SOLAR_ENERGY_SENSOR)
+        self._nominal_inverter_power = config.get(CONF_NOMINAL_INVERTER_POWER)
         self._listeners = []
         self._pending_update_cancel = None
 
@@ -806,6 +809,14 @@ class SimulatedBatteryHandle:
             solar_cap = max(float(solar_amount), 0.0)
             max_charge = min(max_charge, solar_cap)
             self._sensors[SOLAR_POWER_CAP] = solar_cap / interval_hours
+            if self._nominal_inverter_power is not None:
+                available_inverter_discharge_power = max(
+                    float(self._nominal_inverter_power) - self._sensors[SOLAR_POWER_CAP],
+                    0.0,
+                )
+                max_discharge = min(
+                    max_discharge, available_inverter_discharge_power * interval_hours
+                )
             _LOGGER.debug(
                 f"({self._name}) Solar cap: {solar_cap} kWh over {interval_hours:.4f} hours = {self._sensors[SOLAR_POWER_CAP]:.3f} kW"
             )

@@ -27,7 +27,8 @@
           "rated_battery_cycles": "Rated battery cycles",
           "end_of_life_degradation": "Capacity at end of life (0 to 1)",
           "update_frequency": "Update frequency in seconds",
-          "solar_energy_sensor": "Solar energy sensor"
+          "solar_energy_sensor": "Solar energy sensor",
+          "nominal_inverter_power_kw": "Nominal inverter power in kW"
         },
         "description": "Set the specifications of the battery. Efficiencies can be entered as a single value or as power/efficiency pairs such as 0:0.9, 5:0.95. The optional solar energy sensor caps charging to the solar energy produced during each update interval. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
       },
@@ -102,7 +103,8 @@
           "rated_battery_cycles": "Rated battery cycles",
           "end_of_life_degradation": "Capacity at end of life (0 to 1)",
           "update_frequency": "Update frequency in seconds",
-          "solar_energy_sensor": "Solar energy sensor"
+          "solar_energy_sensor": "Solar energy sensor",
+          "nominal_inverter_power_kw": "Nominal inverter power in kW"
         }
       },
       "input_sensors": {
