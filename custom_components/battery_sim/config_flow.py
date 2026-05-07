@@ -113,12 +113,17 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._data[SETUP_TYPE] = CONFIG_FLOW
                 self._data[CONF_NAME] = f"{self._data[CONF_UNIQUE_NAME]}"
                 self._data[CONF_INPUT_LIST] = []
-                self._data[CONF_SOLAR_ENERGY_SENSOR] = user_input.get(
-                    CONF_SOLAR_ENERGY_SENSOR
-                )
-                self._data[CONF_NOMINAL_INVERTER_POWER] = user_input.get(
-                    CONF_NOMINAL_INVERTER_POWER
-                )
+                solar_sensor = user_input.get(CONF_SOLAR_ENERGY_SENSOR)
+                if solar_sensor:
+                    self._data[CONF_SOLAR_ENERGY_SENSOR] = solar_sensor
+                else:
+                    self._data.pop(CONF_SOLAR_ENERGY_SENSOR, None)
+
+                nominal_inverter_power = user_input.get(CONF_NOMINAL_INVERTER_POWER)
+                if nominal_inverter_power is not None:
+                    self._data[CONF_NOMINAL_INVERTER_POWER] = nominal_inverter_power
+                else:
+                    self._data.pop(CONF_NOMINAL_INVERTER_POWER, None)
                 await self.async_set_unique_id(self._data[CONF_NAME])
                 self._abort_if_unique_id_configured()
                 return await self.async_step_meter_menu()
@@ -404,7 +409,7 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             vol.Optional(
                 CONF_NOMINAL_INVERTER_POWER,
                 default=self.updated_entry.get(CONF_NOMINAL_INVERTER_POWER),
-            ): vol.All(vol.Coerce(float), vol.Range(min=0)),
+            ): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0))),
         }
         return self.async_show_form(
             step_id="main_params",
