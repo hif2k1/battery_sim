@@ -162,4 +162,4 @@ to your configuration.yaml and then restarting. If you leave it to run for a few
 
 ## Acknowledgements
 
-Original idea and integration developed by hif2k1. Thanks for your work! 
+Original idea and integration developed by hif2k1. Further work in cooperation with dewi-ny-je.
