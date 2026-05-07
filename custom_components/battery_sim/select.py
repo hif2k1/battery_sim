@@ -45,6 +45,7 @@ class BatteryMode(SelectEntity):
     def __init__(self, handle):
         self.handle = handle
         self._device_name = handle._name
+        self._device_identifier = handle.device_identifier
         self._name = f"{handle._name} ".replace("_", " ") + "Battery Mode"
         self._attr_unique_id = f"{handle._name} - Battery Mode"
         self._internal_options = [
@@ -68,7 +69,7 @@ class BatteryMode(SelectEntity):
     def device_info(self):
         return {
             "name": self._device_name,
-            "identifiers": {(DOMAIN, self._device_name)},
+            "identifiers": {self._device_identifier},
         }
 
     @property

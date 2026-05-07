@@ -56,6 +56,7 @@ class BatterySwitch(SwitchEntity):
         self._icon = icon
         self._switch_type = switch_type
         self._device_name = handle._name
+        self._device_identifier = handle.device_identifier
         self._name = (
             f"{handle._name} ".replace("_", " ")
             + f"{switch_type}".replace("_", " ").capitalize()
@@ -75,7 +76,7 @@ class BatterySwitch(SwitchEntity):
     def device_info(self):
         return {
             "name": self._device_name,
-            "identifiers": {(DOMAIN, self._device_name)},
+            "identifiers": {self._device_identifier},
         }
 
     @property

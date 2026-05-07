@@ -198,6 +198,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         self._name = f"{handle._name} ".replace("_", " ") + f"{sensor_name}".replace("_", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {sensor_name}"
         self._device_name = handle._name
+        self._device_identifier = handle.device_identifier
         self._sensor_type = sensor_name
         self._type_of_sensor = type_of_sensor
         self._last_reset = dt_util.utcnow()
@@ -266,7 +267,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {"name": self._device_name, "identifiers": {(DOMAIN, self._device_name)}}
+        return {"name": self._device_name, "identifiers": {self._device_identifier}}
 
     @property
     def native_value(self):
@@ -437,7 +438,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     def device_info(self):
         return {
             "name": self._name,
-            "identifiers": {(DOMAIN, self.handle._name)},
+            "identifiers": {self.handle.device_identifier},
         }
 
     @property
@@ -514,6 +515,7 @@ class BatteryStatus(SensorEntity):
         self._name = f"{handle._name} ".replace("_", " ") + f"{sensor_name}".replace("_", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {sensor_name}"
         self._device_name = handle._name
+        self._device_identifier = handle.device_identifier
         self._sensor_type = sensor_name
 
     async def async_added_to_hass(self):
@@ -542,7 +544,7 @@ class BatteryStatus(SensorEntity):
 
     @property
     def device_info(self):
-        return {"name": self._device_name, "identifiers": {(DOMAIN, self._device_name)}}
+        return {"name": self._device_name, "identifiers": {self._device_identifier}}
 
     @property
     def native_value(self):

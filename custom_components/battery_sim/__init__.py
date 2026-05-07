@@ -176,7 +176,7 @@ async def async_setup_entry(hass, entry) -> bool:
     
     _LOGGER.debug("Setup %s.%s", DOMAIN, entry.data[CONF_NAME])
 
-    handle = SimulatedBatteryHandle(entry.data, hass)
+    handle = SimulatedBatteryHandle(entry.data, hass, entry.entry_id)
     hass.data[DOMAIN][entry.entry_id] = handle
 
     # Register service
@@ -194,7 +194,7 @@ async def async_setup_entry(hass, entry) -> bool:
 
         # Match to correct handle by comparing identifiers
         for handle_entry in hass.data[DOMAIN].values():
-            if (DOMAIN, handle_entry._name) in device.identifiers:
+            if handle_entry.matches_device_identifiers(device.identifiers):
                 handle_entry.async_set_battery_charge_state(state)
                 _LOGGER.debug("Battery charge updated for device %s", handle_entry._name)
                 break
@@ -213,7 +213,7 @@ async def async_setup_entry(hass, entry) -> bool:
             return
 
         for handle_entry in hass.data[DOMAIN].values():
-            if (DOMAIN, handle_entry._name) in device.identifiers:
+            if handle_entry.matches_device_identifiers(device.identifiers):
                 handle_entry.async_set_battery_cycles(cycles)
                 _LOGGER.debug("Battery cycles updated for device %s", handle_entry._name)
                 break
@@ -301,9 +301,10 @@ class SimulatedBatteryHandle:
             return curve[0][1]
         return fallback
 
-    def __init__(self, config, hass):
+    def __init__(self, config, hass, entry_id=None):
         """Initialize the Battery."""
         self._hass = hass
+        self._entry_id = entry_id
         self._date_recording_started = dt_util.now().isoformat()
         self._name = config[CONF_NAME]
         self._sensor_collection: list = []
@@ -394,6 +395,19 @@ class SimulatedBatteryHandle:
                 self.async_reset_battery,
             )
         )
+
+    @property
+    def device_identifier(self):
+        """Return a stable identifier tuple used for device registry linking."""
+        return (DOMAIN, self._entry_id or self._name)
+
+    def matches_device_identifiers(self, identifiers):
+        """Return true when any known identifier matches this handle."""
+        known_identifiers = {
+            self.device_identifier,
+            (DOMAIN, self._name),  # Backward compatibility for existing devices.
+        }
+        return bool(known_identifiers.intersection(identifiers))
 
     def async_set_battery_charge_state(self, state: float):
         """Reset the battery to start over."""

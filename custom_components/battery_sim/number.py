@@ -92,6 +92,7 @@ class BatterySlider(RestoreNumber):
         self._slider_type = slider_type
         self._precision = precision
         self._device_name = handle._name
+        self._device_identifier = handle.device_identifier
         self._name = f"{handle._name} ".replace("_", " ") + f"{slider_type}".replace("_", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {slider_type}"
         if key == "charge_limit":
@@ -125,7 +126,7 @@ class BatterySlider(RestoreNumber):
     def device_info(self):
         return {
             "name": self._device_name,
-            "identifiers": {(DOMAIN, self._device_name)},
+            "identifiers": {self._device_identifier},
         }
         
     @property
