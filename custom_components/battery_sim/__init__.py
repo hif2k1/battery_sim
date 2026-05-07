@@ -601,11 +601,14 @@ class SimulatedBatteryHandle:
 
         if reading_variance < 0:
             _LOGGER.debug(
-                "(%s) %s sensor value decreased - meter may have been reset",
+                "(%s) %s sensor value decreased - rebasing simulated sensor %s",
                 self._name,
                 input_details[SENSOR_TYPE],
+                input_details[SIMULATED_SENSOR],
             )
             self._sensors[sensor_charge_rate] = 0
+            self._sensors[input_details[SIMULATED_SENSOR]] = new_state_value
+            dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
             return
 
         if input_details[SENSOR_TYPE] == IMPORT:
