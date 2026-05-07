@@ -95,15 +95,13 @@ The integration creates the following sensors for each battery:
 
 When a solar energy sensor is configured via the `solar_energy_sensor` parameter, the integration uses solar generation data to cap the maximum charging power during each update interval.
 
-If `nominal_inverter_power_kw` is also configured, discharge is additionally capped to the inverter headroom:
+For this feature to work, **it is essential that the entity tracking the solar energy production gets updated more often than the battery simulator**, which is by default once per 60 seconds. If thats not the case, the battery simulator would not detect any energy generation for some of the update intervals and incorrectly pause the battery. A practical example: APsystems' microinverters communicate via ZigBee and publish power and energy updates every 5 minutes. They are therefore incompatible with this feature.
 
-`max(0, nominal_inverter_power_kw - current_solar_power_kw)`
+If `nominal_inverter_power_kw` is also configured, discharge is additionally capped to the inverter headroom, taking into account the solar energy sensor change over the current update interval.
 
-where `current_solar_power_kw` is derived from the solar energy sensor change over the current update interval.
+This is useful only in the scenario in which batteries are connected to inverters which are "one way", meaning these inverters can use energy from the panels to charge the battery and use the battery to provide power to the rest of the network, but which cannot use energy from the grid to charge the batteries. 
 
-This is useful only in **one** very specific scenario, in which two batteries are connected to two separate inverters which are "one way", meaning these inverters can use energy from the panels to charge the battery and use the battery to provide power to the rest of the network, but which cannot use energy from the grid to charge the batteries. 
-
-This parameter is needed only when there are more batteries (and inverters) than the available energy readings (which typically means two of such batteries and inverters), because if there is only one of such batteries and inverters, the only excess power seen by the smart meter is inevitably the power from the only inverter, and this parameter is not needed.
+This parameter is needed also2 when there are more batteries (and inverters) than the available energy readings (which typically means two of such batteries and inverters), because if there is only one of such batteries and inverters, the only excess power seen by the smart meter is inevitably the power from the only inverter, and this parameter is not needed.
 
 In such a scenario the simulator would not be able to know whether the excess energy (the one normally exported to the grid) come from one or the other inverter, so it would potentially use excess production from one inverter to charge a battery connected behind the other inverter. 
 
