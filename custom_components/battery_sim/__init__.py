@@ -323,8 +323,11 @@ class SimulatedBatteryHandle:
         self._charge_state: float = config[CONF_BATTERY_SIZE] * INITIAL_SOC_RATIO
         self._accumulated_export_reading: float = 0.0
         self._accumulated_solar_reading: float = 0.0
-        self._last_import_reading_sensor_data: str = None
-        self._last_export_reading_sensor_data: str = None
+        self._last_import_reading_sensor_data = None
+        self._last_export_reading_sensor_data = None
+        self._energy_saved_today: float = 0.0
+        self._energy_saved_week: float = 0.0
+        self._energy_saved_month: float = 0.0
         self._solar_entity_id = config.get(CONF_SOLAR_ENERGY_SENSOR)
         self._listeners = []
         self._pending_update_cancel = None
