@@ -27,8 +27,8 @@
           "rated_battery_cycles": "Nennzyklen der Batterie",
           "end_of_life_degradation": "Kapazität am Ende der Lebensdauer (0 bis 1)",
           "update_frequency": "Aktualisierungsintervall in Sekunden",
-          "solar_energy_sensor": "Solarenergiezählersensor"
-
+          "solar_energy_sensor": "Solarenergiezählersensor",
+          "nominal_inverter_power_kw": "Nennleistung des Wechselrichters in kW"
         },
         "description": "Lege die Spezifikationen der Batterie fest. Bitte erwäge, Details der von dir simulierten Batterie auf unserem GitHub zu veröffentlichen, damit wir sie zur Vorlagenliste hinzufügen können."
       },
@@ -103,7 +103,8 @@
           "rated_battery_cycles": "Nennzyklen der Batterie",
           "end_of_life_degradation": "Kapazität am Ende der Lebensdauer (0 bis 1)",
           "update_frequency": "Aktualisierungsintervall in Sekunden",
-          "solar_energy_sensor": "Solarenergiezählersensor"
+          "solar_energy_sensor": "Solarenergiezählersensor",
+          "nominal_inverter_power_kw": "Nennleistung des Wechselrichters in kW"
         }
       },
       "input_sensors": {

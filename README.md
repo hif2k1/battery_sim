@@ -30,6 +30,7 @@ You can also define batteries in `configuration.yaml`. Each battery is created u
 | `energy_import_tariff` | No | Entity ID of an import tariff sensor. |
 | `energy_export_tariff` | No | Entity ID of an export tariff sensor. |
 | `solar_energy_sensor` | No | Entity ID of a cumulative solar energy production sensor in kWh. When configured, the maximum charge power is capped by the solar production rate during each update interval. Seldomly needed, see below. |
+| `nominal_inverter_power_kw` | No | Nominal inverter AC power limit in kW. Used together with `solar_energy_sensor` to cap battery discharge to `max(0, nominal_inverter_power_kw - current_solar_power_kw)` each update interval. |
 | `name` | No | Friendly name shown in Home Assistant. If omitted, the YAML object key is used. |
 | `rated_battery_cycles` | No | Number of full cycles at which end-of-life degradation is reached. Defaults to `6000`. |
 | `end_of_life_degradation` | No | Remaining usable capacity at `rated_battery_cycles`, expressed from `0` to `1`. Defaults to `0.8`. |
@@ -48,6 +49,8 @@ battery_sim:
     max_charge_rate_kw: 3.68
     discharge_efficiency: 0:0.92, 2.5:0.95, 5:0.95
     charge_efficiency: 0:0.90, 2:0.94, 3.68:0.95
+    solar_energy_sensor: sensor.solar_generation_energy_kwh
+    nominal_inverter_power_kw: 5.0
     rated_battery_cycles: 6000
     end_of_life_degradation: 0.8
     update_frequency: 60
@@ -90,7 +93,13 @@ The integration creates the following sensors for each battery:
 
 ## Solar Power Cap : Important Remarks
 
-When a solar energy sensor is configured via the `solar_energy_sensor` parameter, the integration uses solar generation data to intelligently cap the maximum charging power during each update interval.
+When a solar energy sensor is configured via the `solar_energy_sensor` parameter, the integration uses solar generation data to cap the maximum charging power during each update interval.
+
+If `nominal_inverter_power_kw` is also configured, discharge is additionally capped to the inverter headroom:
+
+`max(0, nominal_inverter_power_kw - current_solar_power_kw)`
+
+where `current_solar_power_kw` is derived from the solar energy sensor change over the current update interval.
 
 This is useful only in **one** very specific scenario, in which two batteries are connected to two separate inverters which are "one way", meaning these inverters can use energy from the panels to charge the battery and use the battery to provide power to the rest of the network, but which cannot use energy from the grid to charge the batteries. 
 

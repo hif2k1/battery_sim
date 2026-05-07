@@ -27,7 +27,8 @@
           "rated_battery_cycles": "Nominella battericykler",
           "end_of_life_degradation": "Kapacitet vid slutet av livslängden (0 till 1)",
           "update_frequency": "Uppdateringsfrekvens i sekunder",
-          "solar_energy_sensor": "Solenergisensor"
+          "solar_energy_sensor": "Solenergisensor",
+          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW"
         },
         "description": "Ange batteriets specifikationer. Effektiviteter kan anges som ett enskilt värde eller som effekt/effektivitetspar som 0:0.9, 5:0.95. Överväg gärna att dela detaljer om batteriet du simulerar på vår GitHub så att vi kan lägga till det i mallistan."
       },
@@ -101,7 +102,9 @@
           "charge_efficiency": "Laddningseffektivitet eller kurva (t.ex. 0.95 eller 0:0.9, 5:0.95)",
           "rated_battery_cycles": "Nominella battericykler",
           "end_of_life_degradation": "Kapacitet vid slutet av livslängden (0 till 1)",
-          "update_frequency": "Uppdateringsfrekvens i sekunder"
+          "update_frequency": "Uppdateringsfrekvens i sekunder",
+          "solar_energy_sensor": "Solenergisensor",
+          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW"
         }
       },
       "input_sensors": {
