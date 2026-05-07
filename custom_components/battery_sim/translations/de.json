@@ -4,7 +4,7 @@
       "already_configured": "Dieses Gerät ist bereits konfiguriert."
     },
     "error": {
-      "not_float": "Muss eine Zahl sein"
+      "invalid_input": "Ungültige Eingabe"
     },
     "flow_title": "Neue simulierte Batterie einrichten",
     "step": {
@@ -22,7 +22,13 @@
           "size_kwh": "Batteriegröße in kWh",
           "max_discharge_rate_kw": "Maximale Entladerate in kW",
           "max_charge_rate_kw": "Maximale Laderate in kW",
-          "efficiency": "Wirkungsgrad (0 bis 1)"
+          "discharge_efficiency": "Entladewirkungsgrad oder Kurve (z. B. 0.95 oder 0:0.9, 5:0.95)",
+          "charge_efficiency": "Ladewirkungsgrad oder Kurve (z. B. 0.95 oder 0:0.9, 5:0.95)",
+          "rated_battery_cycles": "Nennzyklen der Batterie",
+          "end_of_life_degradation": "Kapazität am Ende der Lebensdauer (0 bis 1)",
+          "update_frequency": "Aktualisierungsintervall in Sekunden",
+          "solar_energy_sensor": "Solarenergiezählersensor",
+          "nominal_inverter_power_kw": "Nennleistung des Wechselrichters in kW"
         },
         "description": "Lege die Spezifikationen der Batterie fest. Bitte erwäge, Details der von dir simulierten Batterie auf unserem GitHub zu veröffentlichen, damit wir sie zur Vorlagenliste hinzufügen können."
       },
@@ -92,7 +98,13 @@
           "size_kwh": "Batteriegröße in kWh",
           "max_discharge_rate_kw": "Maximale Entladerate in kW",
           "max_charge_rate_kw": "Maximale Laderate in kW",
-          "efficiency": "Wirkungsgrad (Roundtrip) (0 bis 1)"
+          "discharge_efficiency": "Entladewirkungsgrad oder Kurve (z. B. 0.95 oder 0:0.9, 5:0.95)",
+          "charge_efficiency": "Ladewirkungsgrad oder Kurve (z. B. 0.95 oder 0:0.9, 5:0.95)",
+          "rated_battery_cycles": "Nennzyklen der Batterie",
+          "end_of_life_degradation": "Kapazität am Ende der Lebensdauer (0 bis 1)",
+          "update_frequency": "Aktualisierungsintervall in Sekunden",
+          "solar_energy_sensor": "Solarenergiezählersensor",
+          "nominal_inverter_power_kw": "Nennleistung des Wechselrichters in kW"
         }
       },
       "input_sensors": {
@@ -166,6 +178,20 @@
         "charge_state": {
           "name": "Ladezustand",
           "description": "Ladungswert in kWh"
+        }
+      }
+    },
+    "set_battery_cycles": {
+      "name": "Batteriezyklen einstellen",
+      "description": "Stellt die simulierten Batteriezyklen für ein bestimmtes Batteriegerät ein",
+      "fields": {
+        "device_id": {
+          "name": "Ziel-Batteriegerät",
+          "description": "Gerät, für das die Batteriezyklen eingestellt werden sollen"
+        },
+        "battery_cycles": {
+          "name": "Batteriezyklen",
+          "description": "Anzuwendende Anzahl Zyklen"
         }
       }
     }

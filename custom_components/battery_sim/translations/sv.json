@@ -1,69 +1,197 @@
 {
-    "config": {
-        "abort": {
-            "already_configured": "Den här enheten är redan konfigurerad."
-        },
-        "error": { 
-            "not_float": "Måste vara en siffra"
-        },
-        "flow_title": "Ställ in nytt simulerat batteri",
-        "step": {
-            "user": {
-                "title": "Välj batteri",
-                "data":{
-                    "battery": "Batterimodell"
-                },
-                "description": "Välj en batterimodell att simulera från listan eller välj anpassad för att skapa en ny."
-            },
-            "custom": {
-                "title": "Anpassat batteri",
-                "data":{
-                    "size_kwh": "Batteristorlek i kWh",
-                    "max_discharge_rate_kw" : "Max urladdningshastighet i kW",
-                    "max_charge_rate_kw": "Max laddningshastighet i kW",
-                    "efficiency": "Round trip efficiency (0 to 1)"
-                },
-                "description": "Ställ in specifikationerna för batteriet."
-            },
-           "metertype":{
-                "title": "Energy meter type",
-                "data":{
-                    "one_import_one_export" : "One import and one export meter",
-                    "two_import_one_export" : "Two import and one export meter"
-                },
-                "description": "Select the type of energy meter you have. Import meters measure energy coming into your home from the grid. You may have two of these e.g. one for day time and one for night. Export meters measure energy leaving your house to the grid e.g. excess solar generation."
-            },
-            "connectsensors": {
-                "title": "Anslut batteri eller energi mätarare",
-                "data":{
-                    "import_sensor": "Importera senor/mätare - inkommande energi",
-                    "second_import_sensor": "Second import sensor/meter - e.g. night time or Economy 7",
-                    "export_sensor" : "Exportera sensor/mätare - producering till elnätet"
-                },
-                "description": "När exportsensorn visar energi som lämnar huset laddas batteriet. När importsensorn visar energi som kommer in i huset från nätet laddas batteriet ur."
-            },
-            "connecttariffsensors": {
-                "title": "Connect sensors for energy tariffs",
-                "data":{
-                    "energy_import_tariff": "Import tariff/rate - cost of energy from the grid (£/kWh)",
-                    "energy_export_tariff": "Export tariff/rate - payment for energy exported to grid (£/kWh)"
-                },
-                "description": "For static tariffs it is best to create a helper entity with a fixed value. Currency is determined in home assistant location settings and is usually in base unit (e.g. euro) not subunit (e.g. cents)."
-            }
-         }
+  "config": {
+    "abort": {
+      "already_configured": "Den här enheten är redan konfigurerad."
     },
+    "error": {
+      "invalid_input": "Ogiltig inmatning"
+    },
+    "flow_title": "Ställ in nytt simulerat batteri",
+    "step": {
+      "user": {
+        "title": "Välj batteri",
+        "data": {
+          "battery": "Batterimodell"
+        },
+        "description": "Välj en batterimodell att simulera från listan eller välj Anpassad för att skapa en ny."
+      },
+      "custom": {
+        "title": "Anpassat batteri",
+        "data": {
+          "unique_name": "Unikt namn",
+          "size_kwh": "Batteristorlek i kWh",
+          "max_discharge_rate_kw": "Maximal urladdningshastighet i kW",
+          "max_charge_rate_kw": "Maximal laddningshastighet i kW",
+          "discharge_efficiency": "Urladdningseffektivitet eller kurva (t.ex. 0.95 eller 0:0.9, 5:0.95)",
+          "charge_efficiency": "Laddningseffektivitet eller kurva (t.ex. 0.95 eller 0:0.9, 5:0.95)",
+          "rated_battery_cycles": "Nominella battericykler",
+          "end_of_life_degradation": "Kapacitet vid slutet av livslängden (0 till 1)",
+          "update_frequency": "Uppdateringsfrekvens i sekunder",
+          "solar_energy_sensor": "Solenergisensor",
+          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW"
+        },
+        "description": "Ange batteriets specifikationer. Effektiviteter kan anges som ett enskilt värde eller som effekt/effektivitetspar som 0:0.9, 5:0.95. Överväg gärna att dela detaljer om batteriet du simulerar på vår GitHub så att vi kan lägga till det i mallistan."
+      },
+      "meter_menu": {
+        "title": "Lägg till mätare",
+        "menu_options": {
+          "add_import_meter": "Lägg till importmätare (mäter energi som kommer in i hemmet från elnätet)",
+          "add_export_meter": "Lägg till exportmätare (mäter energi som lämnar hemmet till elnätet)",
+          "all_done": "Allt klart"
+        },
+        "description": "Minst en importmätare och en exportmätare krävs. Mätare som övervakar solelproduktion direkt ska inte läggas till."
+      },
+      "tariff_menu": {
+        "title": "Välj tarifftyp",
+        "menu_options": {
+          "no_tariff_info": "Ingen tariff för den här mätaren",
+          "fixed_tariff": "Ett konstant fast värde för tariffen",
+          "tariff_sensor": "En sensor som innehåller värdet för en tariff som varierar över tid"
+        },
+        "description": ""
+      },
+      "add_import_meter": {
+        "title": "Lägg till importmätare till batteriet",
+        "data": {
+          "sensor_id": "Energimätarsensor"
+        },
+        "description": "Välj mätarsensor"
+      },
+      "add_export_meter": {
+        "title": "Lägg till exportmätare till batteriet",
+        "data": {
+          "sensor_id": "Energimätarsensor"
+        },
+        "description": "Välj mätarsensor"
+      },
+      "fixed_tariff": {
+        "title": "Lägg till detaljer för fast tariff",
+        "data": {
+          "fixed_tariff": "Fast tariffvärde (om tillämpligt)"
+        },
+        "description": ""
+      },
+      "tariff_sensor": {
+        "title": "Lägg till detaljer för tariffsensor",
+        "data": {
+          "tariff_sensor": "Sensor som visar aktuell tariff (om tillämpligt)"
+        },
+        "description": ""
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Batteriinställningar",
+        "description": "Välj parametrar att ändra",
+        "menu_options": {
+          "main_params": "Huvudparametrar",
+          "input_sensors": "Redigera mätare/sensorer",
+          "all_done": "Allt klart"
+        }
+      },
+      "main_params": {
+        "title": "Huvudsakliga batteriinställningar",
+        "description": "Huvudparametrar",
+        "data": {
+          "size_kwh": "Batteristorlek i kWh",
+          "max_discharge_rate_kw": "Maximal urladdningshastighet i kW",
+          "max_charge_rate_kw": "Maximal laddningshastighet i kW",
+          "discharge_efficiency": "Urladdningseffektivitet eller kurva (t.ex. 0.95 eller 0:0.9, 5:0.95)",
+          "charge_efficiency": "Laddningseffektivitet eller kurva (t.ex. 0.95 eller 0:0.9, 5:0.95)",
+          "rated_battery_cycles": "Nominella battericykler",
+          "end_of_life_degradation": "Kapacitet vid slutet av livslängden (0 till 1)",
+          "update_frequency": "Uppdateringsfrekvens i sekunder",
+          "solar_energy_sensor": "Solenergisensor",
+          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW"
+        }
+      },
+      "input_sensors": {
+        "title": "Redigera mätare/sensorer",
+        "menu_options": {
+          "add_import_meter": "Lägg till importmätare (mäter energi som kommer in i hemmet från elnätet)",
+          "add_export_meter": "Lägg till exportmätare (mäter energi som lämnar hemmet till elnätet)",
+          "edit_input_tariff": "Redigera tariffdetaljer för en mätare",
+          "delete_input": "Ta bort en mätare"
+        },
+        "description": "Minst en importmätare och en exportmätare krävs. Mätare som övervakar solelproduktion direkt ska inte användas."
+      },
+      "tariff_menu": {
+        "title": "Välj tarifftyp",
+        "menu_options": {
+          "no_tariff_info": "Ingen tariff för den här mätaren",
+          "fixed_tariff": "Ett konstant fast pris för tariffen",
+          "tariff_sensor": "En sensor som representerar värdet för en tariff som varierar över tid"
+        },
+        "description": ""
+      },
+      "add_import_meter": {
+        "title": "Lägg till importmätare till batteriet",
+        "data": {
+          "sensor_id": "Energimätarsensor"
+        },
+        "description": "Välj mätarsensor"
+      },
+      "add_export_meter": {
+        "title": "Lägg till exportmätare till batteriet",
+        "data": {
+          "sensor_id": "Energimätarsensor"
+        },
+        "description": "Välj mätarsensor"
+      },
+      "delete_input": {
+        "title": "Välj mätare att ta bort",
+        "data": {},
+        "description": ""
+      },
+      "edit_input_tariff": {
+        "title": "Välj mätare vars tariff ska redigeras",
+        "data": {},
+        "description": ""
+      },
+      "fixed_tariff": {
+        "title": "Lägg till fast tariff",
+        "data": {
+          "fixed_tariff": "Fast tariffvärde"
+        },
+        "description": ""
+      },
+      "tariff_sensor": {
+        "title": "Lägg till tariffsensor",
+        "data": {
+          "tariff_sensor": "Sensor som visar aktuell tariff"
+        },
+        "description": ""
+      }
+    }
+  },
   "services": {
     "set_battery_charge_state": {
       "name": "Ange batteriladdning",
       "description": "Ställ in batteriets laddningsnivå för en specifik simulerad enhet",
       "fields": {
         "device_id": {
-          "name": "Målenhet",
-          "description": "Enheten vars batteriladdning ska ställas in"
+          "name": "Målbatterienhet",
+          "description": "Enhet vars batteriladdning ska ställas in"
         },
         "charge_state": {
           "name": "Laddningsnivå",
-          "description": "Värde på laddning i kWh"
+          "description": "Laddningsvärde i kWh"
+        }
+      }
+    },
+    "set_battery_cycles": {
+      "name": "Ange battericykler",
+      "description": "Ställ in simulerade battericykler för en specifik batterienhet",
+      "fields": {
+        "device_id": {
+          "name": "Målbatterienhet",
+          "description": "Enhet vars battericykler ska ställas in"
+        },
+        "battery_cycles": {
+          "name": "Battericykler",
+          "description": "Antal cykler att tillämpa"
         }
       }
     }

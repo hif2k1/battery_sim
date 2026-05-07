@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 BATTERY_BUTTONS = [
     {
         "name": RESET_BATTERY,
-        "key": "overide_charging_enabled",
+        "key": "override_charging_enabled",
         "icon": "mdi:fast-forward",
     }
 ]
@@ -59,6 +59,7 @@ class BatteryButton(ButtonEntity):
         self._icon = icon
         self._button_type = button_type
         self._device_name = handle._name
+        self._device_identifier = handle.device_identifier
         self._name = f"{handle._name} ".replace("_", " ") + f"{button_type}".replace("_", " ").capitalize()
         self._attr_unique_id = f"{handle._name} - {button_type}"
         self._type = type
@@ -76,7 +77,7 @@ class BatteryButton(ButtonEntity):
     def device_info(self):
         return {
             "name": self._device_name,
-            "identifiers": {(DOMAIN, self._device_name)},
+            "identifiers": {self._device_identifier},
         }
 
     @property

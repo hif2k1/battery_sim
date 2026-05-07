@@ -4,7 +4,7 @@
       "already_configured": "This device is already configured."
     },
     "error": {
-      "not_float": "Needs to be a number"
+      "invalid_input": "Invalid input"
     },
     "flow_title": "Setup new simulated battery",
     "step": {
@@ -22,9 +22,15 @@
           "size_kwh": "Battery size in kWh",
           "max_discharge_rate_kw": "Maximum discharge rate in kW",
           "max_charge_rate_kw": "Maximum charging rate in kW",
-          "efficiency": "Round trip efficiency (0 to 1)"
+          "discharge_efficiency": "Discharge efficiency or curve (e.g. 0.95 or 0:0.9, 5:0.95)",
+          "charge_efficiency": "Charge efficiency or curve (e.g. 0.95 or 0:0.9, 5:0.95)",
+          "rated_battery_cycles": "Rated battery cycles",
+          "end_of_life_degradation": "Capacity at end of life (0 to 1)",
+          "update_frequency": "Update frequency in seconds",
+          "solar_energy_sensor": "Solar energy sensor",
+          "nominal_inverter_power_kw": "Nominal inverter power in kW"
         },
-        "description": "Set the specifications of the battery. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
+        "description": "Set the specifications of the battery. Efficiencies can be entered as a single value or as power/efficiency pairs such as 0:0.9, 5:0.95. The optional solar energy sensor caps charging to the solar energy produced during each update interval. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
       },
       "meter_menu": {
         "title": "Add Meters",
@@ -92,7 +98,13 @@
           "size_kwh": "Battery size in kWh",
           "max_discharge_rate_kw": "Maximum discharge rate in kW",
           "max_charge_rate_kw": "Maximum charging rate in kW",
-          "efficiency": "Round trip efficiency (0 to 1)"
+          "discharge_efficiency": "Discharge efficiency or curve (e.g. 0.95 or 0:0.9, 5:0.95)",
+          "charge_efficiency": "Charge efficiency or curve (e.g. 0.95 or 0:0.9, 5:0.95)",
+          "rated_battery_cycles": "Rated battery cycles",
+          "end_of_life_degradation": "Capacity at end of life (0 to 1)",
+          "update_frequency": "Update frequency in seconds",
+          "solar_energy_sensor": "Solar energy sensor",
+          "nominal_inverter_power_kw": "Nominal inverter power in kW"
         }
       },
       "input_sensors": {
@@ -102,7 +114,7 @@
           "add_export_meter": "Add export meter (measuring energy leaving home to the grid)",
           "edit_input_tariff": "Edit tariff details for a meter",
           "delete_input": "Delete a meter"
-          },
+        },
         "description": "At least one import and one export meter are required. Meters monitoring solar generation directly shouldn't be used."
       },
       "tariff_menu": {
@@ -166,6 +178,20 @@
         "charge_state": {
           "name": "Charge State",
           "description": "Value of charge in kWh"
+        }
+      }
+    },
+    "set_battery_cycles": {
+      "name": "Set Battery Cycles",
+      "description": "Set the simulated battery cycles for a specific battery device",
+      "fields": {
+        "device_id": {
+          "name": "Target Battery Device",
+          "description": "Device to set battery cycles for"
+        },
+        "battery_cycles": {
+          "name": "Battery Cycles",
+          "description": "Cycle count to apply"
         }
       }
     }

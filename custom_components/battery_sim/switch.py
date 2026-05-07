@@ -1,51 +1,23 @@
-"""Switch  Platform Device for Battery Sim."""
+"""Switch platform for Battery Sim."""
 import logging
 
 from homeassistant.components.switch import SwitchEntity
 
-from .const import (
-    DOMAIN,
-    CONF_BATTERY,
-    OVERIDE_CHARGING,
-    PAUSE_BATTERY,
-    FORCE_DISCHARGE,
-    CHARGE_ONLY,
-    DISCHARGE_ONLY,
-)
+from .const import DOMAIN, CONF_BATTERY, PAUSE_BATTERY
 
 _LOGGER = logging.getLogger(__name__)
 
 BATTERY_SWITCHES = [
     {
-        "name": OVERIDE_CHARGING,
-        "key": "overide_charging_enabled",
-        "icon": "mdi:fast-forward",
-    },
-    {
         "name": PAUSE_BATTERY,
         "key": "pause_battery_enabled",
         "icon": "mdi:pause",
-    },
-    {
-        "name": FORCE_DISCHARGE,
-        "key": "force_battery_enabled",
-        "icon": "mdi:home-export-outline",
-    },
-    {
-        "name": CHARGE_ONLY,
-        "key": "charge_only_enabled",
-        "icon": "mdi:home-import-outline",
-    },
-    {
-        "name": DISCHARGE_ONLY,
-        "key": "discharge_only_enabled",
-        "icon": "mdi:home-export-outline",
-    },
+    }
 ]
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    handle = hass.data[DOMAIN][config_entry.entry_id]  # Get Handler
+    handle = hass.data[DOMAIN][config_entry.entry_id]
 
     battery_switches = [
         BatterySwitch(handle, switch["name"], switch["key"], switch["icon"])
@@ -76,23 +48,24 @@ async def async_setup_platform(
 
 
 class BatterySwitch(SwitchEntity):
-    """Switch to set the status of the Wiser Operation Mode (Away/Normal)."""
+    """Switch to pause or resume the simulated battery."""
 
     def __init__(self, handle, switch_type, key, icon):
-        """Initialize the sensor."""
         self.handle = handle
         self._key = key
         self._icon = icon
         self._switch_type = switch_type
         self._device_name = handle._name
-        self._name = f"{handle._name} ".replace("_", " ") + f"{switch_type}".replace("_", " ").capitalize()
+        self._device_identifier = handle.device_identifier
+        self._name = (
+            f"{handle._name} ".replace("_", " ")
+            + f"{switch_type}".replace("_", " ").capitalize()
+        )
         self._attr_unique_id = f"{handle._name} - {switch_type}"
-        self._is_on = False
         self._type = type
 
     @property
     def unique_id(self):
-        """Return uniqueid."""
         return self._attr_unique_id
 
     @property
@@ -103,33 +76,25 @@ class BatterySwitch(SwitchEntity):
     def device_info(self):
         return {
             "name": self._device_name,
-            "identifiers": {(DOMAIN, self._device_name)},
+            "identifiers": {self._device_identifier},
         }
 
     @property
     def icon(self):
-        """Return icon."""
         return self._icon
 
     @property
     def is_on(self):
-        """Return true if device is on."""
         return self.handle._switches[self._switch_type]
 
     async def async_turn_on(self, **kwargs):
         self.handle._switches[self._switch_type] = True
-        if self._switch_type == CHARGE_ONLY:
-            self.handle._switches[FORCE_DISCHARGE] = False
-        elif self._switch_type == FORCE_DISCHARGE:
-            self.handle._switches[CHARGE_ONLY] = False
-        # Recompute immediately so the battery reacts even if meters are quiet.
         self.handle.async_trigger_update()
         self.schedule_update_ha_state(True)
         return True
 
     async def async_turn_off(self, **kwargs):
         self.handle._switches[self._switch_type] = False
-        # Recompute immediately so the battery reacts even if meters are quiet.
         self.handle.async_trigger_update()
         self.schedule_update_ha_state(True)
         return True

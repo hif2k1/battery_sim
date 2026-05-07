@@ -4,7 +4,13 @@ import voluptuous as vol
 import time
 
 from homeassistant import config_entries
-from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
+from homeassistant.helpers.selector import (
+    EntitySelector,
+    EntitySelectorConfig,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
@@ -15,9 +21,15 @@ from .const import (
     CONF_BATTERY_SIZE,
     CONF_BATTERY_MAX_DISCHARGE_RATE,
     CONF_BATTERY_MAX_CHARGE_RATE,
+    CONF_BATTERY_CHARGE_EFFICIENCY,
+    CONF_BATTERY_DISCHARGE_EFFICIENCY,
     CONF_BATTERY_EFFICIENCY,
+    CONF_END_OF_LIFE_DEGRADATION,
     CONF_UPDATE_FREQUENCY,
     CONF_INPUT_LIST,
+    CONF_RATED_BATTERY_CYCLES,
+    CONF_SOLAR_ENERGY_SENSOR,
+    CONF_NOMINAL_INVERTER_POWER,
     CONF_UNIQUE_NAME,
     SETUP_TYPE,
     CONFIG_FLOW,
@@ -31,7 +43,12 @@ from .const import (
     FIXED_TARIFF,
     SIMULATED_SENSOR,
 )
-from .helpers import generate_input_list
+from .helpers import generate_input_list, validate_efficiency_config
+
+
+EFFICIENCY_TEXT_SELECTOR = TextSelector(
+    TextSelectorConfig(type=TextSelectorType.TEXT)
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,7 +61,21 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         """Return flow options."""
-        return BatteryOptionsFlowHandler()
+        return BatteryOptionsFlowHandler(config_entry)
+
+    @staticmethod
+    def _validate_efficiency_fields(user_input):
+        """Return field errors for invalid efficiency inputs."""
+        errors = {}
+        for key in (
+            CONF_BATTERY_DISCHARGE_EFFICIENCY,
+            CONF_BATTERY_CHARGE_EFFICIENCY,
+        ):
+            try:
+                validate_efficiency_config(user_input[key])
+            except (ValueError, TypeError):
+                errors[key] = "invalid_input"
+        return errors
 
     async def async_step_user(self, user_input):
         """Handle a flow initialized by the user."""
@@ -55,6 +86,8 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data = BATTERY_OPTIONS[user_input[BATTERY_TYPE]]
             self._data[SETUP_TYPE] = CONFIG_FLOW
             self._data[CONF_NAME] = f"{user_input[BATTERY_TYPE]}"
+            self._data[CONF_RATED_BATTERY_CYCLES] = 6000
+            self._data[CONF_END_OF_LIFE_DEGRADATION] = 0.8
             self._data[CONF_UPDATE_FREQUENCY] = 60
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
@@ -72,14 +105,28 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_custom(self, user_input=None):
+        errors = {}
         if user_input is not None:
-            self._data = user_input
-            self._data[SETUP_TYPE] = CONFIG_FLOW
-            self._data[CONF_NAME] = f"{self._data[CONF_UNIQUE_NAME]}"
-            self._data[CONF_INPUT_LIST] = []
-            await self.async_set_unique_id(self._data[CONF_NAME])
-            self._abort_if_unique_id_configured()
-            return await self.async_step_meter_menu()
+            errors = self._validate_efficiency_fields(user_input)
+            if not errors:
+                self._data = user_input
+                self._data[SETUP_TYPE] = CONFIG_FLOW
+                self._data[CONF_NAME] = f"{self._data[CONF_UNIQUE_NAME]}"
+                self._data[CONF_INPUT_LIST] = []
+                solar_sensor = user_input.get(CONF_SOLAR_ENERGY_SENSOR)
+                if solar_sensor:
+                    self._data[CONF_SOLAR_ENERGY_SENSOR] = solar_sensor
+                else:
+                    self._data.pop(CONF_SOLAR_ENERGY_SENSOR, None)
+
+                nominal_inverter_power = user_input.get(CONF_NOMINAL_INVERTER_POWER)
+                if nominal_inverter_power is not None:
+                    self._data[CONF_NOMINAL_INVERTER_POWER] = nominal_inverter_power
+                else:
+                    self._data.pop(CONF_NOMINAL_INVERTER_POWER, None)
+                await self.async_set_unique_id(self._data[CONF_NAME])
+                self._abort_if_unique_id_configured()
+                return await self.async_step_meter_menu()
 
         return self.async_show_form(
             step_id="custom",
@@ -93,14 +140,30 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_BATTERY_MAX_CHARGE_RATE): vol.All(
                         vol.Coerce(float)
                     ),
-                    vol.Required(CONF_BATTERY_EFFICIENCY, default=0.9): vol.All(
+                    vol.Required(
+                        CONF_BATTERY_DISCHARGE_EFFICIENCY, default="0.9"
+                    ): EFFICIENCY_TEXT_SELECTOR,
+                    vol.Required(
+                        CONF_BATTERY_CHARGE_EFFICIENCY, default="0.9"
+                    ): EFFICIENCY_TEXT_SELECTOR,
+                     vol.Required(CONF_RATED_BATTERY_CYCLES, default=6000): vol.All(
+                        vol.Coerce(float), vol.Range(min=1)
+                    ),
+                    vol.Required(CONF_END_OF_LIFE_DEGRADATION, default=0.8): vol.All(
                         vol.Coerce(float), vol.Range(min=0, max=1)
                     ),
                     vol.Required(CONF_UPDATE_FREQUENCY, default=60): vol.All(
                         vol.Coerce(int), vol.Range(min=1)
                     ),
+                    vol.Optional(CONF_SOLAR_ENERGY_SENSOR): EntitySelector(
+                        EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
+                    ),
+                    vol.Optional(CONF_NOMINAL_INVERTER_POWER): vol.All(
+                        vol.Coerce(float), vol.Range(min=0)
+                    ),
                 }
             ),
+            errors=errors,
         )
 
     async def async_step_meter_menu(self, user_input=None):
@@ -206,12 +269,36 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle a option flow for battery."""
 
-    def __init__(self):
+    def __init__(self, config_entry=None):
         """Initialize options flow."""
+        self._config_entry_compat = config_entry
+        self.updated_entry = None
+        self.current_input_entry = None
+
+    @property
+    def _battery_config_entry(self):
+        """Return the config entry for both old and new Home Assistant cores."""
+        return getattr(self, "config_entry", None) or self._config_entry_compat
+
+    @staticmethod
+    def _validate_efficiency_fields(user_input):
+        """Return field errors for invalid efficiency inputs."""
+        errors = {}
+        for key in (
+            CONF_BATTERY_DISCHARGE_EFFICIENCY,
+            CONF_BATTERY_CHARGE_EFFICIENCY,
+        ):
+            try:
+                validate_efficiency_config(user_input[key])
+            except (ValueError, TypeError):
+                errors[key] = "invalid_input"
+        return errors
 
     async def async_step_init(self, user_input=None):
         """Handle options flow."""
-        self.updated_entry = self.config_entry.data.copy()
+        config_entry = self._battery_config_entry
+        self.updated_entry = config_entry.data.copy()
+        self._active_config_entry = config_entry
         if CONF_INPUT_LIST not in self.updated_entry:
             self.updated_entry[CONF_INPUT_LIST] = generate_input_list(
                 config=self.updated_entry
@@ -222,26 +309,51 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def async_step_main_params(self, user_input=None):
+        errors = {}
         if user_input is not None:
-            self.updated_entry[CONF_BATTERY_SIZE] = user_input[CONF_BATTERY_SIZE]
-            self.updated_entry[CONF_BATTERY_MAX_CHARGE_RATE] = user_input[
-                CONF_BATTERY_MAX_CHARGE_RATE
-            ]
-            self.updated_entry[CONF_BATTERY_MAX_DISCHARGE_RATE] = user_input[
-                CONF_BATTERY_MAX_DISCHARGE_RATE
-            ]
-            self.updated_entry[CONF_BATTERY_EFFICIENCY] = user_input[
-                CONF_BATTERY_EFFICIENCY
-            ]
-            self.updated_entry[CONF_UPDATE_FREQUENCY] = user_input[
-                CONF_UPDATE_FREQUENCY
-            ]
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data=self.updated_entry,
-                options=self.config_entry.options,
-            )
-            return await self.async_step_init()
+            errors = self._validate_efficiency_fields(user_input)
+            if not errors:
+                self.updated_entry[CONF_BATTERY_SIZE] = user_input[CONF_BATTERY_SIZE]
+                self.updated_entry[CONF_BATTERY_MAX_CHARGE_RATE] = user_input[
+                    CONF_BATTERY_MAX_CHARGE_RATE
+                ]
+                self.updated_entry[CONF_BATTERY_MAX_DISCHARGE_RATE] = user_input[
+                    CONF_BATTERY_MAX_DISCHARGE_RATE
+                ]
+                self.updated_entry[CONF_BATTERY_DISCHARGE_EFFICIENCY] = user_input[
+                    CONF_BATTERY_DISCHARGE_EFFICIENCY
+                ]
+                self.updated_entry[CONF_BATTERY_CHARGE_EFFICIENCY] = user_input[
+                    CONF_BATTERY_CHARGE_EFFICIENCY
+                ]
+                self.updated_entry[CONF_RATED_BATTERY_CYCLES] = user_input[
+                    CONF_RATED_BATTERY_CYCLES
+                ]
+                self.updated_entry[CONF_END_OF_LIFE_DEGRADATION] = user_input[
+                    CONF_END_OF_LIFE_DEGRADATION
+                ]
+                self.updated_entry.pop(CONF_BATTERY_EFFICIENCY, None)
+                self.updated_entry[CONF_UPDATE_FREQUENCY] = user_input[
+                    CONF_UPDATE_FREQUENCY
+                ]
+                if user_input.get(CONF_SOLAR_ENERGY_SENSOR):
+                    self.updated_entry[CONF_SOLAR_ENERGY_SENSOR] = user_input[
+                        CONF_SOLAR_ENERGY_SENSOR
+                    ]
+                else:
+                    self.updated_entry.pop(CONF_SOLAR_ENERGY_SENSOR, None)
+                if user_input.get(CONF_NOMINAL_INVERTER_POWER) is not None:
+                    self.updated_entry[CONF_NOMINAL_INVERTER_POWER] = user_input[
+                        CONF_NOMINAL_INVERTER_POWER
+                    ]
+                else:
+                    self.updated_entry.pop(CONF_NOMINAL_INVERTER_POWER, None)
+                self.hass.config_entries.async_update_entry(
+                    self._active_config_entry,
+                    data=self.updated_entry,
+                    options=self._active_config_entry.options,
+                )
+                return await self.async_step_init()
 
         data_schema = {
             vol.Required(
@@ -255,17 +367,54 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_BATTERY_MAX_DISCHARGE_RATE,
                 default=self.updated_entry[CONF_BATTERY_MAX_DISCHARGE_RATE],
             ): vol.All(vol.Coerce(float)),
+            # Use .get() so existing entries using legacy `efficiency` keep working.
             vol.Required(
-                CONF_BATTERY_EFFICIENCY,
-                default=self.updated_entry[CONF_BATTERY_EFFICIENCY],
-            ): vol.All(vol.Coerce(float)),
+                CONF_BATTERY_DISCHARGE_EFFICIENCY,
+                default=str(
+                    self.updated_entry.get(
+                        CONF_BATTERY_DISCHARGE_EFFICIENCY,
+                        self.updated_entry.get(CONF_BATTERY_EFFICIENCY, 0.9),
+                    )
+                ),
+            ): EFFICIENCY_TEXT_SELECTOR,
+            vol.Required(
+                CONF_BATTERY_CHARGE_EFFICIENCY,
+                default=str(
+                    self.updated_entry.get(
+                        CONF_BATTERY_CHARGE_EFFICIENCY,
+                        self.updated_entry.get(CONF_BATTERY_EFFICIENCY, 1.0),
+                    )
+                ),
+            ): EFFICIENCY_TEXT_SELECTOR,
+            vol.Required(
+                CONF_RATED_BATTERY_CYCLES,
+                default=self.updated_entry.get(CONF_RATED_BATTERY_CYCLES, 6000),
+            ): vol.All(vol.Coerce(float), vol.Range(min=1)),
+            vol.Required(
+                CONF_END_OF_LIFE_DEGRADATION,
+                default=self.updated_entry.get(CONF_END_OF_LIFE_DEGRADATION, 0.8),
+            ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
             vol.Required(
                 CONF_UPDATE_FREQUENCY,
                 default=self.updated_entry.get(CONF_UPDATE_FREQUENCY, 60),
             ): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Optional(
+                CONF_SOLAR_ENERGY_SENSOR,
+                description={
+                    "suggested_value": self.updated_entry.get(CONF_SOLAR_ENERGY_SENSOR)
+                },
+            ): EntitySelector(
+                EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
+            ),
+            vol.Optional(
+                CONF_NOMINAL_INVERTER_POWER,
+                default=self.updated_entry.get(CONF_NOMINAL_INVERTER_POWER),
+            ): vol.Any(None, vol.All(vol.Coerce(float), vol.Range(min=0))),
         }
         return self.async_show_form(
-            step_id="main_params", data_schema=vol.Schema(data_schema)
+            step_id="main_params",
+            data_schema=vol.Schema(data_schema),
+            errors=errors,
         )
 
     async def async_step_input_sensors(self, user_input=None):
@@ -287,9 +436,9 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 if input[SENSOR_ID] == user_input[CONF_INPUT_LIST]:
                     self.updated_entry[CONF_INPUT_LIST].remove(input)
             self.hass.config_entries.async_update_entry(
-                self.config_entry,
+                self._active_config_entry,
                 data=self.updated_entry,
-                options=self.config_entry.options,
+                options=self._active_config_entry.options,
             )
             return await self.async_step_init()
 
@@ -373,9 +522,9 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_no_tariff_info(self, user_input=None):
         self.current_input_entry[TARIFF_TYPE] = NO_TARIFF_INFO
         self.hass.config_entries.async_update_entry(
-            self.config_entry,
+            self._active_config_entry,
             data=self.updated_entry,
-            options=self.config_entry.options,
+            options=self._active_config_entry.options,
         )
         return await self.async_step_init()
 
@@ -384,9 +533,9 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             self.current_input_entry[TARIFF_TYPE] = FIXED_TARIFF
             self.current_input_entry[FIXED_TARIFF] = user_input[FIXED_TARIFF]
             self.hass.config_entries.async_update_entry(
-                self.config_entry,
+                self._active_config_entry,
                 data=self.updated_entry,
-                options=self.config_entry.options,
+                options=self._active_config_entry.options,
             )
             return await self.async_step_init()
 
@@ -409,9 +558,9 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             self.current_input_entry[TARIFF_TYPE] = TARIFF_SENSOR
             self.current_input_entry[TARIFF_SENSOR] = user_input[TARIFF_SENSOR]
             self.hass.config_entries.async_update_entry(
-                self.config_entry,
+                self._active_config_entry,
                 data=self.updated_entry,
-                options=self.config_entry.options,
+                options=self._active_config_entry.options,
             )
             return await self.async_step_init()
 
