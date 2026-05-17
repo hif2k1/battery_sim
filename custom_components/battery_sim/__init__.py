@@ -352,6 +352,8 @@ class SimulatedBatteryHandle:
         # Monetary book value of the energy currently held in the simulated battery.
         # This is tracked separately from published savings counters.
         self._stored_energy_value: float = 0.0
+        self._pending_restored_average_energy_value: float | None = None
+        self._battery_charge_state_restore_complete: bool = False
 
         self._charge_limit = config[CONF_BATTERY_MAX_CHARGE_RATE]
         self._discharge_limit = config[CONF_BATTERY_MAX_DISCHARGE_RATE]
@@ -464,6 +466,49 @@ class SimulatedBatteryHandle:
             self._stored_energy_value / charge_state
         )
 
+    def _finalize_average_energy_value_restore(self) -> None:
+        """Finalize stored-value restoration after battery SoC is available."""
+        if not self._battery_charge_state_restore_complete:
+            return
+
+        if self._pending_restored_average_energy_value is not None:
+            charge_state = max(float(self._charge_state), 0.0)
+            self._stored_energy_value = (
+                self._pending_restored_average_energy_value * charge_state
+                if charge_state > 0.000001
+                else 0.0
+            )
+            self._pending_restored_average_energy_value = None
+
+        self._update_average_energy_value_sensor()
+
+    def _rescale_stored_energy_value_for_charge_state_change(
+        self,
+        previous_charge_state: float,
+        new_charge_state: float,
+    ) -> None:
+        """Preserve average stored-energy value across external SoC adjustments.
+
+        This helper is used only when stored energy changes outside the normal
+        charge/discharge value-accounting path, such as a manual SoC change,
+        degradation-driven capacity clipping, or a cycle-count update that
+        reduces usable capacity.
+        """
+        previous_charge_state = max(float(previous_charge_state), 0.0)
+        new_charge_state = max(float(new_charge_state), 0.0)
+
+        if new_charge_state <= 0.000001:
+            self._stored_energy_value = 0.0
+        elif previous_charge_state > 0.000001:
+            self._stored_energy_value *= new_charge_state / previous_charge_state
+        else:
+            # There is no existing priced stored energy to preserve when the
+            # battery changes from empty to non-empty through an external SoC
+            # adjustment. Treat the newly introduced energy as unvalued.
+            self._stored_energy_value = 0.0
+
+        self._update_average_energy_value_sensor()
+
     def async_set_battery_charge_state(self, state: float):
         """Set the battery state of charge while preserving its average energy value."""
         _LOGGER.debug("Set battery charge state")
@@ -477,12 +522,10 @@ class SimulatedBatteryHandle:
             self._charge_state = self.current_max_capacity
 
         new_charge_state = max(float(self._charge_state), 0.0)
-        if previous_charge_state > 0.0:
-            self._stored_energy_value *= new_charge_state / previous_charge_state
-        elif new_charge_state <= 0.0:
-            self._stored_energy_value = 0.0
-
-        self._update_average_energy_value_sensor()
+        self._rescale_stored_energy_value_for_charge_state_change(
+            previous_charge_state,
+            new_charge_state,
+        )
         dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
         return
 
@@ -504,11 +547,10 @@ class SimulatedBatteryHandle:
         self._sensors[BATTERY_DEGRADATION] = self.degradation_factor
         self._charge_state = min(float(self._charge_state), self.current_max_capacity)
         new_charge_state = max(float(self._charge_state), 0.0)
-        if previous_charge_state > 0.000001 and new_charge_state < previous_charge_state:
-            self._stored_energy_value *= new_charge_state / previous_charge_state
-        elif new_charge_state <= 0.000001:
-            self._stored_energy_value = 0.0
-        self._update_average_energy_value_sensor()
+        self._rescale_stored_energy_value_for_charge_state_change(
+            previous_charge_state,
+            new_charge_state,
+        )
         self._charge_percentage = round(100 * self._charge_state / self.current_max_capacity)
 
         dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
@@ -1113,12 +1155,16 @@ class SimulatedBatteryHandle:
 
         charge_state_before_capacity_clip = float(self._charge_state)
         self._charge_state = min(charge_state_before_capacity_clip, effective_max_capacity)
-        if charge_state_before_capacity_clip > 0.000001 and self._charge_state < charge_state_before_capacity_clip:
+        if self._charge_state < charge_state_before_capacity_clip:
             # If degradation/capacity clipping removes stored energy, keep the
             # average value stable by reducing the cumulative stored value in
             # the same proportion.
-            self._stored_energy_value *= self._charge_state / charge_state_before_capacity_clip
-        self._update_average_energy_value_sensor()
+            self._rescale_stored_energy_value_for_charge_state_change(
+                charge_state_before_capacity_clip,
+                self._charge_state,
+            )
+        else:
+            self._update_average_energy_value_sensor()
 
         self._charge_percentage = round(100 * self._charge_state / effective_max_capacity)
 
