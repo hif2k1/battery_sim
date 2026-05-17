@@ -194,6 +194,20 @@
           "description": "Anzuwendende Anzahl Zyklen"
         }
       }
+    },
+    "set_stored_energy_value": {
+      "name": "Gespeicherten Energiewert setzen",
+      "description": "Setzt den aktuellen gesamten Geldwert der in einer bestimmten simulierten Batterie gespeicherten Energie",
+      "fields": {
+        "device_id": {
+          "name": "Ziel-Batteriegerät",
+          "description": "Gerät, dessen gespeicherter Energiewert gesetzt werden soll"
+        },
+        "stored_energy_value": {
+          "name": "Gespeicherter Energiewert",
+          "description": "Gesamter Geldwert, der aktuell der in der Batterie gespeicherten Energie zugeordnet ist"
+        }
+      }
     }
   }
 }
