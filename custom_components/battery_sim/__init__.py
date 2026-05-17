@@ -352,6 +352,8 @@ class SimulatedBatteryHandle:
         # Monetary book value of the energy currently held in the simulated battery.
         # This is tracked separately from published savings counters.
         self._stored_energy_value: float = 0.0
+        self._pending_restored_average_energy_value: float | None = None
+        self._battery_charge_state_restore_complete: bool = False
 
         self._charge_limit = config[CONF_BATTERY_MAX_CHARGE_RATE]
         self._discharge_limit = config[CONF_BATTERY_MAX_DISCHARGE_RATE]
@@ -463,6 +465,22 @@ class SimulatedBatteryHandle:
         self._sensors[ATTR_AVERAGE_ENERGY_VALUE] = (
             self._stored_energy_value / charge_state
         )
+
+    def _finalize_average_energy_value_restore(self) -> None:
+        """Finalize stored-value restoration after battery SoC is available."""
+        if not self._battery_charge_state_restore_complete:
+            return
+
+        if self._pending_restored_average_energy_value is not None:
+            charge_state = max(float(self._charge_state), 0.0)
+            self._stored_energy_value = (
+                self._pending_restored_average_energy_value * charge_state
+                if charge_state > 0.000001
+                else 0.0
+            )
+            self._pending_restored_average_energy_value = None
+
+        self._update_average_energy_value_sensor()
 
     def _rescale_stored_energy_value_for_charge_state_change(
         self,

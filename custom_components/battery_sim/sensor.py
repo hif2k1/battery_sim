@@ -242,12 +242,14 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
                         if restored_stored_value is not None:
                             self._handle._stored_energy_value = float(restored_stored_value)
                         else:
-                            # Backward-compatible fallback for the first startup
-                            # after upgrading to this sensor.
-                            self._handle._stored_energy_value = (
-                                float(state.state) * max(float(self._handle._charge_state), 0.0)
+                            # Backward-compatible fallback for states written
+                            # before the exact cumulative stored value attribute
+                            # existed. Defer reconstruction until the battery SoC
+                            # entity has completed its own restore.
+                            self._handle._pending_restored_average_energy_value = float(
+                                state.state
                             )
-                        self._handle._update_average_energy_value_sensor()
+                        self._handle._finalize_average_energy_value_restore()
                     last_reset = state.attributes.get(ATTR_LAST_RESET)
                     if self._supports_last_reset and last_reset is not None:
                         parsed_last_reset = dt_util.parse_datetime(last_reset)
@@ -442,6 +444,10 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
                 self.handle._date_recording_started = state.attributes[
                     ATTR_DATE_RECORDING_STARTED
                 ]
+
+        self.handle._battery_charge_state_restore_complete = True
+        self.handle._finalize_average_energy_value_restore()
+        dispatcher_send(self.hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
 
         async def async_update_state():
             """Update sensor state."""
