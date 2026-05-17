@@ -83,6 +83,7 @@ The integration creates the following sensors for each battery:
 | `total_money_saved` | Total money saved by the battery operation. | Currency |
 | `money_saved_on_imports` | Money saved by reducing energy imports from the grid. | Currency |
 | `extra_money_earned_on_exports` | Extra revenue earned by exporting energy to the grid. | Currency |
+| `average energy value` | Average monetary value of the energy currently stored in the battery, calculated from the tracked stored-energy value divided by the current stored energy. | Currency/kWh |
 | `last charge efficiency` | Charge efficiency used in the most recent update. | Ratio |
 | `last discharge efficiency` | Discharge efficiency used in the most recent update. | Ratio |
 | `battery_cycles` | Number of full charge/discharge cycles accumulated. | Cycles |
@@ -90,6 +91,28 @@ The integration creates the following sensors for each battery:
 | `Battery_mode_now` | Current operating mode (Charging, Discharging, Idle, etc.). | State |
 | `percentage` | Current charge level as a percentage. | % |
 | `status` | Status indicator showing if battery is Full, Empty, or Normal. | State |
+
+### Average energy value
+
+The `average energy value` sensor estimates the average monetary value of the energy currently stored in the simulated battery. Internally the integration keeps a cumulative **stored-energy value**:
+
+- during charging, it adds the charging cost already represented by the tariff logic: foregone export revenue for energy diverted from export, and import cost for grid-backed forced charging;
+- during discharge, it removes that stored value proportionally, assuming the discharged energy is drawn from a well-mixed pool of stored energy.
+
+The published sensor value is:
+
+`stored-energy value / currently stored battery energy`
+
+The cost of charging therefore reflects **charge efficiency**: lower charge efficiency raises the average value of each kWh that actually ends up stored. For this monetary-value estimate, discharge is intentionally treated as if it were **100% efficient**. The integration does not try to fold the power-dependent discharge efficiency into the published value; users who want to compare this number with a tariff or resale assumption should apply their own discharge-efficiency scaling factor.
+
+If no suitable tariff is available for part of a charging interval, no unknown cost is added to the stored-energy value for that portion. The sensor starts at `0` because the simulator cannot infer the historic value of the initial state of charge. Negative tariffs are preserved, so the reported average energy value can also become negative.
+
+To seed or correct the value manually, call the `battery_sim.set_stored_energy_value` action and provide:
+
+- `device_id`: the simulated battery device;
+- `stored_energy_value`: the **total** monetary value currently assigned to the stored energy, not the value per kWh.
+
+After the action runs, the `average energy value` sensor is updated immediately as `stored_energy_value / currently stored battery energy`. Negative values are accepted, which can be useful when the battery was charged at negative prices. If the battery currently contains no stored energy, the integration keeps the stored-energy value at `0`, because a non-zero value for an empty battery would be inconsistent.
 
 ## Solar Power Cap : Important Remarks
 

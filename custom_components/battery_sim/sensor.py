@@ -31,6 +31,8 @@ from .const import (
     ATTR_MONEY_SAVED,
     ATTR_MONEY_SAVED_IMPORT,
     ATTR_MONEY_SAVED_EXPORT,
+    ATTR_AVERAGE_ENERGY_VALUE,
+    ATTR_STORED_ENERGY_VALUE,
     ATTR_LAST_CHARGE_EFFICIENCY,
     ATTR_LAST_DISCHARGE_EFFICIENCY,
     ATTR_SOURCE_ID,
@@ -176,6 +178,14 @@ async def define_sensors(hass, handle):
             hass.config.currency,
         )
     )
+    sensors.append(
+        DisplayOnlySensor(
+            handle,
+            ATTR_AVERAGE_ENERGY_VALUE,
+            None,
+            f"{hass.config.currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
+        )
+    )
     sensors.append(SimulatedBattery(handle))
     sensors.append(BatteryStatus(handle, BATTERY_MODE))
     return sensors
@@ -225,6 +235,19 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
             else:
                 try:
                     self._handle._sensors[self._sensor_type] = float(state.state)
+                    if self._sensor_type == ATTR_AVERAGE_ENERGY_VALUE:
+                        restored_stored_value = state.attributes.get(
+                            ATTR_STORED_ENERGY_VALUE
+                        )
+                        if restored_stored_value is not None:
+                            self._handle._stored_energy_value = float(restored_stored_value)
+                        else:
+                            # Backward-compatible fallback for the first startup
+                            # after upgrading to this sensor.
+                            self._handle._stored_energy_value = (
+                                float(state.state) * max(float(self._handle._charge_state), 0.0)
+                            )
+                        self._handle._update_average_energy_value_sensor()
                     last_reset = state.attributes.get(ATTR_LAST_RESET)
                     if self._supports_last_reset and last_reset is not None:
                         parsed_last_reset = dt_util.parse_datetime(last_reset)
@@ -294,6 +317,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
             SOLAR_POWER_CAP,
             ATTR_LAST_CHARGE_EFFICIENCY,
             ATTR_LAST_DISCHARGE_EFFICIENCY,
+            ATTR_AVERAGE_ENERGY_VALUE,
         ]:
             return SensorStateClass.MEASUREMENT
         return SensorStateClass.TOTAL
@@ -306,6 +330,9 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes of the sensor."""
+        if self._sensor_type == ATTR_AVERAGE_ENERGY_VALUE:
+            return {ATTR_STORED_ENERGY_VALUE: round(self._handle._stored_energy_value, 6)}
+
         state_attr = {}
         for input in self._handle._inputs:
             if self._sensor_type != input[SIMULATED_SENSOR]:

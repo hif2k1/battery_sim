@@ -194,6 +194,20 @@
           "description": "Cycle count to apply"
         }
       }
+    },
+    "set_stored_energy_value": {
+      "name": "Set Stored Energy Value",
+      "description": "Set the current total monetary value assigned to the energy stored in a specific simulated battery",
+      "fields": {
+        "device_id": {
+          "name": "Target Battery Device",
+          "description": "Device to set stored energy value for"
+        },
+        "stored_energy_value": {
+          "name": "Stored Energy Value",
+          "description": "Total monetary value currently assigned to the energy stored in the battery"
+        }
+      }
     }
   }
 }

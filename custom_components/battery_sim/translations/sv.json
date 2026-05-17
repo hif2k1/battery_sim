@@ -194,6 +194,20 @@
           "description": "Antal cykler att tillämpa"
         }
       }
+    },
+    "set_stored_energy_value": {
+      "name": "Ange lagrat energivärde",
+      "description": "Ange det aktuella totala monetära värdet för energin som lagras i ett visst simulerat batteri",
+      "fields": {
+        "device_id": {
+          "name": "Målenhet för batteri",
+          "description": "Enhet vars lagrade energivärde ska anges"
+        },
+        "stored_energy_value": {
+          "name": "Lagrat energivärde",
+          "description": "Totalt monetärt värde som för närvarande tilldelas energin som lagras i batteriet"
+        }
+      }
     }
   }
 }

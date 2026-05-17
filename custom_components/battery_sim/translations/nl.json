@@ -194,6 +194,20 @@
           "description": "Aantal cycli om toe te passen"
         }
       }
+    },
+    "set_stored_energy_value": {
+      "name": "Opgeslagen energiewaarde instellen",
+      "description": "Stel de huidige totale geldwaarde in die is toegewezen aan de energie in een specifieke gesimuleerde batterij",
+      "fields": {
+        "device_id": {
+          "name": "Doelbatterijapparaat",
+          "description": "Apparaat waarvoor de opgeslagen energiewaarde wordt ingesteld"
+        },
+        "stored_energy_value": {
+          "name": "Opgeslagen energiewaarde",
+          "description": "Totale geldwaarde die momenteel is toegewezen aan de energie die in de batterij is opgeslagen"
+        }
+      }
     }
   }
 }
