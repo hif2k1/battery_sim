@@ -54,6 +54,7 @@ battery_sim:
     nominal_inverter_power_kw: 5.0
     rated_battery_cycles: 6000
     end_of_life_degradation: 0.8
+    minimum_user_selectable_soc: 0.10
     update_frequency: 60
     energy_tariff: sensor.energy_tariff
   lg_chem_resu10h:
