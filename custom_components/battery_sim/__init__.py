@@ -59,6 +59,8 @@ from .const import (
     CONF_SOLAR_ENERGY_SENSOR,
     CONF_NOMINAL_INVERTER_POWER,
     CONF_UPDATE_FREQUENCY,
+    CONF_MINIMUM_USER_SELECTABLE_SOC,
+    DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
     CONF_INPUT_LIST,
     CONF_RATED_BATTERY_CYCLES,
     DEFAULT_MODE,
@@ -128,6 +130,10 @@ BATTERY_CONFIG_SCHEMA = vol.Schema(
             vol.Optional(CONF_UPDATE_FREQUENCY, default=60): vol.All(
                 vol.Coerce(int), vol.Range(min=1)
             ),
+            vol.Optional(
+                CONF_MINIMUM_USER_SELECTABLE_SOC,
+                default=DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
+            ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
         },
     )
 )
@@ -357,7 +363,19 @@ class SimulatedBatteryHandle:
 
         self._charge_limit = config[CONF_BATTERY_MAX_CHARGE_RATE]
         self._discharge_limit = config[CONF_BATTERY_MAX_DISCHARGE_RATE]
-        self._minimum_soc: float = 0
+        self._minimum_user_selectable_soc: float = min(
+            max(
+                float(
+                    config.get(
+                        CONF_MINIMUM_USER_SELECTABLE_SOC,
+                        DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
+                    )
+                ),
+                0.0,
+            ),
+            1.0,
+        )
+        self._minimum_soc: float = self.minimum_user_selectable_soc_percentage
         self._maximum_soc: float = 100
         self._charge_percentage: float = INITIAL_CHARGE_PERCENTAGE
         self._charge_state: float = config[CONF_BATTERY_SIZE] * INITIAL_SOC_RATIO
@@ -825,7 +843,9 @@ class SimulatedBatteryHandle:
         elif key == "discharge_limit":        
             self._discharge_limit = value
         elif key == "minimum_soc":        
-            self._minimum_soc = value
+            self._minimum_soc = max(
+                float(value), self.minimum_user_selectable_soc_percentage
+            )
         elif key == "maximum_soc":        
             self._maximum_soc = value
         else:
@@ -882,6 +902,11 @@ class SimulatedBatteryHandle:
     def current_max_capacity(self) -> float:
         """Return current degraded maximum battery capacity in kWh."""
         return max(float(self._battery_size) * self.degradation_factor, 0.000001)
+
+    @property
+    def minimum_user_selectable_soc_percentage(self) -> float:
+        """Return the configured minimum selectable SOC as a percentage."""
+        return 100.0 * float(self._minimum_user_selectable_soc)
 
     def update_battery(self, import_amount, export_amount, solar_amount=0.0):
         """Update battery statistics based on the reading for Im- or Export."""
