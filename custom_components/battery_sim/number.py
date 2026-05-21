@@ -102,8 +102,9 @@ class BatterySlider(RestoreNumber):
             self._max_value = handle._max_discharge_rate
             self._value = self._max_value
         elif key == "minimum_soc":               
-            self._max_value = 100          
-            self._value = 0
+            self._max_value = 100
+            self._min_value = handle.minimum_user_selectable_soc_percentage
+            self._value = self._min_value
         elif key == "maximum_soc":               
             self._max_value = 100
             self._value = self._max_value
@@ -131,7 +132,7 @@ class BatterySlider(RestoreNumber):
         
     @property
     def native_min_value(self):
-        return 0.00
+        return getattr(self, "_min_value", 0.00)
 
     @property
     def native_max_value(self):
@@ -146,6 +147,8 @@ class BatterySlider(RestoreNumber):
         return self._value
 
     async def async_set_native_value(self, value: float) -> None:
+        if self._key == "minimum_soc":
+            value = max(float(value), self.native_min_value)
         self._value = value
      
         self.handle.set_slider_limit(value, self._key)
@@ -158,6 +161,9 @@ class BatterySlider(RestoreNumber):
         await super().async_added_to_hass()
 
         if (last_number_data := await self.async_get_last_number_data()) is not None:
-            self._value = last_number_data.native_value
+            restored_value = last_number_data.native_value
+            if self._key == "minimum_soc":
+                restored_value = max(float(restored_value), self.native_min_value)
+            self._value = restored_value
             _LOGGER.debug("Restored %s to %.2f", self._key, self._value)
             self.handle.set_slider_limit(self._value, self._key)  # Restore to handle too
