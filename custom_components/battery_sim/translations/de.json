@@ -28,7 +28,8 @@
           "end_of_life_degradation": "Kapazität am Ende der Lebensdauer (0 bis 1)",
           "update_frequency": "Aktualisierungsintervall in Sekunden",
           "solar_energy_sensor": "Solarenergiezählersensor",
-          "nominal_inverter_power_kw": "Nennleistung des Wechselrichters in kW"
+          "nominal_inverter_power_kw": "Nennleistung des Wechselrichters in kW",
+          "minimum_user_selectable_soc": "Minimal auswählbarer Ladezustand (0 bis 1)"
         },
         "description": "Lege die Spezifikationen der Batterie fest. Bitte erwäge, Details der von dir simulierten Batterie auf unserem GitHub zu veröffentlichen, damit wir sie zur Vorlagenliste hinzufügen können."
       },
