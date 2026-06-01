@@ -360,11 +360,20 @@ class SimulatedBatteryHandle:
 
     def get_efficiency(self, efficiency_type, power_level):
         """Return configured charge or discharge efficiency at the given power level."""
-        curve = (
-            self._battery_charge_efficiency_curve
-            if efficiency_type == "charge"
-            else self._battery_discharge_efficiency_curve
-        )
+        if efficiency_type == "charge":
+            curve = self._battery_charge_efficiency_curve
+        elif efficiency_type == "discharge":
+            curve = self._battery_discharge_efficiency_curve
+        else:
+            _LOGGER.error(
+                "Invalid efficiency_type '%s' passed to get_efficiency; expected 'charge' or 'discharge'",
+                efficiency_type,
+            )
+            raise ValueError(
+                f"Invalid efficiency_type '{efficiency_type}' passed to get_efficiency; "
+                "expected 'charge' or 'discharge'"
+            )
+
         return interpolate_efficiency(curve, power_level)
 
     def __init__(self, config, hass, entry_id=None):
