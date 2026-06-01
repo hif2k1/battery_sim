@@ -34,6 +34,7 @@ You can also define batteries in `configuration.yaml`. Each battery is created u
 | `name` | No | Friendly name shown in Home Assistant. If omitted, the YAML object key is used. |
 | `rated_battery_cycles` | No | Number of full cycles at which end-of-life degradation is reached. Defaults to `6000`. |
 | `end_of_life_degradation` | No | Remaining usable capacity at `rated_battery_cycles`, expressed from `0` to `1`. Defaults to `0.8`. |
+| `minimum_user_selectable_soc` | No | Physical lower SOC floor, expressed from `0` to `1`, below which the runtime **Minimum SOC** control cannot be set. Defaults to `0.10`, so the slider cannot be moved below 10%. |
 | `update_frequency` | No | Maximum interval between updates in seconds. Defaults to `60`, which is also the recommended value. Faster updates do not improve accuracy. |
 
 ### Example YAML
@@ -53,6 +54,7 @@ battery_sim:
     nominal_inverter_power_kw: 5.0
     rated_battery_cycles: 6000
     end_of_life_degradation: 0.8
+    minimum_user_selectable_soc: 0.10
     update_frequency: 60
     energy_tariff: sensor.energy_tariff
   lg_chem_resu10h:

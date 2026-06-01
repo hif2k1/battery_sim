@@ -89,6 +89,9 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data[CONF_RATED_BATTERY_CYCLES] = 6000
             self._data[CONF_END_OF_LIFE_DEGRADATION] = 0.8
             self._data[CONF_UPDATE_FREQUENCY] = 60
+            self._data[CONF_MINIMUM_USER_SELECTABLE_SOC] = (
+                DEFAULT_MINIMUM_USER_SELECTABLE_SOC
+            )
             await self.async_set_unique_id(self._data[CONF_NAME])
             self._abort_if_unique_id_configured()
             self._data[CONF_INPUT_LIST] = []
@@ -155,6 +158,10 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_UPDATE_FREQUENCY, default=60): vol.All(
                         vol.Coerce(int), vol.Range(min=1)
                     ),
+                    vol.Required(
+                        CONF_MINIMUM_USER_SELECTABLE_SOC,
+                        default=DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
                     vol.Optional(CONF_SOLAR_ENERGY_SENSOR): EntitySelector(
                         EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
                     ),
@@ -336,6 +343,9 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 self.updated_entry[CONF_UPDATE_FREQUENCY] = user_input[
                     CONF_UPDATE_FREQUENCY
                 ]
+                self.updated_entry[CONF_MINIMUM_USER_SELECTABLE_SOC] = user_input[
+                    CONF_MINIMUM_USER_SELECTABLE_SOC
+                ]
                 if user_input.get(CONF_SOLAR_ENERGY_SENSOR):
                     self.updated_entry[CONF_SOLAR_ENERGY_SENSOR] = user_input[
                         CONF_SOLAR_ENERGY_SENSOR
@@ -398,6 +408,13 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_UPDATE_FREQUENCY,
                 default=self.updated_entry.get(CONF_UPDATE_FREQUENCY, 60),
             ): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(
+                CONF_MINIMUM_USER_SELECTABLE_SOC,
+                default=self.updated_entry.get(
+                    CONF_MINIMUM_USER_SELECTABLE_SOC,
+                    DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
+                ),
+            ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
             vol.Optional(
                 CONF_SOLAR_ENERGY_SENSOR,
                 description={
