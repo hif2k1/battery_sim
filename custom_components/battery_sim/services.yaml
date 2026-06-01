@@ -41,3 +41,36 @@ set_battery_cycles:
           min: 0
           max: 50000
           step: 1
+
+get_efficiency:
+  name: battery_sim.get_efficiency.name
+  description: battery_sim.get_efficiency.description
+  fields:
+    device_id:
+      name: battery_sim.get_efficiency.fields.device_id.name
+      description: battery_sim.get_efficiency.fields.device_id.description
+      required: true
+      selector:
+        device:
+          integration: battery_sim
+    efficiency_type:
+      name: battery_sim.get_efficiency.fields.efficiency_type.name
+      description: battery_sim.get_efficiency.fields.efficiency_type.description
+      required: true
+      selector:
+        select:
+          options:
+            - label: Charge
+              value: charge
+            - label: Discharge
+              value: discharge
+    power_level:
+      name: battery_sim.get_efficiency.fields.power_level.name
+      description: battery_sim.get_efficiency.fields.power_level.description
+      required: true
+      selector:
+        number:
+          mode: box
+          min: 0
+          step: 0.001
+          unit_of_measurement: kW
