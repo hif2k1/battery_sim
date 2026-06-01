@@ -198,12 +198,12 @@ async def async_setup_entry(hass, entry) -> bool:
         for handle_entry in hass.data[DOMAIN].values():
             if handle_entry.matches_device_identifiers(device.identifiers):
                 handle_entry.async_set_battery_charge_state(state)
-                _LOGGER.debug("Battery charge updated for device %s", handle_entry._name)
+                _LOGGER.debug("Battery charge updated for device %s", handle_entry.name)
                 break
         else:
             _LOGGER.error("No handle matched for device_id: %s", device_id)
 
-    async def _get_handle_for_device_id(device_id):
+    def _get_handle_for_device_id(device_id):
         """Return the simulated battery handle matching a Home Assistant device ID."""
         dev_reg = dr.async_get(hass)
         device = dev_reg.async_get(device_id)
@@ -232,7 +232,7 @@ async def async_setup_entry(hass, entry) -> bool:
         for handle_entry in hass.data[DOMAIN].values():
             if handle_entry.matches_device_identifiers(device.identifiers):
                 handle_entry.async_set_battery_cycles(cycles)
-                _LOGGER.debug("Battery cycles updated for device %s", handle_entry._name)
+                _LOGGER.debug("Battery cycles updated for device %s", handle_entry.name)
                 break
         else:
             _LOGGER.error("No handle matched for device_id: %s", device_id)
@@ -247,7 +247,7 @@ async def async_setup_entry(hass, entry) -> bool:
             power_level,
         )
 
-        handle_entry = await _get_handle_for_device_id(device_id)
+        handle_entry = _get_handle_for_device_id(device_id)
         if handle_entry is None:
             return {
                 "success": False,
@@ -258,7 +258,7 @@ async def async_setup_entry(hass, entry) -> bool:
         return {
             "success": True,
             "device_id": device_id,
-            "battery": handle_entry._name,
+            "battery": handle_entry.name,
             "efficiency_type": efficiency_type,
             "power_level_kw": power_level,
             "efficiency": efficiency,
@@ -350,6 +350,11 @@ async def async_unload_entry(hass, config_entry):
 
 class SimulatedBatteryHandle:
     """Representation of the battery itself."""
+
+    @property
+    def name(self):
+        """Return the configured battery name."""
+        return self._name
 
     @staticmethod
     def _safe_curve_efficiency(curve, fallback=1.0):
