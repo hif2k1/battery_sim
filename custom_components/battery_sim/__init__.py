@@ -6,7 +6,7 @@ from datetime import timedelta
 import voluptuous as vol
 import homeassistant.util.dt as dt_util
 
-homeassistant.core import SupportsResponse, callback
+from homeassistant.core import SupportsResponse, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import discovery
 import homeassistant.helpers.config_validation as cv
