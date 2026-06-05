@@ -1,13 +1,38 @@
 import re
 
 from .const import (
+    ATTR_AVERAGE_ENERGY_VALUE,
+    ATTR_ENERGY_BATTERY_IN,
+    ATTR_ENERGY_BATTERY_OUT,
+    ATTR_ENERGY_SAVED,
+    ATTR_LAST_CHARGE_EFFICIENCY,
+    ATTR_LAST_DISCHARGE_EFFICIENCY,
+    ATTR_MONEY_SAVED,
+    ATTR_MONEY_SAVED_EXPORT,
+    ATTR_MONEY_SAVED_IMPORT,
+    BATTERY_CYCLES,
+    BATTERY_DEGRADATION,
+    BATTERY_MODE,
+    CHARGE_LIMIT,
+    CHARGING_RATE,
+    DISCHARGE_LIMIT,
+    DISCHARGING_RATE,
+    DOMAIN,
+    MAXIMUM_SOC,
+    MINIMUM_SOC,
+    PAUSE_BATTERY,
+    RESET_BATTERY,
+    SOLAR_POWER_CAP,
     CONF_ENERGY_EXPORT_TARIFF,
     CONF_ENERGY_IMPORT_TARIFF,
     CONF_ENERGY_TARIFF,
     CONF_EXPORT_SENSOR,
+    CONF_NAME,
     CONF_IMPORT_SENSOR,
+    CONF_INPUT_LIST,
     CONF_SECOND_EXPORT_SENSOR,
     CONF_SECOND_IMPORT_SENSOR,
+    CONF_SOLAR_ENERGY_SENSOR,
     FIXED_NUMERICAL_TARIFFS,
     GRID_EXPORT_SIM,
     GRID_IMPORT_SIM,
@@ -186,3 +211,89 @@ def interpolate_efficiency(curve_points, power_kw):
 def _validate_efficiency(value):
     if not 0 <= value <= 1:
         raise ValueError("Efficiency values must be between 0 and 1")
+
+
+BASE_SENSOR_UNIQUE_ID_SUFFIXES = (
+    ATTR_ENERGY_SAVED,
+    ATTR_ENERGY_BATTERY_OUT,
+    ATTR_ENERGY_BATTERY_IN,
+    CHARGING_RATE,
+    DISCHARGING_RATE,
+    ATTR_LAST_CHARGE_EFFICIENCY,
+    ATTR_LAST_DISCHARGE_EFFICIENCY,
+    BATTERY_CYCLES,
+    BATTERY_DEGRADATION,
+    ATTR_MONEY_SAVED_IMPORT,
+    ATTR_MONEY_SAVED,
+    ATTR_MONEY_SAVED_EXPORT,
+    ATTR_AVERAGE_ENERGY_VALUE,
+    BATTERY_MODE,
+)
+
+CONTROL_ENTITY_UNIQUE_ID_SUFFIXES = (
+    RESET_BATTERY,
+    PAUSE_BATTERY,
+    "Battery Mode",
+    CHARGE_LIMIT,
+    DISCHARGE_LIMIT,
+    MINIMUM_SOC,
+    MAXIMUM_SOC,
+)
+
+
+def battery_device_identifiers(config, entry_id=None):
+    """Return device identifiers used by this integration for a battery config."""
+    identifiers = []
+    if entry_id is not None:
+        identifiers.append((DOMAIN, entry_id))
+    identifiers.append((DOMAIN, config[CONF_NAME]))
+    return identifiers
+
+
+def expected_entity_unique_ids(config):
+    """Return the unique IDs that should currently exist for a battery config."""
+    battery_name = config[CONF_NAME]
+    inputs = config.get(CONF_INPUT_LIST) or generate_input_list(config)
+    unique_ids = {battery_name}
+    unique_ids.update(
+        f"{battery_name} - {sensor_name}"
+        for sensor_name in BASE_SENSOR_UNIQUE_ID_SUFFIXES
+    )
+    unique_ids.update(
+        f"{battery_name} - {input_details[SIMULATED_SENSOR]}"
+        for input_details in inputs
+    )
+    if config.get(CONF_SOLAR_ENERGY_SENSOR) is not None:
+        unique_ids.add(f"{battery_name} - {SOLAR_POWER_CAP}")
+    unique_ids.update(
+        f"{battery_name} - {entity_name}"
+        for entity_name in CONTROL_ENTITY_UNIQUE_ID_SUFFIXES
+    )
+    return unique_ids
+
+
+def battery_device_registry_ids(device_registry, config, entry_id=None):
+    """Return device registry IDs for known current and legacy battery identifiers."""
+    device_ids = []
+    for identifier in battery_device_identifiers(config, entry_id):
+        device = device_registry.async_get_device({identifier})
+        if device is not None and device.id not in device_ids:
+            device_ids.append(device.id)
+    return device_ids
+
+
+def find_leftover_entity_registry_entries(
+    entity_registry, device_registry, config, entry_id=None
+):
+    """Return registered battery entities that are not used by current settings."""
+    expected_unique_ids = expected_entity_unique_ids(config)
+    leftovers = []
+    for device_id in battery_device_registry_ids(device_registry, config, entry_id):
+        entries = entity_registry.async_entries_for_device(device_id)
+        for entry in entries:
+            if entry.platform != DOMAIN:
+                continue
+            if entry.unique_id in expected_unique_ids:
+                continue
+            leftovers.append(entry)
+    return leftovers
