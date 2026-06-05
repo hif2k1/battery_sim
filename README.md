@@ -70,9 +70,9 @@ battery_sim:
     energy_export_tariff: sensor.grid_export_tariff
 ```
 
-## Sensors
+## Sensors and attributes 
 
-The integration creates the following sensors for each battery:
+The integration creates the following sensors or attributes for each battery:
 
 | Sensor | Description | Unit |
 | --- | --- | --- |
@@ -91,8 +91,8 @@ The integration creates the following sensors for each battery:
 | `battery_cycles` | Number of full charge/discharge cycles accumulated. | Cycles |
 | `battery_degradation` | Current degradation factor (1.0 = no degradation). | Ratio |
 | `Battery_mode_now` | Current operating mode (Charging, Discharging, Idle, etc.). | State |
-| `percentage` | Current charge level as a percentage. | % |
-| `status` | Status indicator showing if battery is Full, Empty, or Normal. | State |
+| `percentage` | (attribute) Current charge level as a percentage. | % |
+| `status` | (attribute) Status indicator showing if battery is Full, Empty, or Normal. | State |
 
 ### Average energy value
 
