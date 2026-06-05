@@ -8,6 +8,7 @@ import homeassistant.util.dt as dt_util
 
 from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import discovery
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.start import async_at_start
@@ -92,6 +93,7 @@ from .const import (
     SIMULATED_SENSOR,
 )
 from .helpers import (
+    find_leftover_entity_registry_entries,
     generate_input_list,
     interpolate_efficiency,
     parse_efficiency_curve,
@@ -284,14 +286,37 @@ async def async_setup_entry(hass, entry) -> bool:
 
     handle._listeners.append(entry.add_update_listener(async_update_settings))
 
+    _log_leftover_entity_registry_entries(hass, entry)
+
     hass.async_create_task(
         hass.config_entries.async_forward_entry_setups(entry, BATTERY_PLATFORMS)
     )
 
     return True
 
+
+def _log_leftover_entity_registry_entries(hass, entry):
+    """Log stale entity registry entries for a battery config entry."""
+    entity_reg = er.async_get(hass)
+    device_reg = dr.async_get(hass)
+    leftovers = find_leftover_entity_registry_entries(
+        entity_reg, device_reg, entry.data, entry.entry_id
+    )
+    if not leftovers:
+        return
+
+    _LOGGER.warning(
+        "Battery Sim '%s' has leftover entities that are no longer used by the "
+        "current settings: %s. Use the options flow item 'Delete leftover "
+        "entities' to remove them.",
+        entry.data[CONF_NAME],
+        ", ".join(entry.entity_id for entry in leftovers),
+    )
+
+
 async def async_update_settings(hass, entry):
     _LOGGER.warning(f"Config change detected {entry.data[CONF_NAME]}")
+    _log_leftover_entity_registry_entries(hass, entry)
     await hass.config_entries.async_reload(entry.entry_id)
     return
 

@@ -59,70 +59,76 @@ def load_json_and_duplicates(path: pathlib.Path) -> tuple[dict[str, Any], list[s
 
 def collect_used_paths() -> set[tuple[str, ...]]:
     consts = parse_consts()
-    src = CONFIG_FLOW.read_text(encoding="utf-8")
-    tree = ast.parse(src)
-
-    step_ids: set[str] = set()
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-            if node.func.attr in {"async_show_form", "async_show_menu"}:
-                for kw in node.keywords:
-                    if (
-                        kw.arg == "step_id"
-                        and isinstance(kw.value, ast.Constant)
-                        and isinstance(kw.value.value, str)
-                    ):
-                        step_ids.add(kw.value.value)
-
     used: set[tuple[str, ...]] = {
         ("config", "abort", "already_configured"),
         ("config", "flow_title"),
         ("config", "error", "invalid_input"),
     }
 
-    for section in ("config", "options"):
-        for step_id in step_ids:
-            used.add((section, "step", step_id, "title"))
-            used.add((section, "step", step_id, "description"))
+    src = CONFIG_FLOW.read_text(encoding="utf-8")
+    tree = ast.parse(src)
+
+    config_step_ids: set[str] = set()
+    option_step_ids: set[str] = {"delete_leftover_entities"}
+    current_class = None
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            current_class = node.name
+            for class_node in ast.walk(node):
+                if isinstance(class_node, ast.Call) and isinstance(
+                    class_node.func, ast.Attribute
+                ):
+                    if class_node.func.attr in {"async_show_form", "async_show_menu"}:
+                        for kw in class_node.keywords:
+                            if (
+                                kw.arg == "step_id"
+                                and isinstance(kw.value, ast.Constant)
+                                and isinstance(kw.value.value, str)
+                            ):
+                                if current_class == "BatteryOptionsFlowHandler":
+                                    option_step_ids.add(kw.value.value)
+                                else:
+                                    config_step_ids.add(kw.value.value)
+
+    for step_id in config_step_ids:
+        used.add(("config", "step", step_id, "title"))
+        used.add(("config", "step", step_id, "description"))
+    for step_id in option_step_ids:
+        used.add(("options", "step", step_id, "title"))
+        used.add(("options", "step", step_id, "description"))
 
     for opt in ("add_import_meter", "add_export_meter", "all_done"):
         used.add(("config", "step", "meter_menu", "menu_options", opt))
     for opt in ("no_tariff_info", "fixed_tariff", "tariff_sensor"):
         used.add(("config", "step", "tariff_menu", "menu_options", opt))
         used.add(("options", "step", "tariff_menu", "menu_options", opt))
-    for opt in ("main_params", "input_sensors", "all_done"):
+    for opt in ("main_params", "input_sensors", "delete_leftover_entities", "all_done"):
         used.add(("options", "step", "init", "menu_options", opt))
     for opt in ("add_import_meter", "add_export_meter", "edit_input_tariff", "delete_input"):
         used.add(("options", "step", "input_sensors", "menu_options", opt))
 
+    common_battery_fields = [
+        "CONF_BATTERY_SIZE",
+        "CONF_BATTERY_MAX_DISCHARGE_RATE",
+        "CONF_BATTERY_MAX_CHARGE_RATE",
+        "CONF_BATTERY_DISCHARGE_EFFICIENCY",
+        "CONF_BATTERY_CHARGE_EFFICIENCY",
+        "CONF_RATED_BATTERY_CYCLES",
+        "CONF_END_OF_LIFE_DEGRADATION",
+        "CONF_UPDATE_FREQUENCY",
+        "CONF_SOLAR_ENERGY_SENSOR",
+        "CONF_NOMINAL_INVERTER_POWER",
+        "CONF_MINIMUM_USER_SELECTABLE_SOC",
+    ]
     step_fields = {
         ("config", "user"): ["BATTERY_TYPE"],
-        ("config", "custom"): [
-            "CONF_UNIQUE_NAME",
-            "CONF_BATTERY_SIZE",
-            "CONF_BATTERY_MAX_DISCHARGE_RATE",
-            "CONF_BATTERY_MAX_CHARGE_RATE",
-            "CONF_BATTERY_DISCHARGE_EFFICIENCY",
-            "CONF_BATTERY_CHARGE_EFFICIENCY",
-            "CONF_RATED_BATTERY_CYCLES",
-            "CONF_END_OF_LIFE_DEGRADATION",
-            "CONF_UPDATE_FREQUENCY",
-        ],
+        ("config", "custom"): ["CONF_UNIQUE_NAME", *common_battery_fields],
         ("config", "add_import_meter"): ["SENSOR_ID"],
         ("config", "add_export_meter"): ["SENSOR_ID"],
         ("config", "fixed_tariff"): ["FIXED_TARIFF"],
         ("config", "tariff_sensor"): ["TARIFF_SENSOR"],
-        ("options", "main_params"): [
-            "CONF_BATTERY_SIZE",
-            "CONF_BATTERY_MAX_DISCHARGE_RATE",
-            "CONF_BATTERY_MAX_CHARGE_RATE",
-            "CONF_BATTERY_DISCHARGE_EFFICIENCY",
-            "CONF_BATTERY_CHARGE_EFFICIENCY",
-            "CONF_RATED_BATTERY_CYCLES",
-            "CONF_END_OF_LIFE_DEGRADATION",
-            "CONF_UPDATE_FREQUENCY",
-        ],
+        ("options", "main_params"): common_battery_fields,
         ("options", "add_import_meter"): ["SENSOR_ID"],
         ("options", "add_export_meter"): ["SENSOR_ID"],
         ("options", "fixed_tariff"): ["FIXED_TARIFF"],
@@ -135,18 +141,17 @@ def collect_used_paths() -> set[tuple[str, ...]]:
         for field in fields:
             used.add((section, "step", step_id, "data", resolve_const(field, consts)))
 
-    for svc in ("set_battery_charge_state", "set_battery_cycles"):
+    services = {
+        "set_battery_charge_state": ("device_id", "charge_state"),
+        "set_battery_cycles": ("device_id", "battery_cycles"),
+        "set_stored_energy_value": ("device_id", "stored_energy_value"),
+    }
+    for svc, fields in services.items():
         used.add(("services", svc, "name"))
         used.add(("services", svc, "description"))
-
-    for svc, field in (
-        ("set_battery_charge_state", "device_id"),
-        ("set_battery_charge_state", "charge_state"),
-        ("set_battery_cycles", "device_id"),
-        ("set_battery_cycles", "battery_cycles"),
-    ):
-        used.add(("services", svc, "fields", field, "name"))
-        used.add(("services", svc, "fields", field, "description"))
+        for field in fields:
+            used.add(("services", svc, "fields", field, "name"))
+            used.add(("services", svc, "fields", field, "description"))
 
     return used
 

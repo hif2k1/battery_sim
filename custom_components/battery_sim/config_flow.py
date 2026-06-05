@@ -4,6 +4,8 @@ import voluptuous as vol
 import time
 
 from homeassistant import config_entries
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.selector import (
     EntitySelector,
     EntitySelectorConfig,
@@ -45,7 +47,11 @@ from .const import (
     FIXED_TARIFF,
     SIMULATED_SENSOR,
 )
-from .helpers import generate_input_list, validate_efficiency_config
+from .helpers import (
+    find_leftover_entity_registry_entries,
+    generate_input_list,
+    validate_efficiency_config,
+)
 
 
 EFFICIENCY_TEXT_SELECTOR = TextSelector(
@@ -326,8 +332,42 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             )
 
         return self.async_show_menu(
-            step_id="init", menu_options=["main_params", "input_sensors", "all_done"]
+            step_id="init",
+            menu_options=[
+                "main_params",
+                "input_sensors",
+                "delete_leftover_entities",
+                "all_done",
+            ],
         )
+
+    async def async_step_delete_leftover_entities(self, user_input=None):
+        """Delete stale entity registry entries for this battery."""
+        entity_reg = er.async_get(self.hass)
+        device_reg = dr.async_get(self.hass)
+        leftovers = find_leftover_entity_registry_entries(
+            entity_reg,
+            device_reg,
+            self.updated_entry,
+            self._active_config_entry.entry_id,
+        )
+        if not leftovers:
+            _LOGGER.warning(
+                "No leftover Battery Sim entities found for '%s'.",
+                self.updated_entry[CONF_NAME],
+            )
+            return await self.async_step_init()
+
+        leftover_entity_ids = [entry.entity_id for entry in leftovers]
+        for entry in leftovers:
+            entity_reg.async_remove(entry.entity_id)
+
+        _LOGGER.warning(
+            "Deleted leftover Battery Sim entities for '%s': %s",
+            self.updated_entry[CONF_NAME],
+            ", ".join(leftover_entity_ids),
+        )
+        return await self.async_step_init()
 
     async def async_step_main_params(self, user_input=None):
         errors = {}

@@ -89,6 +89,7 @@
         "menu_options": {
           "main_params": "Huvudparametrar",
           "input_sensors": "Redigera mätare/sensorer",
+          "delete_leftover_entities": "Ta bort överblivna entiteter",
           "all_done": "Allt klart"
         }
       },
@@ -144,12 +145,16 @@
       },
       "delete_input": {
         "title": "Välj mätare att ta bort",
-        "data": {},
+        "data": {
+          "input_list": "Mätarsensor"
+        },
         "description": ""
       },
       "edit_input_tariff": {
         "title": "Välj mätare vars tariff ska redigeras",
-        "data": {},
+        "data": {
+          "input_list": "Mätarsensor"
+        },
         "description": ""
       },
       "fixed_tariff": {
@@ -165,6 +170,11 @@
           "tariff_sensor": "Sensor som visar aktuell tariff"
         },
         "description": ""
+      },
+      "delete_leftover_entities": {
+        "title": "Ta bort överblivna entiteter",
+        "description": "Ta bort inaktuella Battery Sim-entiteter som fortfarande är registrerade för detta batteri men inte längre används av de aktuella inställningarna.",
+        "data": {}
       }
     }
   },
