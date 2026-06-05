@@ -55,6 +55,11 @@ EFFICIENCY_TEXT_SELECTOR = TextSelector(
 _LOGGER = logging.getLogger(__name__)
 
 
+def _current_tariff_sensor_value(input_entry):
+    """Return the saved tariff sensor entity for a flow input entry."""
+    return (input_entry or {}).get(TARIFF_SENSOR)
+
+
 @config_entries.HANDLERS.register(DOMAIN)
 class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow."""
@@ -264,7 +269,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data[CONF_INPUT_LIST].append(self.current_input_entry)
             return await self.async_step_meter_menu()
 
-        current_val = self.current_input_entry.get(TARIFF_SENSOR, None)
+        current_val = _current_tariff_sensor_value(self.current_input_entry)
 
         return self.async_show_form(
             step_id="tariff_sensor",
@@ -590,7 +595,7 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             )
             return await self.async_step_init()
 
-        current_val = self.current_input_entry.get(TARIFF_SENSOR, None)
+        current_val = _current_tariff_sensor_value(self.current_input_entry)
 
         return self.async_show_form(
             step_id="tariff_sensor",
