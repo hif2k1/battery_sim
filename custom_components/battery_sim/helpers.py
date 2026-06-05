@@ -1,6 +1,7 @@
 import re
 
 from homeassistant.const import CONF_NAME
+from homeassistant.helpers import entity_registry as er
 
 from .const import (
     ATTR_AVERAGE_ENERGY_VALUE,
@@ -283,6 +284,11 @@ def battery_device_registry_ids(device_registry, config, entry_id=None):
     return device_ids
 
 
+def _entity_registry_entries_for_device(entity_registry, device_id):
+    """Return entity registry entries for a device."""
+    return er.async_entries_for_device(entity_registry, device_id)
+
+
 def find_leftover_entity_registry_entries(
     entity_registry, device_registry, config, entry_id=None
 ):
@@ -290,7 +296,7 @@ def find_leftover_entity_registry_entries(
     expected_unique_ids = expected_entity_unique_ids(config)
     leftovers = []
     for device_id in battery_device_registry_ids(device_registry, config, entry_id):
-        entries = entity_registry.async_entries_for_device(device_id)
+        entries = _entity_registry_entries_for_device(entity_registry, device_id)
         for entry in entries:
             if entry.platform != DOMAIN:
                 continue
