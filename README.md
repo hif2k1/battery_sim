@@ -72,16 +72,18 @@ battery_sim:
 
 ## Sensors and attributes 
 
-The integration creates the following sensors or attributes for each battery:
+The integration creates the following sensors or attributes for each battery. Entity names are prefixed with the configured battery name in Home Assistant; the names below are the sensor suffixes or attribute names.
 
-| Sensor | Description | Unit |
+| Sensor or attribute | Description | Unit |
 | --- | --- | --- |
+| Main battery sensor | Current simulated energy stored in the battery. This sensor uses the configured battery name without an additional suffix. | kWh |
 | `current charging rate` | Real-time charging power based on the energy transferred during the last update interval. | kW |
 | `current discharging rate` | Real-time discharging power based on the energy transferred during the last update interval. | kW |
 | `solar power cap` | Average power corresponding to the solar generation cap, updated each interval. Only available when a solar energy sensor is configured. | kW |
 | `battery_energy_in` | Cumulative energy charged into the battery since initialization or last reset. | kWh |
 | `battery_energy_out` | Cumulative energy discharged from the battery since initialization or last reset. | kWh |
 | `total energy saved` | Total energy saved compared to direct grid use. | kWh |
+| Simulated import/export energy sensors | Cumulative simulated grid readings for each configured input sensor after battery operation is applied. YAML defaults create `simulated grid import after battery discharging` and `simulated grid export after battery charging`; optional second meters add `simulated second grid import after battery discharging` and `simulated second grid export after battery charging`. Config-flow inputs use `simulated_<source entity id>`. | kWh |
 | `total_money_saved` | Total money saved by the battery operation. | Currency |
 | `money_saved_on_imports` | Money saved by reducing energy imports from the grid. | Currency |
 | `extra_money_earned_on_exports` | Extra revenue earned by exporting energy to the grid. | Currency |
@@ -93,6 +95,11 @@ The integration creates the following sensors or attributes for each battery:
 | `Battery_mode_now` | Current operating mode (Charging, Discharging, Idle, etc.). | State |
 | `percentage` | (attribute) Current charge level as a percentage. | % |
 | `status` | (attribute) Status indicator showing if battery is Full, Empty, or Normal. | State |
+| `date_recording_started` | (attribute) Date/time when recording for the main battery sensor started. | Timestamp |
+| `sources` | (attribute) Source energy sensor entity IDs used by the main battery sensor. | Entity IDs |
+| Battery configuration attributes | (attributes) The main battery sensor also exposes configured `size_kwh`, `discharge_efficiency`, `charge_efficiency`, legacy `efficiency`, `max_discharge_rate_kw`, `max_charge_rate_kw`, `rated_battery_cycles`, and `end_of_life_degradation`. | Mixed |
+| `stored_energy_value` | (attribute) Cumulative monetary value backing the `average energy value` sensor. | Currency |
+| `percentage_import_energy_saved` | (attribute) Import reduction percentage on simulated import energy sensors when the matching real-world import sensor is available. | % |
 
 ### Average energy value
 
