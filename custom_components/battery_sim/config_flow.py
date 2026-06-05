@@ -264,10 +264,17 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data[CONF_INPUT_LIST].append(self.current_input_entry)
             return await self.async_step_meter_menu()
 
+        current_val = self.current_input_entry.get(TARIFF_SENSOR, None)
+
         return self.async_show_form(
             step_id="tariff_sensor",
             data_schema=vol.Schema(
-                {vol.Required(TARIFF_SENSOR): EntitySelector(EntitySelectorConfig())}
+                {
+                    vol.Required(
+                        TARIFF_SENSOR,
+                        description={"suggested_value": current_val},
+                    ): EntitySelector(EntitySelectorConfig())
+                }
             ),
         )
 
@@ -588,7 +595,12 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="tariff_sensor",
             data_schema=vol.Schema(
-                {vol.Required(TARIFF_SENSOR): EntitySelector(EntitySelectorConfig())}
+                {
+                    vol.Required(
+                        TARIFF_SENSOR,
+                        description={"suggested_value": current_val},
+                    ): EntitySelector(EntitySelectorConfig())
+                }
             ),
         )
 
