@@ -1,3 +1,4 @@
+from homeassistant.const import CONF_NAME
 """Constants for the battery_sim component."""
 
 DOMAIN = "battery_sim"
