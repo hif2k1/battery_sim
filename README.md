@@ -34,6 +34,7 @@ You can also define batteries in `configuration.yaml`. Each battery is created u
 | `name` | No | Friendly name shown in Home Assistant. If omitted, the YAML object key is used. |
 | `rated_battery_cycles` | No | Number of full cycles at which end-of-life degradation is reached. Defaults to `6000`. |
 | `end_of_life_degradation` | No | Remaining usable capacity at `rated_battery_cycles`, expressed from `0` to `1`. Defaults to `0.8`. |
+| `minimum_user_selectable_soc` | No | Physical lower SOC floor, expressed from `0` to `1`, below which the runtime **Minimum SOC** control cannot be set. Defaults to `0.10`, so the slider cannot be moved below 10%. |
 | `update_frequency` | No | Maximum interval between updates in seconds. Defaults to `60`, which is also the recommended value. Faster updates do not improve accuracy. |
 
 ### Example YAML
@@ -53,6 +54,7 @@ battery_sim:
     nominal_inverter_power_kw: 5.0
     rated_battery_cycles: 6000
     end_of_life_degradation: 0.8
+    minimum_user_selectable_soc: 0.10
     update_frequency: 60
     energy_tariff: sensor.energy_tariff
   lg_chem_resu10h:
@@ -83,6 +85,7 @@ The integration creates the following sensors or attributes for each battery:
 | `total_money_saved` | Total money saved by the battery operation. | Currency |
 | `money_saved_on_imports` | Money saved by reducing energy imports from the grid. | Currency |
 | `extra_money_earned_on_exports` | Extra revenue earned by exporting energy to the grid. | Currency |
+| `average energy value` | Average monetary value of the usable energy currently stored in the battery, calculated from the tracked stored-energy value divided by the energy above `minimum_user_selectable_soc`. | Currency/kWh |
 | `last charge efficiency` | Charge efficiency used in the most recent update. | Ratio |
 | `last discharge efficiency` | Discharge efficiency used in the most recent update. | Ratio |
 | `battery_cycles` | Number of full charge/discharge cycles accumulated. | Cycles |
@@ -90,6 +93,28 @@ The integration creates the following sensors or attributes for each battery:
 | `Battery_mode_now` | Current operating mode (Charging, Discharging, Idle, etc.). | State |
 | `percentage` | (attribute) Current charge level as a percentage. | % |
 | `status` | (attribute) Status indicator showing if battery is Full, Empty, or Normal. | State |
+
+### Average energy value
+
+The `average energy value` sensor estimates the average monetary value of the **usable** energy currently stored in the simulated battery. Energy below `minimum_user_selectable_soc` is treated as a physical floor that cannot be discharged, so it is excluded from the value accounting. Internally the integration keeps a cumulative **stored-energy value**:
+
+- during charging, it adds the charging cost already represented by the tariff logic: foregone export revenue for energy diverted from export, and import cost for grid-backed forced charging;
+- during discharge, it removes that stored value proportionally, assuming the discharged energy is drawn from a well-mixed pool of stored energy.
+
+The published sensor value is:
+
+`stored-energy value / max(current battery energy - current degraded capacity × minimum_user_selectable_soc, 0)`
+
+The cost of charging therefore reflects **charge efficiency**: lower charge efficiency raises the average value of each kWh that actually ends up stored. For this monetary-value estimate, discharge is intentionally treated as if it were **100% efficient**. The integration does not try to fold the power-dependent discharge efficiency into the published value; users who want to compare this number with a tariff or resale assumption should apply their own discharge-efficiency scaling factor.
+
+If no suitable tariff is available for part of a charging interval, no unknown cost is added to the stored-energy value for that portion. The sensor starts at `0` because the simulator cannot infer the historic value of the initial state of charge. Negative tariffs are preserved, so the reported average energy value can also become negative.
+
+To seed or correct the value manually, call the `battery_sim.set_stored_energy_value` action and provide:
+
+- `device_id`: the simulated battery device;
+- `stored_energy_value`: the **total** monetary value currently assigned to the usable/dischargeable stored energy, not the value per kWh.
+
+After the action runs, the `average energy value` sensor is updated immediately as `stored_energy_value / currently usable stored battery energy`, where usable means the energy above `minimum_user_selectable_soc`. Negative values are accepted, which can be useful when the battery was charged at negative prices. If the battery currently contains no usable stored energy, the integration keeps the stored-energy value at `0`, because a non-zero value for an unusable/empty value-accounting battery would be inconsistent.
 
 ## Solar Power Cap : Important Remarks
 

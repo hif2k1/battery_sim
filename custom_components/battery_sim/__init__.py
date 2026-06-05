@@ -31,6 +31,7 @@ from .const import (
     ATTR_ENERGY_BATTERY_OUT,
     ATTR_ENERGY_SAVED,
     ATTR_STATUS,
+    ATTR_AVERAGE_ENERGY_VALUE,
     ATTR_MONEY_SAVED_EXPORT,
     ATTR_MONEY_SAVED_IMPORT,
     ATTR_MONEY_SAVED,
@@ -58,6 +59,8 @@ from .const import (
     CONF_SOLAR_ENERGY_SENSOR,
     CONF_NOMINAL_INVERTER_POWER,
     CONF_UPDATE_FREQUENCY,
+    CONF_MINIMUM_USER_SELECTABLE_SOC,
+    DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
     CONF_INPUT_LIST,
     CONF_RATED_BATTERY_CYCLES,
     DEFAULT_MODE,
@@ -127,6 +130,10 @@ BATTERY_CONFIG_SCHEMA = vol.Schema(
             vol.Optional(CONF_UPDATE_FREQUENCY, default=60): vol.All(
                 vol.Coerce(int), vol.Range(min=1)
             ),
+            vol.Optional(
+                CONF_MINIMUM_USER_SELECTABLE_SOC,
+                default=DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
+            ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
         },
     )
 )
@@ -222,6 +229,27 @@ async def async_setup_entry(hass, entry) -> bool:
         else:
             _LOGGER.error("No handle matched for device_id: %s", device_id)
 
+    async def handle_set_stored_energy_value(call):
+        device_id = call.data.get("device_id")
+        stored_energy_value = call.data.get("stored_energy_value")
+        _LOGGER.debug("Calling set_stored_energy_value with: %s", stored_energy_value)
+
+        dev_reg = dr.async_get(hass)
+        device = dev_reg.async_get(device_id)
+        if not device:
+            _LOGGER.error("Device not found: %s", device_id)
+            return
+
+        for handle_entry in hass.data[DOMAIN].values():
+            if handle_entry.matches_device_identifiers(device.identifiers):
+                handle_entry.async_set_stored_energy_value(stored_energy_value)
+                _LOGGER.debug(
+                    "Stored energy value updated for device %s", handle_entry._name
+                )
+                break
+        else:
+            _LOGGER.error("No handle matched for device_id: %s", device_id)
+
     if not hass.data.get(SERVICE_REGISTRATION_KEY):
         hass.services.async_register(
             DOMAIN,
@@ -240,6 +268,16 @@ async def async_setup_entry(hass, entry) -> bool:
             schema=vol.Schema({
                 vol.Required("device_id"): str,
                 vol.Required("battery_cycles"): vol.All(vol.Coerce(float), vol.Range(min=0))
+            }),
+        )
+
+        hass.services.async_register(
+            DOMAIN,
+            "set_stored_energy_value",
+            handle_set_stored_energy_value,
+            schema=vol.Schema({
+                vol.Required("device_id"): str,
+                vol.Required("stored_energy_value"): vol.Coerce(float)
             }),
         )
         hass.data[SERVICE_REGISTRATION_KEY] = True
@@ -287,6 +325,7 @@ async def async_unload_entry(hass, config_entry):
         if DOMAIN in hass.data and not hass.data[DOMAIN]:
             hass.services.async_remove(DOMAIN, "set_battery_charge_state")
             hass.services.async_remove(DOMAIN, "set_battery_cycles")
+            hass.services.async_remove(DOMAIN, "set_stored_energy_value")
             hass.data.pop(SERVICE_REGISTRATION_KEY, None)
             hass.data.pop(DOMAIN, None)
 
@@ -316,10 +355,27 @@ class SimulatedBatteryHandle:
         # Periodic update cadence (seconds). Falls back to 60 for backwards compatibility.
         self._update_frequency = config.get(CONF_UPDATE_FREQUENCY, 60)
         self._max_discharge: float = 0.0
+        # Monetary book value of the energy currently held in the simulated battery.
+        # This is tracked separately from published savings counters.
+        self._stored_energy_value: float = 0.0
+        self._pending_restored_average_energy_value: float | None = None
+        self._battery_charge_state_restore_complete: bool = False
 
         self._charge_limit = config[CONF_BATTERY_MAX_CHARGE_RATE]
         self._discharge_limit = config[CONF_BATTERY_MAX_DISCHARGE_RATE]
-        self._minimum_soc: float = 0
+        self._minimum_user_selectable_soc: float = min(
+            max(
+                float(
+                    config.get(
+                        CONF_MINIMUM_USER_SELECTABLE_SOC,
+                        DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
+                    )
+                ),
+                0.0,
+            ),
+            1.0,
+        )
+        self._minimum_soc: float = self.minimum_user_selectable_soc_percentage
         self._maximum_soc: float = 100
         self._charge_percentage: float = INITIAL_CHARGE_PERCENTAGE
         self._charge_state: float = config[CONF_BATTERY_SIZE] * INITIAL_SOC_RATIO
@@ -380,6 +436,7 @@ class SimulatedBatteryHandle:
             DISCHARGING_RATE: 0.0,
             SOLAR_POWER_CAP: 0.0,
             ATTR_MONEY_SAVED: 0.0,
+            ATTR_AVERAGE_ENERGY_VALUE: 0.0,
             BATTERY_MODE: MODE_IDLE,
             ATTR_STATUS: DEFAULT_BATTERY_STATUS,
             ATTR_MONEY_SAVED_IMPORT: 0.0,
@@ -415,28 +472,164 @@ class SimulatedBatteryHandle:
         }
         return bool(known_identifiers.intersection(identifiers))
 
+    def _minimum_user_selectable_energy(
+        self, max_capacity: float | None = None
+    ) -> float:
+        """Return the physical, never-dischargeable energy floor in kWh."""
+        if max_capacity is None:
+            max_capacity = self.current_max_capacity
+        return max(
+            max(float(max_capacity), 0.0)
+            * float(self._minimum_user_selectable_soc),
+            0.0,
+        )
+
+    def _value_accounting_energy(
+        self,
+        charge_state: float | None = None,
+        max_capacity: float | None = None,
+    ) -> float:
+        """Return the energy that participates in stored-value accounting.
+
+        The energy below CONF_MINIMUM_USER_SELECTABLE_SOC is a physical floor: it
+        cannot be selected for discharge and should not dilute the reported
+        average value of the energy that can actually be used.
+
+        The maximum capacity is an explicit argument so callers that rescale
+        across ageing/degradation changes can compare the old charge against
+        the old floor and the new charge against the new floor.
+        """
+        if charge_state is None:
+            charge_state = self._charge_state
+        return max(
+            max(float(charge_state), 0.0)
+            - self._minimum_user_selectable_energy(max_capacity),
+            0.0,
+        )
+
+    @property
+    def non_dischargeable_capacity(self) -> float:
+        """Return the reserved energy (kWh) that can never be discharged."""
+        return self._minimum_user_selectable_energy()
+
+    @property
+    def dischargeable_stored_energy(self) -> float:
+        """Return the stored energy (kWh) currently above the reserve floor."""
+        return self._value_accounting_energy()
+
+    def _update_average_energy_value_sensor(self) -> None:
+        """Publish the average monetary value per usable kWh currently stored."""
+        value_accounting_energy = self._value_accounting_energy()
+        if value_accounting_energy <= 0.000001:
+            self._stored_energy_value = 0.0
+            self._sensors[ATTR_AVERAGE_ENERGY_VALUE] = 0.0
+            return
+
+        self._sensors[ATTR_AVERAGE_ENERGY_VALUE] = (
+            self._stored_energy_value / value_accounting_energy
+        )
+
+    def _finalize_average_energy_value_restore(self) -> None:
+        """Finalize stored-value restoration after battery SoC is available."""
+        if not self._battery_charge_state_restore_complete:
+            return
+
+        if self._pending_restored_average_energy_value is not None:
+            value_accounting_energy = self._value_accounting_energy()
+            self._stored_energy_value = (
+                self._pending_restored_average_energy_value * value_accounting_energy
+                if value_accounting_energy > 0.000001
+                else 0.0
+            )
+            self._pending_restored_average_energy_value = None
+
+        self._update_average_energy_value_sensor()
+
+    def _rescale_stored_energy_value_for_charge_state_change(
+        self,
+        previous_charge_state: float,
+        new_charge_state: float,
+        previous_max_capacity: float | None = None,
+        new_max_capacity: float | None = None,
+    ) -> None:
+        """Preserve average stored-energy value across external SoC adjustments.
+
+        This helper is used only when stored energy changes outside the normal
+        charge/discharge value-accounting path, such as a manual SoC change,
+        degradation-driven capacity clipping, or a cycle-count update that
+        reduces usable capacity.
+
+        The average value is tracked per unit of energy above the configured
+        physical floor. When maximum capacity changes, the physical floor moves
+        with it, so callers may pass the old and new capacities explicitly.
+        """
+        previous_value_accounting_energy = self._value_accounting_energy(
+            previous_charge_state, previous_max_capacity
+        )
+        new_value_accounting_energy = self._value_accounting_energy(
+            new_charge_state, new_max_capacity
+        )
+
+        if new_value_accounting_energy <= 0.000001:
+            self._stored_energy_value = 0.0
+        elif previous_value_accounting_energy > 0.000001:
+            self._stored_energy_value *= (
+                new_value_accounting_energy / previous_value_accounting_energy
+            )
+        else:
+            # There is no existing priced usable energy to preserve when the
+            # battery changes from below the physical floor to above it through
+            # an external SoC adjustment. Treat the newly introduced usable
+            # energy as unvalued.
+            self._stored_energy_value = 0.0
+
+        self._update_average_energy_value_sensor()
+
     def async_set_battery_charge_state(self, state: float):
-        """Reset the battery to start over."""
+        """Set the battery state of charge while preserving its average energy value."""
         _LOGGER.debug("Set battery charge state")
 
+        previous_charge_state = max(float(self._charge_state), 0.0)
         if state <= 0:
-            self._charge_state = 0
+            self._charge_state = 0.0
         elif state <= self.current_max_capacity:
             self._charge_state = state
         else:
             self._charge_state = self.current_max_capacity
-            
+
+        new_charge_state = max(float(self._charge_state), 0.0)
+        self._rescale_stored_energy_value_for_charge_state_change(
+            previous_charge_state,
+            new_charge_state,
+        )
+        dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
+        return
+
+    def async_set_stored_energy_value(self, stored_energy_value: float):
+        """Set the current monetary book value of the energy stored in the battery."""
+        _LOGGER.debug("Set stored energy value")
+        self._stored_energy_value = float(stored_energy_value)
+        self._update_average_energy_value_sensor()
         dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
         return
 
     def async_set_battery_cycles(self, cycles: float):
         """Set battery cycles to simulate ageing on demand."""
+        previous_charge_state = max(float(self._charge_state), 0.0)
+        previous_max_capacity = self.current_max_capacity
         self._sensors[BATTERY_CYCLES] = max(float(cycles), 0.0)
         self._sensors[ATTR_ENERGY_BATTERY_IN] = self._sensors[BATTERY_CYCLES] * float(
             self._battery_size
         )
         self._sensors[BATTERY_DEGRADATION] = self.degradation_factor
         self._charge_state = min(float(self._charge_state), self.current_max_capacity)
+        new_charge_state = max(float(self._charge_state), 0.0)
+        self._rescale_stored_energy_value_for_charge_state_change(
+            previous_charge_state,
+            new_charge_state,
+            previous_max_capacity,
+            self.current_max_capacity,
+        )
         self._charge_percentage = round(100 * self._charge_state / self.current_max_capacity)
 
         dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
@@ -460,6 +653,8 @@ class SimulatedBatteryHandle:
 
         self._sensors[ATTR_ENERGY_SAVED] = 0.0
         self._sensors[ATTR_MONEY_SAVED] = 0.0
+        self._stored_energy_value = 0.0
+        self._sensors[ATTR_AVERAGE_ENERGY_VALUE] = 0.0
         self._sensors[ATTR_ENERGY_BATTERY_OUT] = 0.0
         self._sensors[ATTR_ENERGY_BATTERY_IN] = 0.0
         self._sensors[CHARGING_RATE] = 0.0
@@ -709,7 +904,9 @@ class SimulatedBatteryHandle:
         elif key == "discharge_limit":        
             self._discharge_limit = value
         elif key == "minimum_soc":        
-            self._minimum_soc = value
+            self._minimum_soc = max(
+                float(value), self.minimum_user_selectable_soc_percentage
+            )
         elif key == "maximum_soc":        
             self._maximum_soc = value
         else:
@@ -767,6 +964,11 @@ class SimulatedBatteryHandle:
         """Return current degraded maximum battery capacity in kWh."""
         return max(float(self._battery_size) * self.degradation_factor, 0.000001)
 
+    @property
+    def minimum_user_selectable_soc_percentage(self) -> float:
+        """Return the configured minimum selectable SOC as a percentage."""
+        return 100.0 * float(self._minimum_user_selectable_soc)
+
     def update_battery(self, import_amount, export_amount, solar_amount=0.0):
         """Update battery statistics based on the reading for Im- or Export."""
         amount_to_charge: float = 0.0
@@ -776,6 +978,7 @@ class SimulatedBatteryHandle:
 
         if self._charge_state == "unknown":
             self._charge_state = 0.0
+        charge_state_before_update = max(float(self._charge_state), 0.0)
 
         """
             Calculate maximum possible charge and discharge based on battery
@@ -980,6 +1183,46 @@ class SimulatedBatteryHandle:
             + self._sensors[ATTR_MONEY_SAVED_EXPORT]
         )
 
+        # Track the monetary book value of the energy currently stored. Charge
+        # additions use the already-available tariff information: charging from
+        # exported energy has the opportunity cost of foregone export revenue,
+        # while grid-backed forced charging uses the import tariff.
+        charge_value_increment = 0.0
+        if amount_to_charge > 0.0:
+            charge_from_export = min(amount_to_charge, max(export_amount, 0.0))
+            charge_from_import = max(amount_to_charge - charge_from_export, 0.0)
+            if current_export_tariff is not None:
+                charge_value_increment += charge_from_export * current_export_tariff
+            if current_import_tariff is not None:
+                charge_value_increment += charge_from_import * current_import_tariff
+
+        # Since normal battery operation never allows the charge state to fall
+        # below the physical floor, any charged energy is added to the
+        # dischargeable/value-accounting portion of the battery. The floor is
+        # therefore excluded from the value basis used for discharge, but the
+        # charge value itself does not need an additional floor-crossing
+        # correction.
+        charge_state_after_charge = (
+            charge_state_before_update + (amount_to_charge * charge_efficiency)
+        )
+        value_accounting_energy_after_charge = self._value_accounting_energy(
+            charge_state_after_charge
+        )
+
+        retained_value_fraction = 1.0
+        if amount_to_discharge > 0.0 and value_accounting_energy_after_charge > 0.000001:
+            # Follow the requested convention for this monetary sensor: value is
+            # removed as if discharge were 100% efficient. This deliberately does
+            # not apply the possibly load-dependent discharge efficiency.
+            retained_value_fraction = max(
+                1.0 - (amount_to_discharge / value_accounting_energy_after_charge),
+                0.0,
+            )
+
+        self._stored_energy_value = (
+            self._stored_energy_value + charge_value_increment
+        ) * retained_value_fraction
+
         self._charge_state = (
             float(self._charge_state)
             + (amount_to_charge * charge_efficiency)
@@ -1007,7 +1250,21 @@ class SimulatedBatteryHandle:
         )
         self._sensors[BATTERY_DEGRADATION] = self.degradation_factor
 
-        self._charge_state = min(float(self._charge_state), effective_max_capacity)
+        charge_state_before_capacity_clip = float(self._charge_state)
+        self._charge_state = min(charge_state_before_capacity_clip, effective_max_capacity)
+        if self._charge_state < charge_state_before_capacity_clip:
+            # If degradation/capacity clipping removes stored energy, keep the
+            # average value stable by reducing the cumulative stored value in
+            # the same proportion. Both charge states relate to the same
+            # effective capacity, so the non-dischargeable reserve is unchanged.
+            self._rescale_stored_energy_value_for_charge_state_change(
+                charge_state_before_capacity_clip,
+                self._charge_state,
+                effective_max_capacity,
+                effective_max_capacity,
+            )
+        else:
+            self._update_average_energy_value_sensor()
 
         self._charge_percentage = round(100 * self._charge_state / effective_max_capacity)
 

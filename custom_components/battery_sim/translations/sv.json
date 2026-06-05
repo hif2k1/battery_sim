@@ -28,7 +28,8 @@
           "end_of_life_degradation": "Kapacitet vid slutet av livslängden (0 till 1)",
           "update_frequency": "Uppdateringsfrekvens i sekunder",
           "solar_energy_sensor": "Solenergisensor",
-          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW"
+          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW",
+          "minimum_user_selectable_soc": "Lägsta användarvalbara laddningsnivå (0 till 1)"
         },
         "description": "Ange batteriets specifikationer. Effektiviteter kan anges som ett enskilt värde eller som effekt/effektivitetspar som 0:0.9, 5:0.95. Överväg gärna att dela detaljer om batteriet du simulerar på vår GitHub så att vi kan lägga till det i mallistan."
       },
@@ -104,7 +105,8 @@
           "end_of_life_degradation": "Kapacitet vid slutet av livslängden (0 till 1)",
           "update_frequency": "Uppdateringsfrekvens i sekunder",
           "solar_energy_sensor": "Solenergisensor",
-          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW"
+          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW",
+          "minimum_user_selectable_soc": "Lägsta användarvalbara laddningsnivå (0 till 1)"
         }
       },
       "input_sensors": {
@@ -192,6 +194,20 @@
         "battery_cycles": {
           "name": "Battericykler",
           "description": "Antal cykler att tillämpa"
+        }
+      }
+    },
+    "set_stored_energy_value": {
+      "name": "Ange lagrat energivärde",
+      "description": "Ange det aktuella totala monetära värdet för energin som lagras i ett visst simulerat batteri",
+      "fields": {
+        "device_id": {
+          "name": "Målenhet för batteri",
+          "description": "Enhet vars lagrade energivärde ska anges"
+        },
+        "stored_energy_value": {
+          "name": "Lagrat energivärde",
+          "description": "Totalt monetärt värde som för närvarande tilldelas energin som lagras i batteriet"
         }
       }
     }

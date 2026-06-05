@@ -28,7 +28,8 @@
           "end_of_life_degradation": "Capacity at end of life (0 to 1)",
           "update_frequency": "Update frequency in seconds",
           "solar_energy_sensor": "Solar energy sensor",
-          "nominal_inverter_power_kw": "Nominal inverter power in kW"
+          "nominal_inverter_power_kw": "Nominal inverter power in kW",
+          "minimum_user_selectable_soc": "Minimum user-selectable SOC (0 to 1)"
         },
         "description": "Set the specifications of the battery. Efficiencies can be entered as a single value or as power/efficiency pairs such as 0:0.9, 5:0.95. The optional solar energy sensor caps charging to the solar energy produced during each update interval. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
       },
@@ -104,7 +105,8 @@
           "end_of_life_degradation": "Capacity at end of life (0 to 1)",
           "update_frequency": "Update frequency in seconds",
           "solar_energy_sensor": "Solar energy sensor",
-          "nominal_inverter_power_kw": "Nominal inverter power in kW"
+          "nominal_inverter_power_kw": "Nominal inverter power in kW",
+          "minimum_user_selectable_soc": "Minimum user-selectable SOC (0 to 1)"
         }
       },
       "input_sensors": {
@@ -192,6 +194,20 @@
         "battery_cycles": {
           "name": "Battery Cycles",
           "description": "Cycle count to apply"
+        }
+      }
+    },
+    "set_stored_energy_value": {
+      "name": "Set Stored Energy Value",
+      "description": "Set the current total monetary value assigned to the energy stored in a specific simulated battery",
+      "fields": {
+        "device_id": {
+          "name": "Target Battery Device",
+          "description": "Device to set stored energy value for"
+        },
+        "stored_energy_value": {
+          "name": "Stored Energy Value",
+          "description": "Total monetary value currently assigned to the energy stored in the battery"
         }
       }
     }
