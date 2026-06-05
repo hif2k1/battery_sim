@@ -383,9 +383,6 @@ class SimulatedBatteryHandle:
         self._accumulated_solar_reading: float = 0.0
         self._last_import_reading_sensor_data = None
         self._last_export_reading_sensor_data = None
-        self._energy_saved_today: float = 0.0
-        self._energy_saved_week: float = 0.0
-        self._energy_saved_month: float = 0.0
         self._solar_entity_id = config.get(CONF_SOLAR_ENERGY_SENSOR)
         self._nominal_inverter_power = config.get(CONF_NOMINAL_INVERTER_POWER)
         self._listeners = []
@@ -669,10 +666,6 @@ class SimulatedBatteryHandle:
         self._sensors[ATTR_LAST_DISCHARGE_EFFICIENCY] = default_discharge_efficiency
         self._sensors[SOLAR_POWER_CAP] = 0.0
         self._accumulated_solar_reading = 0.0
-
-        self._energy_saved_today = 0.0
-        self._energy_saved_week = 0.0
-        self._energy_saved_month = 0.0
 
         self._date_recording_started = dt_util.now().isoformat()
         dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
@@ -1275,21 +1268,6 @@ class SimulatedBatteryHandle:
             self._sensors[ATTR_STATUS] = MODE_FULL
         else:
             self._sensors[ATTR_STATUS] = "Normal"
-
-        # Reset day/week/month counters using Home Assistant's configured timezone.
-        now_local = dt_util.now()
-        last_update_local = dt_util.as_local(
-            dt_util.utc_from_timestamp(time_last_update)
-        )
-        if now_local.date() != last_update_local.date():
-            self._energy_saved_today = 0
-        if now_local.isocalendar()[:2] != last_update_local.isocalendar()[:2]:
-            self._energy_saved_week = 0
-        if (now_local.year, now_local.month) != (
-            last_update_local.year,
-            last_update_local.month,
-        ):
-            self._energy_saved_month = 0
 
         self._last_battery_update_time = time_now
 
