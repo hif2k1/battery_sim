@@ -288,9 +288,7 @@ async def async_setup_entry(hass, entry) -> bool:
 
     _log_leftover_entity_registry_entries(hass, entry)
 
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setups(entry, BATTERY_PLATFORMS)
-    )
+    await hass.config_entries.async_forward_entry_setups(entry, BATTERY_PLATFORMS)
 
     return True
 
