@@ -1,5 +1,7 @@
 import re
 
+from homeassistant.const import CONF_NAME
+
 from .const import (
     ATTR_AVERAGE_ENERGY_VALUE,
     ATTR_ENERGY_BATTERY_IN,
