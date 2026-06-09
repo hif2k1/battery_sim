@@ -1234,11 +1234,23 @@ class SimulatedBatteryHandle:
 
         retained_value_fraction = 1.0
         if amount_to_discharge > 0.0 and value_accounting_energy_after_charge > 0.000001:
-            # Follow the requested convention for this monetary sensor: value is
-            # removed as if discharge were 100% efficient. This deliberately does
-            # not apply the possibly load-dependent discharge efficiency.
+            # Keep the average value per usable kWh constant across discharge by
+            # reducing the stored value in the same proportion that the
+            # dischargeable energy (the energy above the minimum-SOC floor)
+            # actually falls. That energy drops by the internal amount drawn from
+            # storage, i.e. the delivered amount divided by the discharge
+            # efficiency, which is exactly the reduction applied to the charge
+            # state below. Reducing value by the delivered amount only would let
+            # the numerator shrink more slowly than the denominator and make the
+            # published average drift upward during discharge. Because value and
+            # usable energy now scale together, the average is unchanged by
+            # discharge and independent of the discharge efficiency.
+            internal_discharge_energy = amount_to_discharge / max(
+                discharge_efficiency, 0.000001
+            )
             retained_value_fraction = max(
-                1.0 - (amount_to_discharge / value_accounting_energy_after_charge),
+                1.0
+                - (internal_discharge_energy / value_accounting_energy_after_charge),
                 0.0,
             )
 

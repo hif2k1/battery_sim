@@ -106,13 +106,13 @@ The integration creates the following sensors or attributes for each battery. En
 The `average energy value` sensor estimates the average monetary value of the **usable** energy currently stored in the simulated battery. Energy below `minimum_user_selectable_soc` is treated as a physical floor that cannot be discharged, so it is excluded from the value accounting. Internally the integration keeps a cumulative **stored-energy value**:
 
 - during charging, it adds the charging cost already represented by the tariff logic: foregone export revenue for energy diverted from export, and import cost for grid-backed forced charging;
-- during discharge, it removes that stored value proportionally, assuming the discharged energy is drawn from a well-mixed pool of stored energy.
+- during discharge, it removes that stored value proportionally, in the same proportion that the dischargeable energy falls, so the average value per usable kWh is unchanged by discharge.
 
 The published sensor value is:
 
 `stored-energy value / max(current battery energy - current degraded capacity × minimum_user_selectable_soc, 0)`
 
-The cost of charging therefore reflects **charge efficiency**: lower charge efficiency raises the average value of each kWh that actually ends up stored. For this monetary-value estimate, discharge is intentionally treated as if it were **100% efficient**. The integration does not try to fold the power-dependent discharge efficiency into the published value; users who want to compare this number with a tariff or resale assumption should apply their own discharge-efficiency scaling factor.
+The cost of charging therefore reflects **charge efficiency**: lower charge efficiency raises the average value of each kWh that actually ends up stored. Discharge, on the other hand, leaves the average value **unchanged**: both the stored value and the usable energy that backs it are reduced by the same proportion, so the published value per kWh stays constant while discharging and does not depend on the (possibly power-dependent) discharge efficiency. Users who want to compare this number with a tariff or resale assumption should apply their own discharge-efficiency scaling factor.
 
 If no suitable tariff is available for part of a charging interval, no unknown cost is added to the stored-energy value for that portion. The sensor starts at `0` because the simulator cannot infer the historic value of the initial state of charge. Negative tariffs are preserved, so the reported average energy value can also become negative.
 
