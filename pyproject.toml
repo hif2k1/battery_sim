@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [".git", ".venv"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
