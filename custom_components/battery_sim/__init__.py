@@ -6,7 +6,7 @@ from datetime import timedelta
 import voluptuous as vol
 import homeassistant.util.dt as dt_util
 
-from homeassistant.core import callback
+from homeassistant.core import SupportsResponse, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import discovery
@@ -207,10 +207,25 @@ async def async_setup_entry(hass, entry) -> bool:
         for handle_entry in hass.data[DOMAIN].values():
             if handle_entry.matches_device_identifiers(device.identifiers):
                 handle_entry.async_set_battery_charge_state(state)
-                _LOGGER.debug("Battery charge updated for device %s", handle_entry._name)
+                _LOGGER.debug("Battery charge updated for device %s", handle_entry.name)
                 break
         else:
             _LOGGER.error("No handle matched for device_id: %s", device_id)
+
+    def _get_handle_for_device_id(device_id):
+        """Return the simulated battery handle matching a Home Assistant device ID."""
+        dev_reg = dr.async_get(hass)
+        device = dev_reg.async_get(device_id)
+        if not device:
+            _LOGGER.error("Device not found: %s", device_id)
+            return None
+
+        for handle_entry in hass.data[DOMAIN].values():
+            if handle_entry.matches_device_identifiers(device.identifiers):
+                return handle_entry
+
+        _LOGGER.error("No handle matched for device_id: %s", device_id)
+        return None
 
     async def handle_set_cycles(call):
         device_id = call.data.get("device_id")
@@ -226,10 +241,37 @@ async def async_setup_entry(hass, entry) -> bool:
         for handle_entry in hass.data[DOMAIN].values():
             if handle_entry.matches_device_identifiers(device.identifiers):
                 handle_entry.async_set_battery_cycles(cycles)
-                _LOGGER.debug("Battery cycles updated for device %s", handle_entry._name)
+                _LOGGER.debug("Battery cycles updated for device %s", handle_entry.name)
                 break
         else:
             _LOGGER.error("No handle matched for device_id: %s", device_id)
+
+    async def handle_get_efficiency(call):
+        device_id = call.data.get("device_id")
+        efficiency_type = call.data.get("efficiency_type")
+        power_level = call.data.get("power_level")
+        _LOGGER.debug(
+            "Calling get_efficiency with type=%s, power_level=%s",
+            efficiency_type,
+            power_level,
+        )
+
+        handle_entry = _get_handle_for_device_id(device_id)
+        if handle_entry is None:
+            return {
+                "success": False,
+                "error": f"No simulated battery found for device_id {device_id}",
+            }
+
+        efficiency = handle_entry.get_efficiency(efficiency_type, power_level)
+        return {
+            "success": True,
+            "device_id": device_id,
+            "battery": handle_entry.name,
+            "efficiency_type": efficiency_type,
+            "power_level_kw": power_level,
+            "efficiency": efficiency,
+        }
 
     async def handle_set_stored_energy_value(call):
         device_id = call.data.get("device_id")
@@ -246,7 +288,7 @@ async def async_setup_entry(hass, entry) -> bool:
             if handle_entry.matches_device_identifiers(device.identifiers):
                 handle_entry.async_set_stored_energy_value(stored_energy_value)
                 _LOGGER.debug(
-                    "Stored energy value updated for device %s", handle_entry._name
+                    "Stored energy value updated for device %s", handle_entry.name
                 )
                 break
         else:
@@ -271,6 +313,18 @@ async def async_setup_entry(hass, entry) -> bool:
                 vol.Required("device_id"): str,
                 vol.Required("battery_cycles"): vol.All(vol.Coerce(float), vol.Range(min=0))
             }),
+        )
+
+        hass.services.async_register(
+            DOMAIN,
+            "get_efficiency",
+            handle_get_efficiency,
+            schema=vol.Schema({
+                vol.Required("device_id"): str,
+                vol.Required("efficiency_type"): vol.In(["charge", "discharge"]),
+                vol.Required("power_level"): vol.All(vol.Coerce(float), vol.Range(min=0)),
+            }),
+            supports_response=SupportsResponse.ONLY,
         )
 
         hass.services.async_register(
@@ -348,6 +402,7 @@ async def async_unload_entry(hass, config_entry):
         if DOMAIN in hass.data and not hass.data[DOMAIN]:
             hass.services.async_remove(DOMAIN, "set_battery_charge_state")
             hass.services.async_remove(DOMAIN, "set_battery_cycles")
+            hass.services.async_remove(DOMAIN, "get_efficiency")
             hass.services.async_remove(DOMAIN, "set_stored_energy_value")
             hass.data.pop(SERVICE_REGISTRATION_KEY, None)
             hass.data.pop(DOMAIN, None)
@@ -358,12 +413,35 @@ async def async_unload_entry(hass, config_entry):
 class SimulatedBatteryHandle:
     """Representation of the battery itself."""
 
+    @property
+    def name(self):
+        """Return the configured battery name."""
+        return self._name
+
     @staticmethod
     def _safe_curve_efficiency(curve, fallback=1.0):
         """Return first efficiency value from a curve, or fallback when unavailable."""
         if curve and isinstance(curve[0], (list, tuple)) and len(curve[0]) > 1:
             return curve[0][1]
         return fallback
+
+    def get_efficiency(self, efficiency_type, power_level):
+        """Return configured charge or discharge efficiency at the given power level."""
+        if efficiency_type == "charge":
+            curve = self._battery_charge_efficiency_curve
+        elif efficiency_type == "discharge":
+            curve = self._battery_discharge_efficiency_curve
+        else:
+            _LOGGER.error(
+                "Invalid efficiency_type '%s' passed to get_efficiency; expected 'charge' or 'discharge'",
+                efficiency_type,
+            )
+            raise ValueError(
+                f"Invalid efficiency_type '{efficiency_type}' passed to get_efficiency; "
+                "expected 'charge' or 'discharge'"
+            )
+
+        return interpolate_efficiency(curve, power_level)
 
     def __init__(self, config, hass, entry_id=None):
         """Initialize the Battery."""

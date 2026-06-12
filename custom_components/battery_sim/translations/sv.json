@@ -207,6 +207,24 @@
         }
       }
     },
+    "get_efficiency": {
+      "name": "Get Efficiency",
+      "description": "Return the configured charge or discharge efficiency for a specific simulated battery at a given power level.",
+      "fields": {
+        "device_id": {
+          "name": "Target Battery Device",
+          "description": "Device whose configured efficiency curve should be used."
+        },
+        "efficiency_type": {
+          "name": "Efficiency Type",
+          "description": "Whether to use the charge or discharge efficiency curve."
+        },
+        "power_level": {
+          "name": "Power Level",
+          "description": "Power level in kW for which the efficiency should be calculated."
+        }
+      }
+    },
     "set_stored_energy_value": {
       "name": "Ange lagrat energivärde",
       "description": "Ange det aktuella totala monetära värdet för energin som lagras i ett visst simulerat batteri",

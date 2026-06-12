@@ -168,6 +168,48 @@ If you use fixed efficiencies rather than an efficiency curve, the best approach
 
 When reading a datasheet, make sure the quoted efficiency covers the whole path you care about. Some manufacturers quote inverter efficiency only, which may describe battery-to-AC conversion while excluding charging losses into the battery. In those cases, use conservative values for both charge and discharge.
 
+
+## Actions
+
+The integration exposes Home Assistant actions for each simulated battery. Actions that target a specific battery use the battery device selector, so the easiest way to call them is from **Developer Tools > Actions** or from an automation/script using the `device_id` shown by Home Assistant.
+
+### Get efficiency at a power level
+
+Use `battery_sim.get_efficiency` to retrieve the configured charging or discharging efficiency at a given power level. This is useful when you configured a step-wise efficiency curve and want to check which interpolated value the simulator will use.
+
+The action inputs are:
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `device_id` | Yes | The Battery Simulation device to query. |
+| `efficiency_type` | Yes | `charge` for charging efficiency or `discharge` for discharging efficiency. |
+| `power_level` | Yes | Power level in kW. For example, use `1.5` for 1.5 kW. |
+
+The returned `efficiency` value is a ratio from `0` to `1`. For example, `0.93` means 93%. When the configured efficiency is a curve such as `0:0.88, 0.5:0.90, 2.5:0.94, 5:0.95`, the value is calculated with the same interpolation logic used during normal battery updates.
+
+Example script action:
+
+```yaml
+- action: battery_sim.get_efficiency
+  data:
+    device_id: YOUR_BATTERY_DEVICE_ID
+    efficiency_type: charge
+    power_level: 1.5
+  response_variable: battery_efficiency
+```
+
+Example response data:
+
+```yaml
+success: true
+battery: Tesla Powerwall
+efficiency_type: charge
+power_level_kw: 1.5
+efficiency: 0.92
+```
+
+You can use `response_variable.efficiency` in a following automation or script step.
+
 ## Battery Degradation
 
 This integration models the degradation of the battery linearly, from 100% usable capacity (no degradation) at 0 cycles and (by default)
