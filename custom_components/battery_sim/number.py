@@ -9,6 +9,7 @@ from homeassistant.components.number import NumberEntity
 
 from .const import (
     DOMAIN,
+    CONF_BATTERY,
     CHARGE_LIMIT,
     DISCHARGE_LIMIT,
     MINIMUM_SOC,
