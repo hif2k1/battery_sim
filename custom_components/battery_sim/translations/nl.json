@@ -89,7 +89,7 @@
         "menu_options": {
           "main_params": "Hoofdparameters",
           "input_sensors": "Meters/sensoren bewerken",
-          "delete_leftover_entities": "Overgebleven entiteiten verwijderen",
+          "delete_leftover_entities": "Overgebleven entiteiten en lege apparaten verwijderen",
           "all_done": "Alles klaar"
         }
       },
@@ -172,8 +172,8 @@
         "description": ""
       },
       "delete_leftover_entities": {
-        "title": "Overgebleven entiteiten verwijderen",
-        "description": "Verwijder verouderde Battery Sim-entiteiten die nog voor deze batterij zijn geregistreerd, maar niet meer door de huidige instellingen worden gebruikt.",
+        "title": "Overgebleven entiteiten en lege apparaten verwijderen",
+        "description": "Verwijder verouderde Battery Sim-entiteiten die nog voor deze batterij zijn geregistreerd, maar niet meer door de huidige instellingen worden gebruikt. Daarna worden ook batterijapparaten zonder entiteiten verwijderd.",
         "data": {}
       }
     }
