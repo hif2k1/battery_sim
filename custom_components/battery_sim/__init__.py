@@ -93,6 +93,7 @@ from .const import (
     SIMULATED_SENSOR,
 )
 from .helpers import (
+    find_empty_battery_devices,
     find_leftover_entity_registry_entries,
     generate_input_list,
     interpolate_efficiency,
@@ -340,35 +341,48 @@ async def async_setup_entry(hass, entry) -> bool:
 
     handle._listeners.append(entry.add_update_listener(async_update_settings))
 
-    _log_leftover_entity_registry_entries(hass, entry)
+    _log_leftover_registry_entries(hass, entry)
 
     await hass.config_entries.async_forward_entry_setups(entry, BATTERY_PLATFORMS)
 
     return True
 
 
-def _log_leftover_entity_registry_entries(hass, entry):
-    """Log stale entity registry entries for a battery config entry."""
+def _log_leftover_registry_entries(hass, entry):
+    """Log stale entities and empty devices for a battery config entry."""
     entity_reg = er.async_get(hass)
     device_reg = dr.async_get(hass)
     leftovers = find_leftover_entity_registry_entries(
         entity_reg, device_reg, entry.data, entry.entry_id
     )
-    if not leftovers:
-        return
+    if leftovers:
+        _LOGGER.warning(
+            "Battery Sim '%s' has leftover entities that are no longer used by the "
+            "current settings: %s. Use the options flow item 'Delete leftover "
+            "entities and empty devices' to remove them.",
+            entry.data[CONF_NAME],
+            ", ".join(entry.entity_id for entry in leftovers),
+        )
 
-    _LOGGER.warning(
-        "Battery Sim '%s' has leftover entities that are no longer used by the "
-        "current settings: %s. Use the options flow item 'Delete leftover "
-        "entities' to remove them.",
-        entry.data[CONF_NAME],
-        ", ".join(entry.entity_id for entry in leftovers),
+    empty_devices = find_empty_battery_devices(
+        entity_reg, device_reg, entry.data, entry.entry_id
     )
+    if empty_devices:
+        _LOGGER.warning(
+            "Battery Sim '%s' has devices without any entities: %s. Use the "
+            "options flow item 'Delete leftover entities and empty devices' to "
+            "remove them.",
+            entry.data[CONF_NAME],
+            ", ".join(
+                device.name_by_user or device.name or device.id
+                for device in empty_devices
+            ),
+        )
 
 
 async def async_update_settings(hass, entry):
     _LOGGER.warning(f"Config change detected {entry.data[CONF_NAME]}")
-    _log_leftover_entity_registry_entries(hass, entry)
+    _log_leftover_registry_entries(hass, entry)
     await hass.config_entries.async_reload(entry.entry_id)
     return
 

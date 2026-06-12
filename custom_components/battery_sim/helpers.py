@@ -304,3 +304,20 @@ def find_leftover_entity_registry_entries(
                 continue
             leftovers.append(entry)
     return leftovers
+
+
+def find_empty_battery_devices(entity_registry, device_registry, config, entry_id=None):
+    """Return registered battery devices that no longer have any entities."""
+    empty_devices = []
+    for device_id in battery_device_registry_ids(device_registry, config, entry_id):
+        # Disabled entities still belong to the device, so a device that only
+        # has disabled entities must not be treated as empty.
+        entries = er.async_entries_for_device(
+            entity_registry, device_id, include_disabled_entities=True
+        )
+        if entries:
+            continue
+        device = device_registry.async_get(device_id)
+        if device is not None:
+            empty_devices.append(device)
+    return empty_devices

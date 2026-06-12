@@ -48,6 +48,7 @@ from .const import (
     SIMULATED_SENSOR,
 )
 from .helpers import (
+    find_empty_battery_devices,
     find_leftover_entity_registry_entries,
     generate_input_list,
     validate_efficiency_config,
@@ -342,31 +343,54 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def async_step_delete_leftover_entities(self, user_input=None):
-        """Delete stale entity registry entries for this battery."""
+        """Delete stale entity registry entries and empty devices for this battery."""
         entity_reg = er.async_get(self.hass)
         device_reg = dr.async_get(self.hass)
+        battery_name = self.updated_entry[CONF_NAME]
         leftovers = find_leftover_entity_registry_entries(
             entity_reg,
             device_reg,
             self.updated_entry,
             self._active_config_entry.entry_id,
         )
-        if not leftovers:
+        if leftovers:
+            leftover_entity_ids = [entry.entity_id for entry in leftovers]
+            for entry in leftovers:
+                entity_reg.async_remove(entry.entity_id)
+            _LOGGER.warning(
+                "Deleted leftover Battery Sim entities for '%s': %s",
+                battery_name,
+                ", ".join(leftover_entity_ids),
+            )
+        else:
             _LOGGER.warning(
                 "No leftover Battery Sim entities found for '%s'.",
-                self.updated_entry[CONF_NAME],
+                battery_name,
             )
-            return await self.async_step_init()
 
-        leftover_entity_ids = [entry.entity_id for entry in leftovers]
-        for entry in leftovers:
-            entity_reg.async_remove(entry.entity_id)
-
-        _LOGGER.warning(
-            "Deleted leftover Battery Sim entities for '%s': %s",
-            self.updated_entry[CONF_NAME],
-            ", ".join(leftover_entity_ids),
+        empty_devices = find_empty_battery_devices(
+            entity_reg,
+            device_reg,
+            self.updated_entry,
+            self._active_config_entry.entry_id,
         )
+        if empty_devices:
+            empty_device_names = [
+                device.name_by_user or device.name or device.id
+                for device in empty_devices
+            ]
+            for device in empty_devices:
+                device_reg.async_remove_device(device.id)
+            _LOGGER.warning(
+                "Deleted empty Battery Sim devices for '%s': %s",
+                battery_name,
+                ", ".join(empty_device_names),
+            )
+        else:
+            _LOGGER.warning(
+                "No empty Battery Sim devices found for '%s'.",
+                battery_name,
+            )
         return await self.async_step_init()
 
     async def async_step_main_params(self, user_input=None):
