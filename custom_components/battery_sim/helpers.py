@@ -284,6 +284,11 @@ def battery_device_registry_ids(device_registry, config, entry_id=None):
     return device_ids
 
 
+def device_display_name(device):
+    """Return a human-readable label for a device registry entry."""
+    return device.name_by_user or device.name or device.id
+
+
 def _entity_registry_entries_for_device(entity_registry, device_id):
     """Return entity registry entries for a device."""
     return er.async_entries_for_device(entity_registry, device_id)
@@ -321,3 +326,29 @@ def find_empty_battery_devices(entity_registry, device_registry, config, entry_i
         if device is not None:
             empty_devices.append(device)
     return empty_devices
+
+
+def purge_leftover_battery_registry_entries(
+    entity_registry, device_registry, config, entry_id=None
+):
+    """Delete leftover battery entities, then delete battery devices left empty.
+
+    The empty-device scan deliberately runs after the entity removal so that
+    devices holding only leftover entities are cleaned up in the same pass.
+    Returns the removed entity IDs and the removed devices' display names.
+    """
+    leftovers = find_leftover_entity_registry_entries(
+        entity_registry, device_registry, config, entry_id
+    )
+    removed_entity_ids = [entry.entity_id for entry in leftovers]
+    for entry in leftovers:
+        entity_registry.async_remove(entry.entity_id)
+
+    empty_devices = find_empty_battery_devices(
+        entity_registry, device_registry, config, entry_id
+    )
+    removed_device_names = [device_display_name(device) for device in empty_devices]
+    for device in empty_devices:
+        device_registry.async_remove_device(device.id)
+
+    return removed_entity_ids, removed_device_names

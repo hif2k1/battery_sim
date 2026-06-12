@@ -48,9 +48,8 @@ from .const import (
     SIMULATED_SENSOR,
 )
 from .helpers import (
-    find_empty_battery_devices,
-    find_leftover_entity_registry_entries,
     generate_input_list,
+    purge_leftover_battery_registry_entries,
     validate_efficiency_config,
 )
 
@@ -347,20 +346,19 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
         entity_reg = er.async_get(self.hass)
         device_reg = dr.async_get(self.hass)
         battery_name = self.updated_entry[CONF_NAME]
-        leftovers = find_leftover_entity_registry_entries(
-            entity_reg,
-            device_reg,
-            self.updated_entry,
-            self._active_config_entry.entry_id,
+        removed_entity_ids, removed_device_names = (
+            purge_leftover_battery_registry_entries(
+                entity_reg,
+                device_reg,
+                self.updated_entry,
+                self._active_config_entry.entry_id,
+            )
         )
-        if leftovers:
-            leftover_entity_ids = [entry.entity_id for entry in leftovers]
-            for entry in leftovers:
-                entity_reg.async_remove(entry.entity_id)
+        if removed_entity_ids:
             _LOGGER.warning(
                 "Deleted leftover Battery Sim entities for '%s': %s",
                 battery_name,
-                ", ".join(leftover_entity_ids),
+                ", ".join(removed_entity_ids),
             )
         else:
             _LOGGER.warning(
@@ -368,23 +366,11 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 battery_name,
             )
 
-        empty_devices = find_empty_battery_devices(
-            entity_reg,
-            device_reg,
-            self.updated_entry,
-            self._active_config_entry.entry_id,
-        )
-        if empty_devices:
-            empty_device_names = [
-                device.name_by_user or device.name or device.id
-                for device in empty_devices
-            ]
-            for device in empty_devices:
-                device_reg.async_remove_device(device.id)
+        if removed_device_names:
             _LOGGER.warning(
                 "Deleted empty Battery Sim devices for '%s': %s",
                 battery_name,
-                ", ".join(empty_device_names),
+                ", ".join(removed_device_names),
             )
         else:
             _LOGGER.warning(

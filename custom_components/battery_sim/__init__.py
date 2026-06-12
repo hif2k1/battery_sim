@@ -93,6 +93,7 @@ from .const import (
     SIMULATED_SENSOR,
 )
 from .helpers import (
+    device_display_name,
     find_empty_battery_devices,
     find_leftover_entity_registry_entries,
     generate_input_list,
@@ -373,10 +374,7 @@ def _log_leftover_registry_entries(hass, entry):
             "options flow item 'Delete leftover entities and empty devices' to "
             "remove them.",
             entry.data[CONF_NAME],
-            ", ".join(
-                device.name_by_user or device.name or device.id
-                for device in empty_devices
-            ),
+            ", ".join(device_display_name(device) for device in empty_devices),
         )
 
 
