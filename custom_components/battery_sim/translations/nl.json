@@ -89,6 +89,7 @@
         "menu_options": {
           "main_params": "Hoofdparameters",
           "input_sensors": "Meters/sensoren bewerken",
+          "delete_leftover_entities": "Overgebleven entiteiten verwijderen",
           "all_done": "Alles klaar"
         }
       },
@@ -144,12 +145,16 @@
       },
       "delete_input": {
         "title": "Selecteer meter om te verwijderen",
-        "data": {},
+        "data": {
+          "input_list": "Metersensor"
+        },
         "description": ""
       },
       "edit_input_tariff": {
         "title": "Selecteer meter waarvan je het tarief wilt bewerken",
-        "data": {},
+        "data": {
+          "input_list": "Metersensor"
+        },
         "description": ""
       },
       "fixed_tariff": {
@@ -165,6 +170,11 @@
           "tariff_sensor": "Sensor die het huidige tarief toont"
         },
         "description": ""
+      },
+      "delete_leftover_entities": {
+        "title": "Overgebleven entiteiten verwijderen",
+        "description": "Verwijder verouderde Battery Sim-entiteiten die nog voor deze batterij zijn geregistreerd, maar niet meer door de huidige instellingen worden gebruikt.",
+        "data": {}
       }
     }
   },

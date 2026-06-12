@@ -89,6 +89,7 @@
         "menu_options": {
           "main_params": "Hauptparameter",
           "input_sensors": "Zähler/Sensoren bearbeiten",
+          "delete_leftover_entities": "Übrig gebliebene Entitäten löschen",
           "all_done": "Alles erledigt"
         }
       },
@@ -144,12 +145,16 @@
       },
       "delete_input": {
         "title": "Zu löschenden Zähler auswählen",
-        "data": {},
+        "data": {
+          "input_list": "Zähler-Sensor"
+        },
         "description": ""
       },
       "edit_input_tariff": {
         "title": "Zähler auswählen, für den der Tarif bearbeitet werden soll",
-        "data": {},
+        "data": {
+          "input_list": "Zähler-Sensor"
+        },
         "description": ""
       },
       "fixed_tariff": {
@@ -165,6 +170,11 @@
           "tariff_sensor": "Sensor, der den aktuellen Tarif anzeigt"
         },
         "description": ""
+      },
+      "delete_leftover_entities": {
+        "title": "Übrig gebliebene Entitäten löschen",
+        "description": "Veraltete Battery-Sim-Entitäten löschen, die für diese Batterie noch registriert sind, aber von den aktuellen Einstellungen nicht mehr verwendet werden.",
+        "data": {}
       }
     }
   },

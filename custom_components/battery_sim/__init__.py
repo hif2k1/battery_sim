@@ -8,6 +8,7 @@ import homeassistant.util.dt as dt_util
 
 from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import discovery
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.start import async_at_start
@@ -92,6 +93,7 @@ from .const import (
     SIMULATED_SENSOR,
 )
 from .helpers import (
+    find_leftover_entity_registry_entries,
     generate_input_list,
     interpolate_efficiency,
     parse_efficiency_curve,
@@ -284,14 +286,35 @@ async def async_setup_entry(hass, entry) -> bool:
 
     handle._listeners.append(entry.add_update_listener(async_update_settings))
 
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setups(entry, BATTERY_PLATFORMS)
-    )
+    _log_leftover_entity_registry_entries(hass, entry)
+
+    await hass.config_entries.async_forward_entry_setups(entry, BATTERY_PLATFORMS)
 
     return True
 
+
+def _log_leftover_entity_registry_entries(hass, entry):
+    """Log stale entity registry entries for a battery config entry."""
+    entity_reg = er.async_get(hass)
+    device_reg = dr.async_get(hass)
+    leftovers = find_leftover_entity_registry_entries(
+        entity_reg, device_reg, entry.data, entry.entry_id
+    )
+    if not leftovers:
+        return
+
+    _LOGGER.warning(
+        "Battery Sim '%s' has leftover entities that are no longer used by the "
+        "current settings: %s. Use the options flow item 'Delete leftover "
+        "entities' to remove them.",
+        entry.data[CONF_NAME],
+        ", ".join(entry.entity_id for entry in leftovers),
+    )
+
+
 async def async_update_settings(hass, entry):
     _LOGGER.warning(f"Config change detected {entry.data[CONF_NAME]}")
+    _log_leftover_entity_registry_entries(hass, entry)
     await hass.config_entries.async_reload(entry.entry_id)
     return
 
@@ -1204,11 +1227,23 @@ class SimulatedBatteryHandle:
 
         retained_value_fraction = 1.0
         if amount_to_discharge > 0.0 and value_accounting_energy_after_charge > 0.000001:
-            # Follow the requested convention for this monetary sensor: value is
-            # removed as if discharge were 100% efficient. This deliberately does
-            # not apply the possibly load-dependent discharge efficiency.
+            # Keep the average value per usable kWh constant across discharge by
+            # reducing the stored value in the same proportion that the
+            # dischargeable energy (the energy above the minimum-SOC floor)
+            # actually falls. That energy drops by the internal amount drawn from
+            # storage, i.e. the delivered amount divided by the discharge
+            # efficiency, which is exactly the reduction applied to the charge
+            # state below. Reducing value by the delivered amount only would let
+            # the numerator shrink more slowly than the denominator and make the
+            # published average drift upward during discharge. Because value and
+            # usable energy now scale together, the average is unchanged by
+            # discharge and independent of the discharge efficiency.
+            internal_discharge_energy = amount_to_discharge / max(
+                discharge_efficiency, 0.000001
+            )
             retained_value_fraction = max(
-                1.0 - (amount_to_discharge / value_accounting_energy_after_charge),
+                1.0
+                - (internal_discharge_energy / value_accounting_energy_after_charge),
                 0.0,
             )
 
