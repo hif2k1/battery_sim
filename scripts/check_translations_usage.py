@@ -144,6 +144,7 @@ def collect_used_paths() -> set[tuple[str, ...]]:
     services = {
         "set_battery_charge_state": ("device_id", "charge_state"),
         "set_battery_cycles": ("device_id", "battery_cycles"),
+        "get_efficiency": ("device_id", "efficiency_type", "power_level"),
         "set_stored_energy_value": ("device_id", "stored_energy_value"),
     }
     for svc, fields in services.items():
