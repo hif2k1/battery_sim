@@ -89,7 +89,7 @@
         "menu_options": {
           "main_params": "Hauptparameter",
           "input_sensors": "Zähler/Sensoren bearbeiten",
-          "delete_leftover_entities": "Übrig gebliebene Entitäten löschen",
+          "delete_leftover_entities": "Übrig gebliebene Entitäten und leere Geräte löschen",
           "all_done": "Alles erledigt"
         }
       },
@@ -172,8 +172,8 @@
         "description": ""
       },
       "delete_leftover_entities": {
-        "title": "Übrig gebliebene Entitäten löschen",
-        "description": "Veraltete Battery-Sim-Entitäten löschen, die für diese Batterie noch registriert sind, aber von den aktuellen Einstellungen nicht mehr verwendet werden.",
+        "title": "Übrig gebliebene Entitäten und leere Geräte löschen",
+        "description": "Veraltete Battery-Sim-Entitäten löschen, die für diese Batterie noch registriert sind, aber von den aktuellen Einstellungen nicht mehr verwendet werden. Anschließend werden auch Batteriegeräte gelöscht, die keine Entitäten mehr enthalten.",
         "data": {}
       }
     }

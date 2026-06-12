@@ -89,7 +89,7 @@
         "menu_options": {
           "main_params": "Main Parameters",
           "input_sensors": "Edit Meters/Sensors",
-          "delete_leftover_entities": "Delete leftover entities",
+          "delete_leftover_entities": "Delete leftover entities and empty devices",
           "all_done": "All done"
         }
       },
@@ -172,8 +172,8 @@
         "description": ""
       },
       "delete_leftover_entities": {
-        "title": "Delete leftover entities",
-        "description": "Delete stale Battery Sim entities that are still registered for this battery but are no longer used by the current settings.",
+        "title": "Delete leftover entities and empty devices",
+        "description": "Delete stale Battery Sim entities that are still registered for this battery but are no longer used by the current settings. Afterwards, battery devices left without any entities are deleted as well.",
         "data": {}
       }
     }
