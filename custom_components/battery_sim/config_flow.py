@@ -106,7 +106,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 DEFAULT_MINIMUM_USER_SELECTABLE_SOC
             )
             await self.async_set_unique_id(self._data[CONF_NAME])
-            self._abort_if_unique_id_configured()
+            self._abort_if_unique_id_configured(reload_on_update=False)
             self._data[CONF_INPUT_LIST] = []
             return await self.async_step_meter_menu()
 
@@ -141,7 +141,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 else:
                     self._data.pop(CONF_NOMINAL_INVERTER_POWER, None)
                 await self.async_set_unique_id(self._data[CONF_NAME])
-                self._abort_if_unique_id_configured()
+                self._abort_if_unique_id_configured(reload_on_update=False)
                 return await self.async_step_meter_menu()
 
         return self.async_show_form(
