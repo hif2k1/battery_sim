@@ -28,7 +28,8 @@
           "end_of_life_degradation": "Capacity at end of life (0 to 1)",
           "update_frequency": "Update frequency in seconds",
           "solar_energy_sensor": "Solar energy sensor",
-          "nominal_inverter_power_kw": "Nominal inverter power in kW"
+          "nominal_inverter_power_kw": "Nominal inverter power in kW",
+          "minimum_user_selectable_soc": "Minimum user-selectable SOC (0 to 1)"
         },
         "description": "Set the specifications of the battery. Efficiencies can be entered as a single value or as power/efficiency pairs such as 0:0.9, 5:0.95. The optional solar energy sensor caps charging to the solar energy produced during each update interval. Please consider posting details of the battery you are simulating on our github so we can add it to the template list."
       },
@@ -88,6 +89,7 @@
         "menu_options": {
           "main_params": "Main Parameters",
           "input_sensors": "Edit Meters/Sensors",
+          "delete_leftover_entities": "Delete leftover entities",
           "all_done": "All done"
         }
       },
@@ -104,7 +106,8 @@
           "end_of_life_degradation": "Capacity at end of life (0 to 1)",
           "update_frequency": "Update frequency in seconds",
           "solar_energy_sensor": "Solar energy sensor",
-          "nominal_inverter_power_kw": "Nominal inverter power in kW"
+          "nominal_inverter_power_kw": "Nominal inverter power in kW",
+          "minimum_user_selectable_soc": "Minimum user-selectable SOC (0 to 1)"
         }
       },
       "input_sensors": {
@@ -142,12 +145,16 @@
       },
       "delete_input": {
         "title": "Select Meter To Delete",
-        "data": {},
+        "data": {
+          "input_list": "Meter sensor"
+        },
         "description": ""
       },
       "edit_input_tariff": {
         "title": "Select Meter To Edit Tariff For",
-        "data": {},
+        "data": {
+          "input_list": "Meter sensor"
+        },
         "description": ""
       },
       "fixed_tariff": {
@@ -163,6 +170,11 @@
           "tariff_sensor": "Sensor that shows current tariff"
         },
         "description": ""
+      },
+      "delete_leftover_entities": {
+        "title": "Delete leftover entities",
+        "description": "Delete stale Battery Sim entities that are still registered for this battery but are no longer used by the current settings.",
+        "data": {}
       }
     }
   },
@@ -210,6 +222,20 @@
         "power_level": {
           "name": "Power Level",
           "description": "Power level in kW for which the efficiency should be calculated."
+        }
+      }
+    },
+    "set_stored_energy_value": {
+      "name": "Set Stored Energy Value",
+      "description": "Set the current total monetary value assigned to the energy stored in a specific simulated battery",
+      "fields": {
+        "device_id": {
+          "name": "Target Battery Device",
+          "description": "Device to set stored energy value for"
+        },
+        "stored_energy_value": {
+          "name": "Stored Energy Value",
+          "description": "Total monetary value currently assigned to the energy stored in the battery"
         }
       }
     }

@@ -28,7 +28,8 @@
           "end_of_life_degradation": "Capaciteit aan het einde van de levensduur (0 t/m 1)",
           "update_frequency": "Updatefrequentie in seconden",
           "solar_energy_sensor": "Solarenergie sensor",
-          "nominal_inverter_power_kw": "Nominaal vermogen van de omvormer in kW"
+          "nominal_inverter_power_kw": "Nominaal vermogen van de omvormer in kW",
+          "minimum_user_selectable_soc": "Minimaal door gebruiker selecteerbare SOC (0 tot 1)"
         },
         "description": "Stel de specificaties van de batterij in. Efficiënties kunnen worden ingevoerd als een enkele waarde of als combinaties van vermogen/efficiëntie zoals 0:0.9, 5:0.95. Overweeg om details van de batterij die je simuleert op onze GitHub te delen, zodat we die aan de sjabloonlijst kunnen toevoegen."
       },
@@ -88,6 +89,7 @@
         "menu_options": {
           "main_params": "Hoofdparameters",
           "input_sensors": "Meters/sensoren bewerken",
+          "delete_leftover_entities": "Overgebleven entiteiten verwijderen",
           "all_done": "Alles klaar"
         }
       },
@@ -104,7 +106,8 @@
           "end_of_life_degradation": "Capaciteit aan het einde van de levensduur (0 tot 1)",
           "update_frequency": "Updatefrequentie in seconden",
           "solar_energy_sensor": "Solarenergie sensor",
-          "nominal_inverter_power_kw": "Nominaal vermogen van de omvormer in kW"
+          "nominal_inverter_power_kw": "Nominaal vermogen van de omvormer in kW",
+          "minimum_user_selectable_soc": "Minimaal door gebruiker selecteerbare SOC (0 tot 1)"
         }
       },
       "input_sensors": {
@@ -142,12 +145,16 @@
       },
       "delete_input": {
         "title": "Selecteer meter om te verwijderen",
-        "data": {},
+        "data": {
+          "input_list": "Metersensor"
+        },
         "description": ""
       },
       "edit_input_tariff": {
         "title": "Selecteer meter waarvan je het tarief wilt bewerken",
-        "data": {},
+        "data": {
+          "input_list": "Metersensor"
+        },
         "description": ""
       },
       "fixed_tariff": {
@@ -163,6 +170,11 @@
           "tariff_sensor": "Sensor die het huidige tarief toont"
         },
         "description": ""
+      },
+      "delete_leftover_entities": {
+        "title": "Overgebleven entiteiten verwijderen",
+        "description": "Verwijder verouderde Battery Sim-entiteiten die nog voor deze batterij zijn geregistreerd, maar niet meer door de huidige instellingen worden gebruikt.",
+        "data": {}
       }
     }
   },
@@ -210,6 +222,20 @@
         "power_level": {
           "name": "Power Level",
           "description": "Power level in kW for which the efficiency should be calculated."
+        }
+      }
+    },
+    "set_stored_energy_value": {
+      "name": "Opgeslagen energiewaarde instellen",
+      "description": "Stel de huidige totale geldwaarde in die is toegewezen aan de energie in een specifieke gesimuleerde batterij",
+      "fields": {
+        "device_id": {
+          "name": "Doelbatterijapparaat",
+          "description": "Apparaat waarvoor de opgeslagen energiewaarde wordt ingesteld"
+        },
+        "stored_energy_value": {
+          "name": "Opgeslagen energiewaarde",
+          "description": "Totale geldwaarde die momenteel is toegewezen aan de energie die in de batterij is opgeslagen"
         }
       }
     }

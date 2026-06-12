@@ -28,7 +28,8 @@
           "end_of_life_degradation": "Kapacitet vid slutet av livslängden (0 till 1)",
           "update_frequency": "Uppdateringsfrekvens i sekunder",
           "solar_energy_sensor": "Solenergisensor",
-          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW"
+          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW",
+          "minimum_user_selectable_soc": "Lägsta användarvalbara laddningsnivå (0 till 1)"
         },
         "description": "Ange batteriets specifikationer. Effektiviteter kan anges som ett enskilt värde eller som effekt/effektivitetspar som 0:0.9, 5:0.95. Överväg gärna att dela detaljer om batteriet du simulerar på vår GitHub så att vi kan lägga till det i mallistan."
       },
@@ -88,6 +89,7 @@
         "menu_options": {
           "main_params": "Huvudparametrar",
           "input_sensors": "Redigera mätare/sensorer",
+          "delete_leftover_entities": "Ta bort överblivna entiteter",
           "all_done": "Allt klart"
         }
       },
@@ -104,7 +106,8 @@
           "end_of_life_degradation": "Kapacitet vid slutet av livslängden (0 till 1)",
           "update_frequency": "Uppdateringsfrekvens i sekunder",
           "solar_energy_sensor": "Solenergisensor",
-          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW"
+          "nominal_inverter_power_kw": "Inverterarens nominella effekt, kW",
+          "minimum_user_selectable_soc": "Lägsta användarvalbara laddningsnivå (0 till 1)"
         }
       },
       "input_sensors": {
@@ -142,12 +145,16 @@
       },
       "delete_input": {
         "title": "Välj mätare att ta bort",
-        "data": {},
+        "data": {
+          "input_list": "Mätarsensor"
+        },
         "description": ""
       },
       "edit_input_tariff": {
         "title": "Välj mätare vars tariff ska redigeras",
-        "data": {},
+        "data": {
+          "input_list": "Mätarsensor"
+        },
         "description": ""
       },
       "fixed_tariff": {
@@ -163,6 +170,11 @@
           "tariff_sensor": "Sensor som visar aktuell tariff"
         },
         "description": ""
+      },
+      "delete_leftover_entities": {
+        "title": "Ta bort överblivna entiteter",
+        "description": "Ta bort inaktuella Battery Sim-entiteter som fortfarande är registrerade för detta batteri men inte längre används av de aktuella inställningarna.",
+        "data": {}
       }
     }
   },
@@ -210,6 +222,20 @@
         "power_level": {
           "name": "Power Level",
           "description": "Power level in kW for which the efficiency should be calculated."
+        }
+      }
+    },
+    "set_stored_energy_value": {
+      "name": "Ange lagrat energivärde",
+      "description": "Ange det aktuella totala monetära värdet för energin som lagras i ett visst simulerat batteri",
+      "fields": {
+        "device_id": {
+          "name": "Målenhet för batteri",
+          "description": "Enhet vars lagrade energivärde ska anges"
+        },
+        "stored_energy_value": {
+          "name": "Lagrat energivärde",
+          "description": "Totalt monetärt värde som för närvarande tilldelas energin som lagras i batteriet"
         }
       }
     }

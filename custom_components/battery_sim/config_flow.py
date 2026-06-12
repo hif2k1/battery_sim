@@ -4,6 +4,8 @@ import voluptuous as vol
 import time
 
 from homeassistant import config_entries
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.selector import (
     EntitySelector,
     EntitySelectorConfig,
@@ -31,6 +33,8 @@ from .const import (
     CONF_SOLAR_ENERGY_SENSOR,
     CONF_NOMINAL_INVERTER_POWER,
     CONF_UNIQUE_NAME,
+    CONF_MINIMUM_USER_SELECTABLE_SOC,
+    DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
     SETUP_TYPE,
     CONFIG_FLOW,
     TARIFF_TYPE,
@@ -43,7 +47,11 @@ from .const import (
     FIXED_TARIFF,
     SIMULATED_SENSOR,
 )
-from .helpers import generate_input_list, validate_efficiency_config
+from .helpers import (
+    find_leftover_entity_registry_entries,
+    generate_input_list,
+    validate_efficiency_config,
+)
 
 
 EFFICIENCY_TEXT_SELECTOR = TextSelector(
@@ -51,6 +59,11 @@ EFFICIENCY_TEXT_SELECTOR = TextSelector(
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _current_tariff_sensor_value(input_entry):
+    """Return the saved tariff sensor entity for a flow input entry."""
+    return (input_entry or {}).get(TARIFF_SENSOR)
 
 
 @config_entries.HANDLERS.register(DOMAIN)
@@ -89,8 +102,11 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data[CONF_RATED_BATTERY_CYCLES] = 6000
             self._data[CONF_END_OF_LIFE_DEGRADATION] = 0.8
             self._data[CONF_UPDATE_FREQUENCY] = 60
+            self._data[CONF_MINIMUM_USER_SELECTABLE_SOC] = (
+                DEFAULT_MINIMUM_USER_SELECTABLE_SOC
+            )
             await self.async_set_unique_id(self._data[CONF_NAME])
-            self._abort_if_unique_id_configured()
+            self._abort_if_unique_id_configured(reload_on_update=False)
             self._data[CONF_INPUT_LIST] = []
             return await self.async_step_meter_menu()
 
@@ -125,7 +141,7 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 else:
                     self._data.pop(CONF_NOMINAL_INVERTER_POWER, None)
                 await self.async_set_unique_id(self._data[CONF_NAME])
-                self._abort_if_unique_id_configured()
+                self._abort_if_unique_id_configured(reload_on_update=False)
                 return await self.async_step_meter_menu()
 
         return self.async_show_form(
@@ -155,6 +171,10 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_UPDATE_FREQUENCY, default=60): vol.All(
                         vol.Coerce(int), vol.Range(min=1)
                     ),
+                    vol.Required(
+                        CONF_MINIMUM_USER_SELECTABLE_SOC,
+                        default=DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
+                    ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
                     vol.Optional(CONF_SOLAR_ENERGY_SENSOR): EntitySelector(
                         EntitySelectorConfig(device_class=SensorDeviceClass.ENERGY)
                     ),
@@ -255,10 +275,17 @@ class BatterySetupConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._data[CONF_INPUT_LIST].append(self.current_input_entry)
             return await self.async_step_meter_menu()
 
+        current_val = _current_tariff_sensor_value(self.current_input_entry)
+
         return self.async_show_form(
             step_id="tariff_sensor",
             data_schema=vol.Schema(
-                {vol.Required(TARIFF_SENSOR): EntitySelector(EntitySelectorConfig())}
+                {
+                    vol.Required(
+                        TARIFF_SENSOR,
+                        description={"suggested_value": current_val},
+                    ): EntitySelector(EntitySelectorConfig())
+                }
             ),
         )
 
@@ -305,8 +332,42 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             )
 
         return self.async_show_menu(
-            step_id="init", menu_options=["main_params", "input_sensors", "all_done"]
+            step_id="init",
+            menu_options=[
+                "main_params",
+                "input_sensors",
+                "delete_leftover_entities",
+                "all_done",
+            ],
         )
+
+    async def async_step_delete_leftover_entities(self, user_input=None):
+        """Delete stale entity registry entries for this battery."""
+        entity_reg = er.async_get(self.hass)
+        device_reg = dr.async_get(self.hass)
+        leftovers = find_leftover_entity_registry_entries(
+            entity_reg,
+            device_reg,
+            self.updated_entry,
+            self._active_config_entry.entry_id,
+        )
+        if not leftovers:
+            _LOGGER.warning(
+                "No leftover Battery Sim entities found for '%s'.",
+                self.updated_entry[CONF_NAME],
+            )
+            return await self.async_step_init()
+
+        leftover_entity_ids = [entry.entity_id for entry in leftovers]
+        for entry in leftovers:
+            entity_reg.async_remove(entry.entity_id)
+
+        _LOGGER.warning(
+            "Deleted leftover Battery Sim entities for '%s': %s",
+            self.updated_entry[CONF_NAME],
+            ", ".join(leftover_entity_ids),
+        )
+        return await self.async_step_init()
 
     async def async_step_main_params(self, user_input=None):
         errors = {}
@@ -335,6 +396,9 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 self.updated_entry.pop(CONF_BATTERY_EFFICIENCY, None)
                 self.updated_entry[CONF_UPDATE_FREQUENCY] = user_input[
                     CONF_UPDATE_FREQUENCY
+                ]
+                self.updated_entry[CONF_MINIMUM_USER_SELECTABLE_SOC] = user_input[
+                    CONF_MINIMUM_USER_SELECTABLE_SOC
                 ]
                 if user_input.get(CONF_SOLAR_ENERGY_SENSOR):
                     self.updated_entry[CONF_SOLAR_ENERGY_SENSOR] = user_input[
@@ -398,6 +462,13 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 CONF_UPDATE_FREQUENCY,
                 default=self.updated_entry.get(CONF_UPDATE_FREQUENCY, 60),
             ): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(
+                CONF_MINIMUM_USER_SELECTABLE_SOC,
+                default=self.updated_entry.get(
+                    CONF_MINIMUM_USER_SELECTABLE_SOC,
+                    DEFAULT_MINIMUM_USER_SELECTABLE_SOC,
+                ),
+            ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
             vol.Optional(
                 CONF_SOLAR_ENERGY_SENSOR,
                 description={
@@ -564,12 +635,17 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
             )
             return await self.async_step_init()
 
-        current_val = self.current_input_entry.get(TARIFF_SENSOR, None)
+        current_val = _current_tariff_sensor_value(self.current_input_entry)
 
         return self.async_show_form(
             step_id="tariff_sensor",
             data_schema=vol.Schema(
-                {vol.Required(TARIFF_SENSOR): EntitySelector(EntitySelectorConfig())}
+                {
+                    vol.Required(
+                        TARIFF_SENSOR,
+                        description={"suggested_value": current_val},
+                    ): EntitySelector(EntitySelectorConfig())
+                }
             ),
         )
 

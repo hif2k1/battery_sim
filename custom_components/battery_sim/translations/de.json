@@ -28,7 +28,8 @@
           "end_of_life_degradation": "Kapazität am Ende der Lebensdauer (0 bis 1)",
           "update_frequency": "Aktualisierungsintervall in Sekunden",
           "solar_energy_sensor": "Solarenergiezählersensor",
-          "nominal_inverter_power_kw": "Nennleistung des Wechselrichters in kW"
+          "nominal_inverter_power_kw": "Nennleistung des Wechselrichters in kW",
+          "minimum_user_selectable_soc": "Minimal auswählbarer Ladezustand (0 bis 1)"
         },
         "description": "Lege die Spezifikationen der Batterie fest. Bitte erwäge, Details der von dir simulierten Batterie auf unserem GitHub zu veröffentlichen, damit wir sie zur Vorlagenliste hinzufügen können."
       },
@@ -88,6 +89,7 @@
         "menu_options": {
           "main_params": "Hauptparameter",
           "input_sensors": "Zähler/Sensoren bearbeiten",
+          "delete_leftover_entities": "Übrig gebliebene Entitäten löschen",
           "all_done": "Alles erledigt"
         }
       },
@@ -104,7 +106,8 @@
           "end_of_life_degradation": "Kapazität am Ende der Lebensdauer (0 bis 1)",
           "update_frequency": "Aktualisierungsintervall in Sekunden",
           "solar_energy_sensor": "Solarenergiezählersensor",
-          "nominal_inverter_power_kw": "Nennleistung des Wechselrichters in kW"
+          "nominal_inverter_power_kw": "Nennleistung des Wechselrichters in kW",
+          "minimum_user_selectable_soc": "Minimal auswählbarer Ladezustand (0 bis 1)"
         }
       },
       "input_sensors": {
@@ -142,12 +145,16 @@
       },
       "delete_input": {
         "title": "Zu löschenden Zähler auswählen",
-        "data": {},
+        "data": {
+          "input_list": "Zähler-Sensor"
+        },
         "description": ""
       },
       "edit_input_tariff": {
         "title": "Zähler auswählen, für den der Tarif bearbeitet werden soll",
-        "data": {},
+        "data": {
+          "input_list": "Zähler-Sensor"
+        },
         "description": ""
       },
       "fixed_tariff": {
@@ -163,6 +170,11 @@
           "tariff_sensor": "Sensor, der den aktuellen Tarif anzeigt"
         },
         "description": ""
+      },
+      "delete_leftover_entities": {
+        "title": "Übrig gebliebene Entitäten löschen",
+        "description": "Veraltete Battery-Sim-Entitäten löschen, die für diese Batterie noch registriert sind, aber von den aktuellen Einstellungen nicht mehr verwendet werden.",
+        "data": {}
       }
     }
   },
@@ -210,6 +222,20 @@
         "power_level": {
           "name": "Power Level",
           "description": "Power level in kW for which the efficiency should be calculated."
+        }
+      }
+    },
+    "set_stored_energy_value": {
+      "name": "Gespeicherten Energiewert setzen",
+      "description": "Setzt den aktuellen gesamten Geldwert der in einer bestimmten simulierten Batterie gespeicherten Energie",
+      "fields": {
+        "device_id": {
+          "name": "Ziel-Batteriegerät",
+          "description": "Gerät, dessen gespeicherter Energiewert gesetzt werden soll"
+        },
+        "stored_energy_value": {
+          "name": "Gespeicherter Energiewert",
+          "description": "Gesamter Geldwert, der aktuell der in der Batterie gespeicherten Energie zugeordnet ist"
         }
       }
     }

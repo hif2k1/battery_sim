@@ -74,3 +74,23 @@ get_efficiency:
           min: 0
           step: 0.001
           unit_of_measurement: kW
+
+set_stored_energy_value:
+  name: battery_sim.set_stored_energy_value.name
+  description: battery_sim.set_stored_energy_value.description
+  fields:
+    device_id:
+      name: battery_sim.set_stored_energy_value.fields.device_id.name
+      description: battery_sim.set_stored_energy_value.fields.device_id.description
+      required: true
+      selector:
+        device:
+          integration: battery_sim
+    stored_energy_value:
+      name: battery_sim.set_stored_energy_value.fields.stored_energy_value.name
+      description: battery_sim.set_stored_energy_value.fields.stored_energy_value.description
+      required: true
+      selector:
+        number:
+          mode: box
+          step: 0.01
