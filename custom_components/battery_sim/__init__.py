@@ -288,7 +288,7 @@ async def async_setup_entry(hass, entry) -> bool:
             if handle_entry.matches_device_identifiers(device.identifiers):
                 handle_entry.async_set_stored_energy_value(stored_energy_value)
                 _LOGGER.debug(
-                    "Stored energy value updated for device %s", handle_entry._name
+                    "Stored energy value updated for device %s", handle_entry.name
                 )
                 break
         else:
