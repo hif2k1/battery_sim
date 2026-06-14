@@ -241,6 +241,19 @@ logger:
 
 to your configuration.yaml and then restarting. If you leave it to run for a few minutes go to logs then and click "load full log" you should see entries from the battery saying it's been set up and then each time it receives an update. If you need to raise an issue then including this code is helpful.
 
+## Development
+
+The integration has a test suite under `tests/` based on
+[pytest-homeassistant-custom-component](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component).
+To run it locally (Python 3.13 recommended):
+
+```
+pip install -r requirements_test.txt
+pytest
+```
+
+Tests also run automatically on every push and pull request via GitHub Actions.
+
 ## Acknowledgements
 
 Original idea and integration developed by hif2k1. Further work in cooperation with dewi-ny-je.
