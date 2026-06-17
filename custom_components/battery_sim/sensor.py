@@ -37,6 +37,7 @@ from .const import (
     ATTR_LAST_DISCHARGE_EFFICIENCY,
     ATTR_SOURCE_ID,
     ATTR_STATUS,
+    PRECISION,
     ATTR_ENERGY_SAVED,
     ATTR_DATE_RECORDING_STARTED,
     BATTERY_MODE,
@@ -303,7 +304,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         if self._sensor_type == ATTR_MONEY_SAVED:
             return round(sensor_value, 2)
         else:
-            return round(sensor_value, 3)
+            return round(sensor_value, PRECISION)
 
     @property
     def device_class(self):
@@ -385,7 +386,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         ]:
             return round(sensor_value, 2)
         else:
-            return round(sensor_value, 3)
+            return round(sensor_value, PRECISION)
 
     def update(self):
         """Not used."""
@@ -477,7 +478,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        return round(float(self.handle._charge_state), 3)
+        return round(float(self.handle._charge_state), PRECISION)
 
     @property
     def device_class(self):
@@ -534,7 +535,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        return round(float(self.handle._charge_state), 3)
+        return round(float(self.handle._charge_state), PRECISION)
 
 
 class BatteryStatus(SensorEntity):
