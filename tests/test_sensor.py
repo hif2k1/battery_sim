@@ -1,7 +1,8 @@
 """Tests for the battery_sim sensor platform."""
 import pytest
 
-from homeassistant.const import ATTR_UNIT_OF_MEASUREMENT
+from homeassistant.const import ATTR_UNIT_OF_MEASUREMENT, UnitOfEnergy
+from homeassistant.helpers import entity_registry as er
 from homeassistant.core import State
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
@@ -82,6 +83,34 @@ async def test_all_sensors_created_with_initial_values(hass, setup_battery):
 
     # No solar sensor configured, so no solar power cap entity.
     assert hass.states.get(SOLAR_CAP_SENSOR_ID) is None
+
+
+async def test_display_sensor_unit_can_be_overridden_by_the_user(
+    hass, setup_battery
+):
+    """The unit must be published as the native one so HA can convert it.
+
+    Home Assistant converts a sensor's value from its native unit to the unit
+    the user picked in the entity settings. A sensor that only overrides
+    `unit_of_measurement` bypasses that conversion entirely.
+    """
+    await setup_battery()
+    entity_registry = er.async_get(hass)
+
+    assert (
+        hass.states.get(ENERGY_SAVED_SENSOR_ID).attributes[ATTR_UNIT_OF_MEASUREMENT]
+        == UnitOfEnergy.KILO_WATT_HOUR
+    )
+
+    entity_registry.async_update_entity_options(
+        ENERGY_SAVED_SENSOR_ID,
+        "sensor",
+        {"unit_of_measurement": UnitOfEnergy.WATT_HOUR},
+    )
+    await hass.async_block_till_done()
+
+    state = hass.states.get(ENERGY_SAVED_SENSOR_ID)
+    assert state.attributes[ATTR_UNIT_OF_MEASUREMENT] == UnitOfEnergy.WATT_HOUR
 
 
 async def test_solar_power_cap_sensor_created_with_solar_config(

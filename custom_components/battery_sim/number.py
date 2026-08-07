@@ -113,7 +113,7 @@ class BatterySlider(RestoreNumber):
         else:
             _LOGGER.debug("Reached undefined state in number.py")
         self._attr_icon = icon
-        self._attr_unit_of_measurement = unit
+        self._attr_native_unit_of_measurement = unit
         self._attr_mode = "box"
         
     @property

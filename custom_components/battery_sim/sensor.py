@@ -335,7 +335,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         return SensorStateClass.TOTAL
 
     @property
-    def unit_of_measurement(self):
+    def native_unit_of_measurement(self):
         """Return the unit the value is expressed in."""
         return self._units
 
@@ -501,11 +501,6 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
     @property
     def native_unit_of_measurement(self):
-        """Return the unit the value is expressed in."""
-        return UnitOfEnergy.KILO_WATT_HOUR
-
-    @property
-    def unit_of_measurement(self):
         """Return the unit the value is expressed in."""
         return UnitOfEnergy.KILO_WATT_HOUR
 
