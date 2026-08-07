@@ -14,64 +14,6 @@ The easiest way to get battery_sim is to use HACS to add it as an integration. I
 
 After installation, create one or more batteries. The recommended approach is to go to **Settings > Devices & Services**, click **Add Integration**, search for **Battery Simulation**, and work through the dialog for each battery you want to simulate.
 
-You can also define batteries in `configuration.yaml`. Each battery is created under `battery_sim:` using a unique slug key. All YAML parameters currently supported by the integration are listed below.
-
-### YAML parameters
-
-| Parameter | Required | Description |
-| --- | --- | --- |
-| `import_sensor` | Yes | Entity ID of the cumulative energy-import sensor in kWh, for example the output of a `utility_meter`. |
-| `export_sensor` | Yes | Entity ID of the cumulative energy-export sensor in kWh. |
-| `size_kwh` | Yes | Usable battery capacity in kWh. Use a floating-point value such as `13.5`. |
-| `max_discharge_rate_kw` | Yes | Maximum rated discharge power in kW. Use a floating-point value such as `5.0`. The user can limit if further using a field in the device page. |
-| `max_charge_rate_kw` | No | Maximum rated charge power in kW. Defaults to `1.0` if omitted.  The user can limit if further using a field in the device page. |
-| `discharge_efficiency` | No | Battery discharge efficiency from `0` to `1`. If omitted, the integration falls back to `efficiency` when that legacy key is present, otherwise `1.0`. You can enter either a single value between 0 and 1, or a power curve such as `0:0.90, 2.5:0.94, 5:0.95`. |
-| `charge_efficiency` | No | Battery charge efficiency from `0` to `1`. Defaults to `1.0` if omitted. You can enter either a single value between 0 and 1, or a power curve such as `0:0.90, 2.5:0.94, 5:0.95`. |
-| `efficiency` | No | Legacy single-value efficiency key kept for backward compatibility. It is used as the default for `discharge_efficiency` when the newer split efficiency keys are not set. |
-| `energy_tariff` | No | Entity ID of a tariff sensor. For backward-compatible YAML setups this populates the import tariff input. |
-| `energy_import_tariff` | No | Entity ID of an import tariff sensor. |
-| `energy_export_tariff` | No | Entity ID of an export tariff sensor. |
-| `solar_energy_sensor` | No | Entity ID of a cumulative solar energy production sensor in kWh. When configured, the maximum charge power is capped by the solar production rate during each update interval. Seldomly needed, see below. |
-| `nominal_inverter_power_kw` | No | Nominal inverter AC power limit in kW. Used together with `solar_energy_sensor` to cap battery discharge to `max(0, nominal_inverter_power_kw - current_solar_power_kw)` each update interval. |
-| `name` | No | Friendly name shown in Home Assistant. If omitted, the YAML object key is used. |
-| `rated_battery_cycles` | No | Number of full cycles at which end-of-life degradation is reached. Defaults to `6000`. |
-| `end_of_life_degradation` | No | Remaining usable capacity at `rated_battery_cycles`, expressed from `0` to `1`. Defaults to `0.8`. |
-| `minimum_user_selectable_soc` | No | Physical lower SOC floor, expressed from `0` to `1`, below which the runtime **Minimum SOC** control cannot be set. Defaults to `0.10`, so the slider cannot be moved below 10%. |
-| `update_frequency` | No | Maximum interval between updates in seconds. Defaults to `60`, which is also the recommended value. Faster updates do not improve accuracy. |
-
-### Example YAML
-
-```yaml
-battery_sim:
-  tesla_powerwall:
-    name: Tesla Powerwall
-    import_sensor: sensor.circuitsetup_cumulative_import_energy_kwh
-    export_sensor: sensor.circuitsetup_cumulative_export_energy_kwh
-    size_kwh: 13.5
-    max_discharge_rate_kw: 5.0
-    max_charge_rate_kw: 3.68
-    discharge_efficiency: 0:0.92, 2.5:0.95, 5:0.95
-    charge_efficiency: 0:0.90, 2:0.94, 3.68:0.95
-    solar_energy_sensor: sensor.solar_generation_energy_kwh
-    nominal_inverter_power_kw: 5.0
-    rated_battery_cycles: 6000
-    end_of_life_degradation: 0.8
-    minimum_user_selectable_soc: 0.10
-    update_frequency: 60
-    energy_tariff: sensor.energy_tariff
-  lg_chem_resu10h:
-    name: LG Chem
-    import_sensor: sensor.circuitsetup_cumulative_import_energy_kwh
-    export_sensor: sensor.circuitsetup_cumulative_export_energy_kwh
-    size_kwh: 9.3
-    max_discharge_rate_kw: 5.0
-    max_charge_rate_kw: 3.3
-    discharge_efficiency: 0.975
-    charge_efficiency: 0.975
-    energy_import_tariff: sensor.grid_import_tariff
-    energy_export_tariff: sensor.grid_export_tariff
-```
-
 ## Sensors and attributes 
 
 The integration creates the following sensors or attributes for each battery. Entity names are prefixed with the configured battery name in Home Assistant; the names below are the sensor suffixes or attribute names.
