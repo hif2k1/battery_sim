@@ -2,6 +2,8 @@
 import logging
 
 from homeassistant.components.switch import SwitchEntity
+from homeassistant.const import STATE_OFF, STATE_ON
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import DOMAIN, CONF_BATTERY, PAUSE_BATTERY
 
@@ -47,7 +49,7 @@ async def async_setup_platform(
     return True
 
 
-class BatterySwitch(SwitchEntity):
+class BatterySwitch(RestoreEntity, SwitchEntity):
     """Switch to pause or resume the simulated battery."""
 
     def __init__(self, handle, switch_type, key, icon):
@@ -98,3 +100,16 @@ class BatterySwitch(SwitchEntity):
         self.handle.async_trigger_update()
         self.schedule_update_ha_state(True)
         return True
+
+    async def async_added_to_hass(self):
+        """Restore the switch position from before the last restart."""
+        await super().async_added_to_hass()
+
+        state = await self.async_get_last_state()
+        if state is None or state.state not in (STATE_ON, STATE_OFF):
+            return
+
+        self.handle._switches[self._switch_type] = state.state == STATE_ON
+        _LOGGER.debug(
+            "Restored %s for '%s' to %s", self._key, self._name, state.state
+        )
