@@ -1,6 +1,7 @@
 """Tests for the battery_sim number platform."""
 import pytest
 
+from homeassistant.const import ATTR_UNIT_OF_MEASUREMENT
 from homeassistant.core import State
 
 from custom_components.battery_sim.const import CONF_MINIMUM_USER_SELECTABLE_SOC
@@ -61,6 +62,28 @@ async def test_sliders_created_with_expected_ranges(hass, setup_battery):
     maximum_soc = hass.states.get(MAXIMUM_SOC_NUMBER_ID)
     # The slider is initialised with the integer 100, so no decimal is shown.
     assert maximum_soc.state == "100"
+
+
+async def test_sliders_expose_their_units(hass, setup_battery):
+    """Sliders must publish a unit; NumberEntity only reads the native attribute."""
+    await setup_battery()
+
+    assert (
+        hass.states.get(CHARGE_LIMIT_NUMBER_ID).attributes[ATTR_UNIT_OF_MEASUREMENT]
+        == "kW"
+    )
+    assert (
+        hass.states.get(DISCHARGE_LIMIT_NUMBER_ID).attributes[ATTR_UNIT_OF_MEASUREMENT]
+        == "kW"
+    )
+    assert (
+        hass.states.get(MINIMUM_SOC_NUMBER_ID).attributes[ATTR_UNIT_OF_MEASUREMENT]
+        == "%"
+    )
+    assert (
+        hass.states.get(MAXIMUM_SOC_NUMBER_ID).attributes[ATTR_UNIT_OF_MEASUREMENT]
+        == "%"
+    )
 
 
 async def test_minimum_soc_slider_floor_from_config(hass, setup_battery):
