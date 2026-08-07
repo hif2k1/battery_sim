@@ -66,6 +66,7 @@ from .const import (
     MESSAGE_TYPE_BATTERY_UPDATE,
     SENSOR_ID,
 )
+from .helpers import battery_entity_name
 
 _LOGGER = logging.getLogger(__name__)
 _INVALID_RESTORED_STATES = {None, "", STATE_UNKNOWN, STATE_UNAVAILABLE}
@@ -206,7 +207,9 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
         """Initialize the display only sensors for the battery."""
         self._handle = handle
         self._units = units
-        self._name = f"{handle._name} ".replace("_", " ") + f"{sensor_name}".replace("_", " ").capitalize()
+        self._name = battery_entity_name(
+            handle._name, sensor_name.replace("_", " ").capitalize()
+        )
         self._attr_unique_id = f"{handle._name} - {sensor_name}"
         self._device_name = handle._name
         self._device_identifier = handle.device_identifier
@@ -555,7 +558,9 @@ class BatteryStatus(SensorEntity):
     def __init__(self, handle, sensor_name):
         self.handle = handle
         self._date_recording_started = time.asctime()
-        self._name = f"{handle._name} ".replace("_", " ") + f"{sensor_name}".replace("_", " ").capitalize()
+        self._name = battery_entity_name(
+            handle._name, sensor_name.replace("_", " ").capitalize()
+        )
         self._attr_unique_id = f"{handle._name} - {sensor_name}"
         self._device_name = handle._name
         self._device_identifier = handle.device_identifier

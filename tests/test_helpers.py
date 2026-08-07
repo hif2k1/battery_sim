@@ -277,11 +277,7 @@ class TestExpectedEntityUniqueIds:
         assert f"legacy - {GRID_EXPORT_SIM}" in unique_ids
 
 
-def test_battery_device_identifiers_without_entry_id():
-    assert battery_device_identifiers(base_config()) == [(DOMAIN, BATTERY_NAME)]
-
-
-def test_battery_device_identifiers_with_entry_id():
+def test_battery_device_identifiers():
     assert battery_device_identifiers(base_config(), "entry123") == [
         (DOMAIN, "entry123"),
         (DOMAIN, BATTERY_NAME),
@@ -309,8 +305,8 @@ class TestRegistryCleanupHelpers:
         entry, _handle = await setup_battery()
         entity_registry = er.async_get(hass)
         device_registry = dr.async_get(hass)
-        device = device_registry.async_get_device(
-            identifiers={(DOMAIN, entry.entry_id)}
+        device = device_registry.async_get_device_by_identifier(
+            (DOMAIN, entry.entry_id), entry.entry_id
         )
         assert device is not None
 
@@ -405,7 +401,9 @@ class TestRegistryCleanupHelpers:
         assert device_registry.async_get(legacy_device.id) is None
         # The active battery device and its entities stay untouched.
         assert (
-            device_registry.async_get_device(identifiers={(DOMAIN, entry.entry_id)})
+            device_registry.async_get_device_by_identifier(
+                (DOMAIN, entry.entry_id), entry.entry_id
+            )
             is not None
         )
         assert entity_registry.async_get("sensor.test_battery") is not None

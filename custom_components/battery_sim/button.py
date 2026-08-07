@@ -5,6 +5,7 @@ from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.dispatcher import dispatcher_send
 
 from .const import DOMAIN, CONF_BATTERY, RESET_BATTERY, MESSAGE_TYPE_GENERAL
+from .helpers import battery_entity_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -60,7 +61,9 @@ class BatteryButton(ButtonEntity):
         self._button_type = button_type
         self._device_name = handle._name
         self._device_identifier = handle.device_identifier
-        self._name = f"{handle._name} ".replace("_", " ") + f"{button_type}".replace("_", " ").capitalize()
+        self._name = battery_entity_name(
+            handle._name, button_type.replace("_", " ").capitalize()
+        )
         self._attr_unique_id = f"{handle._name} - {button_type}"
         self._type = type
 

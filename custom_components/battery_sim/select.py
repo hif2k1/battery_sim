@@ -14,6 +14,7 @@ from .const import (
     DEFAULT_MODE,
     ICON_FULL,
 )
+from .helpers import battery_entity_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class BatteryMode(SelectEntity):
         self.handle = handle
         self._device_name = handle._name
         self._device_identifier = handle.device_identifier
-        self._name = f"{handle._name} ".replace("_", " ") + "Battery Mode"
+        self._name = battery_entity_name(handle._name, "Battery Mode")
         self._attr_unique_id = f"{handle._name} - Battery Mode"
         self._internal_options = [
             DEFAULT_MODE,

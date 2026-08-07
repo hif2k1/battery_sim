@@ -4,6 +4,7 @@ import logging
 from homeassistant.components.switch import SwitchEntity
 
 from .const import DOMAIN, CONF_BATTERY, PAUSE_BATTERY
+from .helpers import battery_entity_name
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -57,9 +58,8 @@ class BatterySwitch(SwitchEntity):
         self._switch_type = switch_type
         self._device_name = handle._name
         self._device_identifier = handle.device_identifier
-        self._name = (
-            f"{handle._name} ".replace("_", " ")
-            + f"{switch_type}".replace("_", " ").capitalize()
+        self._name = battery_entity_name(
+            handle._name, switch_type.replace("_", " ").capitalize()
         )
         self._attr_unique_id = f"{handle._name} - {switch_type}"
         self._type = type

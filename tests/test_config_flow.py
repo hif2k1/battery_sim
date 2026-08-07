@@ -409,8 +409,8 @@ class TestOptionsFlow:
         entry, _handle = await setup_battery()
         entity_registry = er.async_get(hass)
         device_registry = dr.async_get(hass)
-        device = device_registry.async_get_device(
-            identifiers={(DOMAIN, entry.entry_id)}
+        device = device_registry.async_get_device_by_identifier(
+            (DOMAIN, entry.entry_id), entry.entry_id
         )
         stale = entity_registry.async_get_or_create(
             "sensor",

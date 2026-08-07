@@ -8,6 +8,8 @@ Please note this is a simulation and a real battery may behave differently and n
 
 ## Setup
 
+This integration requires Home Assistant **2026.8.0** or newer.
+
 The easiest way to get battery_sim is to use HACS to add it as an integration. If you do not want to use HACS, copy this repository into the `custom_components` folder in your Home Assistant configuration directory.
 
 After installation, create one or more batteries. The recommended approach is to go to **Settings > Devices & Services**, click **Add Integration**, search for **Battery Simulation**, and work through the dialog for each battery you want to simulate.
@@ -245,7 +247,7 @@ to your configuration.yaml and then restarting. If you leave it to run for a few
 
 The integration has a test suite under `tests/` based on
 [pytest-homeassistant-custom-component](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component).
-To run it locally (Python 3.13 recommended):
+To run it locally (Python 3.14 required, matching Home Assistant 2026.8):
 
 ```
 pip install -r requirements_test.txt

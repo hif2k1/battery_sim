@@ -243,13 +243,22 @@ CONTROL_ENTITY_UNIQUE_ID_SUFFIXES = (
 )
 
 
-def battery_device_identifiers(config, entry_id=None):
+def battery_entity_name(battery_name, entity_suffix):
+    """Return the name of a battery sub-entity.
+
+    The battery name is used verbatim as the prefix because it is also the
+    device name. These entities do not set `has_entity_name`, so Home Assistant
+    strips the device name off the front of the entity name before it composes
+    the entity ID from the device and entity name parts. Reformatting the
+    battery name here (replacing underscores with spaces, for example) breaks
+    that match, and the device name ends up in the entity ID twice.
+    """
+    return f"{battery_name} {entity_suffix}"
+
+
+def battery_device_identifiers(config, entry_id):
     """Return device identifiers used by this integration for a battery config."""
-    identifiers = []
-    if entry_id is not None:
-        identifiers.append((DOMAIN, entry_id))
-    identifiers.append((DOMAIN, config[CONF_NAME]))
-    return identifiers
+    return [(DOMAIN, entry_id), (DOMAIN, config[CONF_NAME])]
 
 
 def expected_entity_unique_ids(config):
@@ -274,11 +283,11 @@ def expected_entity_unique_ids(config):
     return unique_ids
 
 
-def battery_device_registry_ids(device_registry, config, entry_id=None):
+def battery_device_registry_ids(device_registry, config, entry_id):
     """Return device registry IDs for known current and legacy battery identifiers."""
     device_ids = []
     for identifier in battery_device_identifiers(config, entry_id):
-        device = device_registry.async_get_device({identifier})
+        device = device_registry.async_get_device_by_identifier(identifier, entry_id)
         if device is not None and device.id not in device_ids:
             device_ids.append(device.id)
     return device_ids
@@ -295,7 +304,7 @@ def _entity_registry_entries_for_device(entity_registry, device_id):
 
 
 def find_leftover_entity_registry_entries(
-    entity_registry, device_registry, config, entry_id=None
+    entity_registry, device_registry, config, entry_id
 ):
     """Return registered battery entities that are not used by current settings."""
     expected_unique_ids = expected_entity_unique_ids(config)
@@ -311,7 +320,7 @@ def find_leftover_entity_registry_entries(
     return leftovers
 
 
-def find_empty_battery_devices(entity_registry, device_registry, config, entry_id=None):
+def find_empty_battery_devices(entity_registry, device_registry, config, entry_id):
     """Return registered battery devices that no longer have any entities."""
     empty_devices = []
     for device_id in battery_device_registry_ids(device_registry, config, entry_id):
@@ -329,7 +338,7 @@ def find_empty_battery_devices(entity_registry, device_registry, config, entry_i
 
 
 def purge_leftover_battery_registry_entries(
-    entity_registry, device_registry, config, entry_id=None
+    entity_registry, device_registry, config, entry_id
 ):
     """Delete leftover battery entities, then delete battery devices left empty.
 
