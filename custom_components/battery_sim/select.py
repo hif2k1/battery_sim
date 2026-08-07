@@ -2,6 +2,8 @@
 import logging
 
 from homeassistant.components.select import SelectEntity
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import (
     DOMAIN,
@@ -16,6 +18,8 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+ATTR_BATTERY_MODE = "battery_mode"
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
@@ -39,7 +43,7 @@ async def async_setup_platform(
     return True
 
 
-class BatteryMode(SelectEntity):
+class BatteryMode(RestoreEntity, SelectEntity):
     """Select to set the battery operating mode."""
 
     def __init__(self, handle):
@@ -84,8 +88,14 @@ class BatteryMode(SelectEntity):
     def options(self):
         return [opt.replace("_", " ").capitalize() for opt in self._internal_options]
 
-    async def async_select_option(self, option: str):
-        internal_option = next(
+    @property
+    def extra_state_attributes(self):
+        """Expose the internal mode key so it survives a restart unambiguously."""
+        return {ATTR_BATTERY_MODE: self.handle._battery_mode}
+
+    def _internal_option(self, option: str):
+        """Map a displayed option back to its internal mode, or None if unknown."""
+        return next(
             (
                 opt
                 for opt in self._internal_options
@@ -94,6 +104,9 @@ class BatteryMode(SelectEntity):
             None,
         )
 
+    async def async_select_option(self, option: str):
+        internal_option = self._internal_option(option)
+
         if internal_option is None:
             _LOGGER.warning("Invalid option selected: %s", option)
             return
@@ -101,3 +114,28 @@ class BatteryMode(SelectEntity):
         self.handle._battery_mode = internal_option
         self.handle.async_trigger_update()
         self.schedule_update_ha_state(True)
+
+    async def async_added_to_hass(self):
+        """Restore the mode that was selected before the last restart."""
+        await super().async_added_to_hass()
+
+        state = await self.async_get_last_state()
+        if state is None or state.state in (None, STATE_UNKNOWN, STATE_UNAVAILABLE):
+            return
+
+        # Prefer the internal key stored as an attribute; fall back to the
+        # displayed option for states written before that attribute existed.
+        restored_mode = state.attributes.get(ATTR_BATTERY_MODE)
+        if restored_mode not in self._internal_options:
+            restored_mode = self._internal_option(state.state)
+
+        if restored_mode is None:
+            _LOGGER.warning(
+                "Ignoring invalid restored battery mode '%s' for '%s'.",
+                state.state,
+                self._name,
+            )
+            return
+
+        self.handle._battery_mode = restored_mode
+        _LOGGER.debug("Restored battery mode for '%s' to %s", self._name, restored_mode)

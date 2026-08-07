@@ -1,6 +1,11 @@
 """Tests for the battery_sim select platform."""
+from homeassistant.core import State
+
+from pytest_homeassistant_custom_component.common import mock_restore_cache
+
 from custom_components.battery_sim.const import (
     DEFAULT_MODE,
+    DISCHARGE_ONLY,
     FORCE_DISCHARGE,
     OVERRIDE_CHARGING,
     PAUSE_BATTERY,
@@ -69,3 +74,66 @@ async def test_invalid_option_is_ignored(hass, setup_battery, caplog):
 
     assert handle._battery_mode == DEFAULT_MODE
     assert "Invalid option selected" in caplog.text
+
+
+async def test_mode_exposes_internal_key_as_attribute(hass, setup_battery):
+    await setup_battery()
+
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": MODE_SELECT_ID, "option": "Discharge only"},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+
+    state = hass.states.get(MODE_SELECT_ID)
+    assert state.state == "Discharge only"
+    assert state.attributes["battery_mode"] == DISCHARGE_ONLY
+
+
+async def test_mode_restored_from_attribute(hass, setup_battery):
+    mock_restore_cache(
+        hass,
+        [
+            State(
+                MODE_SELECT_ID,
+                "Discharge only",
+                {"battery_mode": DISCHARGE_ONLY},
+            )
+        ],
+    )
+
+    _entry, handle = await setup_battery()
+
+    assert handle._battery_mode == DISCHARGE_ONLY
+    assert hass.states.get(MODE_SELECT_ID).state == "Discharge only"
+
+
+async def test_mode_restored_from_state_without_attribute(hass, setup_battery):
+    """States stored before the attribute existed still restore."""
+    mock_restore_cache(hass, [State(MODE_SELECT_ID, "Force discharge")])
+
+    _entry, handle = await setup_battery()
+
+    assert handle._battery_mode == FORCE_DISCHARGE
+    assert hass.states.get(MODE_SELECT_ID).state == "Force discharge"
+
+
+async def test_invalid_restored_mode_falls_back_to_default(
+    hass, setup_battery, caplog
+):
+    mock_restore_cache(hass, [State(MODE_SELECT_ID, "Not a real mode")])
+
+    _entry, handle = await setup_battery()
+
+    assert handle._battery_mode == DEFAULT_MODE
+    assert "Ignoring invalid restored battery mode" in caplog.text
+
+
+async def test_unavailable_restored_mode_falls_back_to_default(hass, setup_battery):
+    mock_restore_cache(hass, [State(MODE_SELECT_ID, "unavailable")])
+
+    _entry, handle = await setup_battery()
+
+    assert handle._battery_mode == DEFAULT_MODE
