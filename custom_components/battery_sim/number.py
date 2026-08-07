@@ -16,6 +16,7 @@ from .const import (
     MINIMUM_SOC,
     MAXIMUM_SOC,
 )
+from .helpers import battery_entity_name
  
 import logging
 
@@ -95,7 +96,9 @@ class BatterySlider(RestoreNumber):
         self._precision = precision
         self._device_name = handle._name
         self._device_identifier = handle.device_identifier
-        self._name = f"{handle._name} ".replace("_", " ") + f"{slider_type}".replace("_", " ").capitalize()
+        self._name = battery_entity_name(
+            handle._name, slider_type.replace("_", " ").capitalize()
+        )
         self._attr_unique_id = f"{handle._name} - {slider_type}"
         if key == "charge_limit":
             self._max_value = handle._max_charge_rate

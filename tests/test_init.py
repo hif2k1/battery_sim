@@ -29,7 +29,9 @@ SERVICES = (
 def get_battery_device(hass, entry):
     """Return the device registry entry created for a battery config entry."""
     device_registry = dr.async_get(hass)
-    device = device_registry.async_get_device(identifiers={(DOMAIN, entry.entry_id)})
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, entry.entry_id), entry.entry_id
+    )
     assert device is not None
     return device
 
