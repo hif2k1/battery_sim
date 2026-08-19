@@ -2,7 +2,7 @@
 
 [![downloads](https://img.shields.io/badge/dynamic/json?color=41BDF5&logo=home-assistant&label=integration%20usage&suffix=%20installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.battery_sim.total)](https://github.com/hif2k1/battery_sim/)
 
-Allows you to model how much energy you would save with a home battery if you currently export energy to the grid e.g. from solar panels. Requires an energy monitor that can measure import and export energy. Whenever you are exporting energy your simulated battery will charge up and whenevery you are importing it will discharge. Battery charge percentage and total energy saved are in the attributes. 
+Allows you to model how much energy you would save with a home battery if you currently export energy to the grid e.g. from solar panels. Requires an energy monitor that can measure import and export energy. Whenever you are exporting energy your simulated battery will charge up and whenever you are importing it will discharge. The battery state of charge and the total energy saved are published as sensors. 
 
 Please note this is a simulation and a real battery may behave differently and not all batteries will support all the features available in this simulation. In particular battery_sim allows you to simulate batteries that charge and discharge across multiple phases and various modes including charge_only, discharge_only etc that may not be available in all real world batteries.
 
@@ -17,6 +17,9 @@ After installation, create one or more batteries. The recommended approach is to
 ## Sensors and attributes 
 
 The integration creates the following sensors or attributes for each battery. Entity names are prefixed with the configured battery name in Home Assistant; the names below are the sensor suffixes or attribute names.
+
+> [!IMPORTANT]
+> **Breaking change:** the state of charge used to be published only as a `percentage` attribute on the main battery sensor and on the `Battery_mode_now` sensor. Both attributes have been **removed** and replaced by the standalone `state of charge` sensor, which carries the `battery` device class and the `%` unit. Update any dashboard card, template, or automation that reads `state_attr('sensor.<battery name>', 'percentage')` or `state_attr('sensor.<battery name>_battery_mode_now', 'percentage')` to use `states('sensor.<battery name>_state_of_charge')` instead.
 
 | Sensor or attribute | Description | Unit |
 | --- | --- | --- |
@@ -37,7 +40,7 @@ The integration creates the following sensors or attributes for each battery. En
 | `battery_cycles` | Number of full charge/discharge cycles accumulated. | Cycles |
 | `battery_degradation` | Current degradation factor (1.0 = no degradation). | Ratio |
 | `Battery_mode_now` | Current operating mode (Charging, Discharging, Idle, etc.). | State |
-| `percentage` | (attribute) Current charge level as a percentage. | % |
+| `state of charge` | Current charge level as a percentage of the currently available capacity, which shrinks as the battery degrades. Reported as a `battery` device class sensor, so it can be used anywhere Home Assistant expects a battery level. | % |
 | `status` | (attribute) Status indicator showing if battery is Full, Empty, or Normal. | State |
 | `date_recording_started` | (attribute) Date/time when recording for the main battery sensor started. | Timestamp |
 | `sources` | (attribute) Source energy sensor entity IDs used by the main battery sensor. | Entity IDs |
