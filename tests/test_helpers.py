@@ -252,15 +252,15 @@ class TestExpectedEntityUniqueIds:
         assert f"{BATTERY_NAME} - {GRID_EXPORT_SIM}" in unique_ids
         assert f"{BATTERY_NAME} - Battery Mode" in unique_ids
         assert f"{BATTERY_NAME} - charge_limit" in unique_ids
-        # battery + 14 base sensors + 2 inputs + 7 control entities
-        assert len(unique_ids) == 24
+        # battery + 15 base sensors + 2 inputs + 7 control entities
+        assert len(unique_ids) == 25
 
     def test_solar_config_adds_solar_power_cap(self):
         config = base_config()
         config[CONF_SOLAR_ENERGY_SENSOR] = "sensor.solar"
         unique_ids = expected_entity_unique_ids(config)
         assert f"{BATTERY_NAME} - {SOLAR_POWER_CAP}" in unique_ids
-        assert len(unique_ids) == 25
+        assert len(unique_ids) == 26
 
     def test_no_solar_excludes_solar_power_cap(self):
         unique_ids = expected_entity_unique_ids(base_config())

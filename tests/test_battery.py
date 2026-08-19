@@ -107,7 +107,7 @@ class TestNormalMode:
         assert handle._sensors[GRID_EXPORT_SIM] == pytest.approx(0.0)
         assert handle._sensors[GRID_IMPORT_SIM] == pytest.approx(0.0)
         assert handle._sensors[BATTERY_CYCLES] == pytest.approx(0.2)
-        assert handle._charge_percentage == 66
+        assert handle.charge_percentage == 66
 
     def test_discharges_to_cover_import(self, make_handle):
         handle = make_handle()
@@ -308,7 +308,7 @@ class TestSliderLimits:
         # Only the 3 kWh above the 20% floor may leave, at 0.9 efficiency.
         assert handle._sensors[ATTR_ENERGY_BATTERY_OUT] == pytest.approx(2.7)
         assert handle._charge_state == pytest.approx(2.0)
-        assert handle._charge_percentage == 20
+        assert handle.charge_percentage == 20
 
     def test_maximum_soc_limits_charge(self, make_handle):
         handle = make_handle()
@@ -567,7 +567,7 @@ class TestDirectStateChanges:
         assert handle.current_max_capacity == pytest.approx(9.0)
         # Charge state below the new capacity stays put.
         assert handle._charge_state == pytest.approx(5.0)
-        assert handle._charge_percentage == 56
+        assert handle.charge_percentage == 56
 
     def test_set_battery_cycles_clips_charge_and_rescales_value(self, make_handle):
         handle = make_handle()
@@ -655,7 +655,7 @@ class TestReset:
         handle.async_reset_battery()
 
         assert handle._charge_state == pytest.approx(5.0)
-        assert handle._charge_percentage == 50
+        assert handle.charge_percentage == 50
         assert handle._stored_energy_value == 0.0
         assert handle._sensors[ATTR_ENERGY_SAVED] == 0.0
         assert handle._sensors[ATTR_ENERGY_BATTERY_IN] == 0.0

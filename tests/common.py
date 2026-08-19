@@ -44,6 +44,7 @@ EXPORT_TARIFF = 0.10
 
 BATTERY_ENTITY_ID = "sensor.test_battery"
 BATTERY_MODE_SENSOR_ID = "sensor.test_battery_battery_mode_now"
+BATTERY_SOC_SENSOR_ID = "sensor.test_battery_state_of_charge"
 ENERGY_SAVED_SENSOR_ID = "sensor.test_battery_total_energy_saved"
 ENERGY_IN_SENSOR_ID = "sensor.test_battery_battery_energy_in"
 ENERGY_OUT_SENSOR_ID = "sensor.test_battery_battery_energy_out"
