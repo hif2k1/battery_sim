@@ -150,7 +150,6 @@ _LOGGER = logging.getLogger(__name__)
 SERVICE_REGISTRATION_KEY = f"{DOMAIN}_services_registered"
 
 INITIAL_SOC_RATIO = 0.5
-INITIAL_CHARGE_PERCENTAGE = 50
 DEFAULT_BATTERY_STATUS = "Normal"
 DEFAULT_BATTERY_DEGRADATION = 1.0
 
@@ -490,7 +489,6 @@ class SimulatedBatteryHandle:
         )
         self._minimum_soc: float = self.minimum_user_selectable_soc_percentage
         self._maximum_soc: float = 100
-        self._charge_percentage: float = INITIAL_CHARGE_PERCENTAGE
         self._charge_state: float = config[CONF_BATTERY_SIZE] * INITIAL_SOC_RATIO
         self._accumulated_export_reading: float = 0.0
         self._accumulated_solar_reading: float = 0.0
@@ -740,7 +738,6 @@ class SimulatedBatteryHandle:
             previous_max_capacity,
             self.current_max_capacity,
         )
-        self._charge_percentage = round(100 * self._charge_state / self.current_max_capacity)
 
         dispatcher_send(self._hass, f"{self._name}-{MESSAGE_TYPE_BATTERY_UPDATE}")
         return
@@ -752,7 +749,6 @@ class SimulatedBatteryHandle:
             self.reset_sim_sensor(input[SIMULATED_SENSOR])
 
         self._charge_state = self.current_max_capacity * INITIAL_SOC_RATIO
-        self._charge_percentage = INITIAL_CHARGE_PERCENTAGE
 
         default_charge_efficiency = self._safe_curve_efficiency(
             self._battery_charge_efficiency_curve
@@ -1094,6 +1090,16 @@ class SimulatedBatteryHandle:
         return max(float(self._battery_size) * self.degradation_factor, 0.000001)
 
     @property
+    def charge_percentage(self) -> int:
+        """Return the current state of charge as a percentage of usable capacity.
+
+        Derived from the charge state on every read so it cannot go stale when
+        the charge state is changed outside of a battery update, for example by
+        the `set_battery_charge_state` action or by a state restore on startup.
+        """
+        return round(100 * float(self._charge_state) / self.current_max_capacity)
+
+    @property
     def minimum_user_selectable_soc_percentage(self) -> float:
         """Return the configured minimum selectable SOC as a percentage."""
         return 100.0 * float(self._minimum_user_selectable_soc)
@@ -1407,12 +1413,12 @@ class SimulatedBatteryHandle:
         else:
             self._update_average_energy_value_sensor()
 
-        self._charge_percentage = round(100 * self._charge_state / effective_max_capacity)
+        charge_percentage = round(100 * self._charge_state / effective_max_capacity)
 
         # Keep "mode" (how the battery operates) separate from capacity "status".
-        if self._charge_percentage < 2:
+        if charge_percentage < 2:
             self._sensors[ATTR_STATUS] = MODE_EMPTY
-        elif self._charge_percentage > 98:
+        elif charge_percentage > 98:
             self._sensors[ATTR_STATUS] = MODE_FULL
         else:
             self._sensors[ATTR_STATUS] = "Normal"
