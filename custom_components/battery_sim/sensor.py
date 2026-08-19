@@ -570,10 +570,12 @@ class BatteryStateOfCharge(SensorEntity):
             """Update sensor state."""
             await self.async_update_ha_state(True)
 
-        async_dispatcher_connect(
-            self.hass,
-            f"{self._device_name}-{MESSAGE_TYPE_BATTERY_UPDATE}",
-            async_update_state,
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                f"{self._device_name}-{MESSAGE_TYPE_BATTERY_UPDATE}",
+                async_update_state,
+            )
         )
 
     @property
