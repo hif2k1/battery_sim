@@ -1,13 +1,22 @@
 """Tests for the battery_sim sensor platform."""
 import pytest
 
-from homeassistant.const import ATTR_UNIT_OF_MEASUREMENT, UnitOfEnergy
+from homeassistant.components.sensor import (
+    ATTR_STATE_CLASS,
+    SensorDeviceClass,
+    SensorStateClass,
+)
+from homeassistant.const import (
+    ATTR_DEVICE_CLASS,
+    ATTR_UNIT_OF_MEASUREMENT,
+    PERCENTAGE,
+    UnitOfEnergy,
+)
 from homeassistant.helpers import entity_registry as er
 from homeassistant.core import State
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from custom_components.battery_sim.const import (
-    ATTR_CHARGE_PERCENTAGE,
     ATTR_ENERGY_SAVED,
     ATTR_MONEY_SAVED,
     ATTR_STATUS,
@@ -28,6 +37,7 @@ from .common import (
     BATTERY_MODE_SENSOR_ID,
     BATTERY_NAME,
     CHARGE_EFFICIENCY_SENSOR_ID,
+    CHARGE_PERCENTAGE_SENSOR_ID,
     CHARGING_RATE_SENSOR_ID,
     CYCLES_SENSOR_ID,
     DEGRADATION_SENSOR_ID,
@@ -48,6 +58,10 @@ from .common import (
     WH_ATTRIBUTES,
     config_with_solar,
 )
+
+# The percentage used to be published as an attribute under this key. It is now
+# a standalone sensor, so the key must no longer appear on any battery entity.
+ATTR_CHARGE_PERCENTAGE_LEGACY = "percentage"
 
 
 def battery_update_signal():
@@ -75,6 +89,7 @@ async def test_all_sensors_created_with_initial_values(hass, setup_battery):
         MONEY_SAVED_SENSOR_ID: "0.0",
         MONEY_SAVED_EXPORT_SENSOR_ID: "0.0",
         AVERAGE_VALUE_SENSOR_ID: "0.0",
+        CHARGE_PERCENTAGE_SENSOR_ID: "50",
     }
     for entity_id, expected_state in expected_initial_states.items():
         state = hass.states.get(entity_id)
@@ -125,9 +140,30 @@ async def test_battery_sensor_attributes(hass, setup_battery):
     state = hass.states.get(BATTERY_ENTITY_ID)
 
     assert state.attributes[ATTR_STATUS] == MODE_IDLE
-    assert state.attributes[ATTR_CHARGE_PERCENTAGE] == 50
+    assert ATTR_CHARGE_PERCENTAGE_LEGACY not in state.attributes
     assert state.attributes[CONF_BATTERY_SIZE] == 10.0
     assert IMPORT_SENSOR_ID in state.attributes["sources"]
+
+
+async def test_charge_percentage_sensor_is_a_battery_percentage(hass, setup_battery):
+    """The state of charge is a first class entity with a class and a unit."""
+    await setup_battery()
+    state = hass.states.get(CHARGE_PERCENTAGE_SENSOR_ID)
+
+    assert state.state == "50"
+    assert state.attributes[ATTR_UNIT_OF_MEASUREMENT] == PERCENTAGE
+    assert state.attributes[ATTR_DEVICE_CLASS] == SensorDeviceClass.BATTERY
+    assert state.attributes[ATTR_STATE_CLASS] == SensorStateClass.MEASUREMENT
+
+
+async def test_charge_percentage_sensor_follows_the_charge_state(hass, setup_battery):
+    """The state of charge is derived, so it also tracks direct charge changes."""
+    _entry, handle = await setup_battery()
+
+    handle.async_set_battery_charge_state(2.5)
+    await hass.async_block_till_done()
+
+    assert hass.states.get(CHARGE_PERCENTAGE_SENSOR_ID).state == "25"
 
 
 async def test_mode_sensor_attributes(hass, setup_battery):
@@ -135,7 +171,7 @@ async def test_mode_sensor_attributes(hass, setup_battery):
     state = hass.states.get(BATTERY_MODE_SENSOR_ID)
 
     assert state.attributes[ATTR_STATUS] == "Normal"
-    assert state.attributes[ATTR_CHARGE_PERCENTAGE] == 50
+    assert ATTR_CHARGE_PERCENTAGE_LEGACY not in state.attributes
 
 
 async def test_sensors_update_when_battery_updates(hass, setup_battery):
@@ -147,9 +183,7 @@ async def test_sensors_update_when_battery_updates(hass, setup_battery):
     await hass.async_block_till_done()
 
     assert hass.states.get(BATTERY_ENTITY_ID).state == "7.5"
-    assert (
-        hass.states.get(BATTERY_ENTITY_ID).attributes[ATTR_CHARGE_PERCENTAGE] == 50
-    )
+    assert hass.states.get(CHARGE_PERCENTAGE_SENSOR_ID).state == "75"
     # Energy values round to 3 decimals, money to 2.
     assert hass.states.get(ENERGY_SAVED_SENSOR_ID).state == "12.346"
     assert hass.states.get(MONEY_SAVED_SENSOR_ID).state == "1.23"

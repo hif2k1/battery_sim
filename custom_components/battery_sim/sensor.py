@@ -13,6 +13,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.const import (
+    PERCENTAGE,
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
     UnitOfPower,
@@ -41,7 +42,7 @@ from .const import (
     ATTR_ENERGY_SAVED,
     ATTR_DATE_RECORDING_STARTED,
     BATTERY_MODE,
-    ATTR_CHARGE_PERCENTAGE,
+    CHARGE_PERCENTAGE,
     ATTR_ENERGY_BATTERY_OUT,
     ATTR_ENERGY_BATTERY_IN,
     CHARGING_RATE,
@@ -189,6 +190,7 @@ async def define_sensors(hass, handle):
         )
     )
     sensors.append(SimulatedBattery(handle))
+    sensors.append(BatteryChargePercentage(handle, CHARGE_PERCENTAGE))
     sensors.append(BatteryStatus(handle, BATTERY_MODE))
     return sensors
 
@@ -515,7 +517,6 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
             sensor_list = f"{sensor_list}, {input[SENSOR_ID]}"
         return {
             ATTR_STATUS: self.handle._sensors[BATTERY_MODE],
-            ATTR_CHARGE_PERCENTAGE: int(self.handle._charge_percentage),
             ATTR_DATE_RECORDING_STARTED: self.handle._date_recording_started,
             CONF_BATTERY_SIZE: self.handle._battery_size,
             CONF_BATTERY_DISCHARGE_EFFICIENCY: self.handle._battery_discharge_efficiency,
@@ -543,6 +544,74 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
     def state(self):
         """Return the state of the sensor."""
         return round(float(self.handle._charge_state), PRECISION)
+
+
+class BatteryChargePercentage(SensorEntity):
+    """Representation of the battery state of charge as a percentage."""
+
+    _attr_should_poll = False
+
+    def __init__(self, handle, sensor_name):
+        self.handle = handle
+        self._name = battery_entity_name(
+            handle._name, sensor_name.replace("_", " ").capitalize()
+        )
+        self._attr_unique_id = f"{handle._name} - {sensor_name}"
+        self._device_name = handle._name
+        self._device_identifier = handle.device_identifier
+        self._sensor_type = sensor_name
+
+    async def async_added_to_hass(self):
+        """Handle entity which will be added."""
+        await super().async_added_to_hass()
+
+        async def async_update_state():
+            """Update sensor state."""
+            await self.async_update_ha_state(True)
+
+        async_dispatcher_connect(
+            self.hass,
+            f"{self._device_name}-{MESSAGE_TYPE_BATTERY_UPDATE}",
+            async_update_state,
+        )
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return self._name
+
+    @property
+    def unique_id(self):
+        """Return uniqueid."""
+        return self._attr_unique_id
+
+    @property
+    def device_info(self):
+        return {"name": self._device_name, "identifiers": {self._device_identifier}}
+
+    @property
+    def native_value(self):
+        """Return the state of charge in percent.
+
+        The value is derived from the battery charge state, so it never needs
+        restoring: the main battery sensor restores the charge state itself.
+        """
+        return self.handle.charge_percentage
+
+    @property
+    def device_class(self):
+        """Return the device class of the sensor."""
+        return SensorDeviceClass.BATTERY
+
+    @property
+    def state_class(self):
+        """Return the state class of the sensor."""
+        return SensorStateClass.MEASUREMENT
+
+    @property
+    def native_unit_of_measurement(self):
+        """Return the unit the value is expressed in."""
+        return PERCENTAGE
 
 
 class BatteryStatus(SensorEntity):
@@ -602,10 +671,7 @@ class BatteryStatus(SensorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes of the sensor."""
-        return {
-            ATTR_STATUS: self.handle._sensors.get(ATTR_STATUS),
-            ATTR_CHARGE_PERCENTAGE: getattr(self.handle, "_charge_percentage", None),
-        }
+        return {ATTR_STATUS: self.handle._sensors.get(ATTR_STATUS)}
 
     @property
     def icon(self):
