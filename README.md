@@ -19,7 +19,7 @@ After installation, create one or more batteries. The recommended approach is to
 The integration creates the following sensors or attributes for each battery. Entity names are prefixed with the configured battery name in Home Assistant; the names below are the sensor suffixes or attribute names.
 
 > [!IMPORTANT]
-> **Breaking change:** the state of charge used to be published only as a `percentage` attribute on the main battery sensor and on the `Battery_mode_now` sensor. Both attributes have been **removed** and replaced by the standalone `charge percentage` sensor, which carries the `battery` device class and the `%` unit. Update any dashboard card, template, or automation that reads `state_attr('sensor.<battery name>', 'percentage')` or `state_attr('sensor.<battery name>_battery_mode_now', 'percentage')` to use `states('sensor.<battery name>_charge_percentage')` instead.
+> **Breaking change:** the state of charge used to be published only as a `percentage` attribute on the main battery sensor and on the `Battery_mode_now` sensor. Both attributes have been **removed** and replaced by the standalone `state of charge` sensor, which carries the `battery` device class and the `%` unit. Update any dashboard card, template, or automation that reads `state_attr('sensor.<battery name>', 'percentage')` or `state_attr('sensor.<battery name>_battery_mode_now', 'percentage')` to use `states('sensor.<battery name>_state_of_charge')` instead.
 
 | Sensor or attribute | Description | Unit |
 | --- | --- | --- |
@@ -40,7 +40,7 @@ The integration creates the following sensors or attributes for each battery. En
 | `battery_cycles` | Number of full charge/discharge cycles accumulated. | Cycles |
 | `battery_degradation` | Current degradation factor (1.0 = no degradation). | Ratio |
 | `Battery_mode_now` | Current operating mode (Charging, Discharging, Idle, etc.). | State |
-| `charge percentage` | Current state of charge as a percentage of the (degraded) battery capacity. Device class `battery`. | % |
+| `state of charge` | Current charge level as a percentage of the currently available capacity, which shrinks as the battery degrades. Reported as a `battery` device class sensor, so it can be used anywhere Home Assistant expects a battery level. | % |
 | `status` | (attribute) Status indicator showing if battery is Full, Empty, or Normal. | State |
 | `date_recording_started` | (attribute) Date/time when recording for the main battery sensor started. | Timestamp |
 | `sources` | (attribute) Source energy sensor entity IDs used by the main battery sensor. | Entity IDs |

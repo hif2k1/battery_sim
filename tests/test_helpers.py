@@ -8,7 +8,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 
 from custom_components.battery_sim.const import (
-    CHARGE_PERCENTAGE,
+    BATTERY_STATE_OF_CHARGE,
     CONF_ENERGY_EXPORT_TARIFF,
     CONF_ENERGY_IMPORT_TARIFF,
     CONF_ENERGY_TARIFF,
@@ -253,7 +253,7 @@ class TestExpectedEntityUniqueIds:
         assert f"{BATTERY_NAME} - {GRID_EXPORT_SIM}" in unique_ids
         assert f"{BATTERY_NAME} - Battery Mode" in unique_ids
         assert f"{BATTERY_NAME} - charge_limit" in unique_ids
-        assert f"{BATTERY_NAME} - {CHARGE_PERCENTAGE}" in unique_ids
+        assert f"{BATTERY_NAME} - {BATTERY_STATE_OF_CHARGE}" in unique_ids
         # battery + 15 base sensors + 2 inputs + 7 control entities
         assert len(unique_ids) == 25
 

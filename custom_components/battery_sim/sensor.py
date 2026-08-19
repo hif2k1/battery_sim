@@ -42,7 +42,7 @@ from .const import (
     ATTR_ENERGY_SAVED,
     ATTR_DATE_RECORDING_STARTED,
     BATTERY_MODE,
-    CHARGE_PERCENTAGE,
+    BATTERY_STATE_OF_CHARGE,
     ATTR_ENERGY_BATTERY_OUT,
     ATTR_ENERGY_BATTERY_IN,
     CHARGING_RATE,
@@ -189,8 +189,10 @@ async def define_sensors(hass, handle):
             f"{hass.config.currency}/{UnitOfEnergy.KILO_WATT_HOUR}",
         )
     )
+    # Added after the battery itself so its first state is written once the
+    # battery has restored its charge state.
     sensors.append(SimulatedBattery(handle))
-    sensors.append(BatteryChargePercentage(handle, CHARGE_PERCENTAGE))
+    sensors.append(BatteryStateOfCharge(handle, BATTERY_STATE_OF_CHARGE))
     sensors.append(BatteryStatus(handle, BATTERY_MODE))
     return sensors
 
@@ -546,8 +548,8 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
         return round(float(self.handle._charge_state), PRECISION)
 
 
-class BatteryChargePercentage(SensorEntity):
-    """Representation of the battery state of charge as a percentage."""
+class BatteryStateOfCharge(SensorEntity):
+    """State of charge of the simulated battery, as a percentage."""
 
     _attr_should_poll = False
 
@@ -559,7 +561,6 @@ class BatteryChargePercentage(SensorEntity):
         self._attr_unique_id = f"{handle._name} - {sensor_name}"
         self._device_name = handle._name
         self._device_identifier = handle.device_identifier
-        self._sensor_type = sensor_name
 
     async def async_added_to_hass(self):
         """Handle entity which will be added."""

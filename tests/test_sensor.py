@@ -36,8 +36,8 @@ from .common import (
     BATTERY_ENTITY_ID,
     BATTERY_MODE_SENSOR_ID,
     BATTERY_NAME,
+    BATTERY_SOC_SENSOR_ID,
     CHARGE_EFFICIENCY_SENSOR_ID,
-    CHARGE_PERCENTAGE_SENSOR_ID,
     CHARGING_RATE_SENSOR_ID,
     CYCLES_SENSOR_ID,
     DEGRADATION_SENSOR_ID,
@@ -89,7 +89,7 @@ async def test_all_sensors_created_with_initial_values(hass, setup_battery):
         MONEY_SAVED_SENSOR_ID: "0.0",
         MONEY_SAVED_EXPORT_SENSOR_ID: "0.0",
         AVERAGE_VALUE_SENSOR_ID: "0.0",
-        CHARGE_PERCENTAGE_SENSOR_ID: "50",
+        BATTERY_SOC_SENSOR_ID: "50",
     }
     for entity_id, expected_state in expected_initial_states.items():
         state = hass.states.get(entity_id)
@@ -145,10 +145,10 @@ async def test_battery_sensor_attributes(hass, setup_battery):
     assert IMPORT_SENSOR_ID in state.attributes["sources"]
 
 
-async def test_charge_percentage_sensor_is_a_battery_percentage(hass, setup_battery):
+async def test_state_of_charge_sensor_is_a_battery_percentage(hass, setup_battery):
     """The state of charge is a first class entity with a class and a unit."""
     await setup_battery()
-    state = hass.states.get(CHARGE_PERCENTAGE_SENSOR_ID)
+    state = hass.states.get(BATTERY_SOC_SENSOR_ID)
 
     assert state.state == "50"
     assert state.attributes[ATTR_UNIT_OF_MEASUREMENT] == PERCENTAGE
@@ -156,14 +156,37 @@ async def test_charge_percentage_sensor_is_a_battery_percentage(hass, setup_batt
     assert state.attributes[ATTR_STATE_CLASS] == SensorStateClass.MEASUREMENT
 
 
-async def test_charge_percentage_sensor_follows_the_charge_state(hass, setup_battery):
+async def test_state_of_charge_sensor_follows_the_charge_state(hass, setup_battery):
     """The state of charge is derived, so it also tracks direct charge changes."""
     _entry, handle = await setup_battery()
 
     handle.async_set_battery_charge_state(2.5)
     await hass.async_block_till_done()
 
-    assert hass.states.get(CHARGE_PERCENTAGE_SENSOR_ID).state == "25"
+    assert hass.states.get(BATTERY_SOC_SENSOR_ID).state == "25"
+
+
+async def test_state_of_charge_sensor_follows_restored_charge_state(
+    hass, setup_battery
+):
+    """The state of charge must be right at startup, before the first update."""
+    mock_restore_cache(hass, [State(BATTERY_ENTITY_ID, "8.0")])
+    await setup_battery()
+
+    assert hass.states.get(BATTERY_SOC_SENSOR_ID).state == "80"
+
+
+async def test_state_of_charge_sensor_accounts_for_degradation(hass, setup_battery):
+    """The percentage is relative to the remaining, degraded capacity."""
+    _entry, handle = await setup_battery()
+
+    # Half of the rated cycles degrades a 10 kWh battery to 9 kWh here.
+    handle.async_set_battery_cycles(3000.0)
+    handle.async_set_battery_charge_state(4.5)
+    await hass.async_block_till_done()
+
+    assert handle.current_max_capacity == pytest.approx(9.0)
+    assert hass.states.get(BATTERY_SOC_SENSOR_ID).state == "50"
 
 
 async def test_mode_sensor_attributes(hass, setup_battery):
@@ -183,7 +206,7 @@ async def test_sensors_update_when_battery_updates(hass, setup_battery):
     await hass.async_block_till_done()
 
     assert hass.states.get(BATTERY_ENTITY_ID).state == "7.5"
-    assert hass.states.get(CHARGE_PERCENTAGE_SENSOR_ID).state == "75"
+    assert hass.states.get(BATTERY_SOC_SENSOR_ID).state == "75"
     # Energy values round to 3 decimals, money to 2.
     assert hass.states.get(ENERGY_SAVED_SENSOR_ID).state == "12.346"
     assert hass.states.get(MONEY_SAVED_SENSOR_ID).state == "1.23"
