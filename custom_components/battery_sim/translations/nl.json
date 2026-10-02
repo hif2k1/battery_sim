@@ -90,6 +90,7 @@
           "main_params": "Hoofdparameters",
           "input_sensors": "Meters/sensoren bewerken",
           "delete_leftover_entities": "Overgebleven entiteiten en lege apparaten verwijderen",
+          "show_config": "Huidige configuratie tonen",
           "all_done": "Alles klaar"
         }
       },
@@ -175,6 +176,13 @@
         "title": "Overgebleven entiteiten en lege apparaten verwijderen",
         "description": "Verwijder verouderde Battery Sim-entiteiten die nog voor deze batterij zijn geregistreerd, maar niet meer door de huidige instellingen worden gebruikt. Daarna worden ook batterijapparaten zonder entiteiten verwijderd.",
         "data": {}
+      },
+      "show_config": {
+        "title": "Huidige configuratie",
+        "description": "Kopieer de onderstaande tekst om deze toe te voegen aan een issuemelding of om je instellingen te controleren. Het verzenden van dit formulier wijzigt niets.",
+        "data": {
+          "config": "Configuratie"
+        }
       }
     }
   },

@@ -1,4 +1,5 @@
 """Configuration flow for the Battery."""
+import json
 import logging
 import voluptuous as vol
 import time
@@ -16,6 +17,7 @@ from homeassistant.helpers.selector import (
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
+from homeassistant.loader import async_get_integration
 from .const import (
     DOMAIN,
     BATTERY_OPTIONS,
@@ -329,8 +331,32 @@ class BatteryOptionsFlowHandler(config_entries.OptionsFlow):
                 "main_params",
                 "input_sensors",
                 "delete_leftover_entities",
+                "show_config",
                 "all_done",
             ],
+        )
+
+    async def async_step_show_config(self, user_input=None):
+        """Show the current configuration as text for copying into issue reports."""
+        if user_input is not None:
+            return await self.async_step_init()
+
+        integration = await async_get_integration(self.hass, DOMAIN)
+        config_dump = {
+            "version": str(integration.version),
+            "data": dict(self.config_entry.data),
+            "options": dict(self.config_entry.options),
+        }
+        config_text = json.dumps(config_dump, indent=2, sort_keys=True, default=str)
+        return self.async_show_form(
+            step_id="show_config",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional("config", default=config_text): TextSelector(
+                        TextSelectorConfig(multiline=True)
+                    )
+                }
+            ),
         )
 
     async def async_step_delete_leftover_entities(self, user_input=None):

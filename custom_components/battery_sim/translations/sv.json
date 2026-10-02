@@ -90,6 +90,7 @@
           "main_params": "Huvudparametrar",
           "input_sensors": "Redigera mätare/sensorer",
           "delete_leftover_entities": "Ta bort överblivna entiteter och tomma enheter",
+          "show_config": "Visa aktuell konfiguration",
           "all_done": "Allt klart"
         }
       },
@@ -175,6 +176,13 @@
         "title": "Ta bort överblivna entiteter och tomma enheter",
         "description": "Ta bort inaktuella Battery Sim-entiteter som fortfarande är registrerade för detta batteri men inte längre används av de aktuella inställningarna. Därefter tas även batterienheter utan entiteter bort.",
         "data": {}
+      },
+      "show_config": {
+        "title": "Aktuell konfiguration",
+        "description": "Kopiera texten nedan för att bifoga den i en felrapport eller för att kontrollera dina inställningar. Att skicka detta formulär ändrar ingenting.",
+        "data": {
+          "config": "Konfiguration"
+        }
       }
     }
   },
