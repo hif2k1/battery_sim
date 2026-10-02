@@ -1,4 +1,6 @@
 """Tests for the battery_sim config and options flows."""
+import json
+
 import pytest
 
 from homeassistant import config_entries
@@ -429,6 +431,31 @@ class TestOptionsFlow:
 
         assert entity_registry.async_get(stale.entity_id) is None
         assert "Deleted leftover Battery Sim entities" in caplog.text
+
+    async def test_show_config(self, hass, setup_battery):
+        entry, _handle = await setup_battery()
+        result = await self._start_options(hass, entry)
+
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": "show_config"}
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "show_config"
+        config_key = next(
+            key for key in result["data_schema"].schema if key == "config"
+        )
+        config_text = config_key.default()
+        dumped = json.loads(config_text)
+        assert dumped["data"][CONF_NAME] == entry.data[CONF_NAME]
+        assert "version" in dumped
+
+        original_data = dict(entry.data)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"config": "edited text"}
+        )
+        assert result["type"] is FlowResultType.MENU
+        assert result["step_id"] == "init"
+        assert dict(entry.data) == original_data
 
     async def test_all_done_creates_options_entry(self, hass, setup_battery):
         entry, _handle = await setup_battery()

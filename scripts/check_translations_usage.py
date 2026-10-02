@@ -103,7 +103,7 @@ def collect_used_paths() -> set[tuple[str, ...]]:
     for opt in ("no_tariff_info", "fixed_tariff", "tariff_sensor"):
         used.add(("config", "step", "tariff_menu", "menu_options", opt))
         used.add(("options", "step", "tariff_menu", "menu_options", opt))
-    for opt in ("main_params", "input_sensors", "delete_leftover_entities", "all_done"):
+    for opt in ("main_params", "input_sensors", "delete_leftover_entities", "show_config", "all_done"):
         used.add(("options", "step", "init", "menu_options", opt))
     for opt in ("add_import_meter", "add_export_meter", "edit_input_tariff", "delete_input"):
         used.add(("options", "step", "input_sensors", "menu_options", opt))
@@ -135,6 +135,7 @@ def collect_used_paths() -> set[tuple[str, ...]]:
         ("options", "tariff_sensor"): ["TARIFF_SENSOR"],
         ("options", "delete_input"): ["CONF_INPUT_LIST"],
         ("options", "edit_input_tariff"): ["CONF_INPUT_LIST"],
+        ("options", "show_config"): ["config"],
     }
 
     for (section, step_id), fields in step_fields.items():
