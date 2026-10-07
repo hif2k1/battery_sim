@@ -130,11 +130,8 @@ class BatterySlider(RestoreNumber):
 
     @property
     def device_info(self):
-        return {
-            "name": self._device_name,
-            "identifiers": {self._device_identifier},
-        }
-        
+        return self.handle.device_info
+
     @property
     def native_min_value(self):
         return getattr(self, "_min_value", 0.00)

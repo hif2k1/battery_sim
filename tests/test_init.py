@@ -41,6 +41,10 @@ async def test_setup_entry_creates_handle_and_services(hass, setup_battery):
 
     assert hass.data[DOMAIN][entry.entry_id] is handle
     assert handle.name == BATTERY_NAME
+    assert handle.device_info == {
+        "name": BATTERY_NAME,
+        "identifiers": {(DOMAIN, entry.entry_id)},
+    }
     for service in SERVICES:
         assert hass.services.has_service(DOMAIN, service)
 
@@ -233,6 +237,12 @@ async def test_yaml_setup_creates_handle_and_entities(hass):
     assert hass.states.get("sensor.my_battery") is not None
     assert hass.states.get("switch.my_battery_pause_battery") is not None
     assert hass.states.get("select.my_battery_battery_mode") is not None
+    # YAML batteries have no config entry, so they must not offer device info.
+    assert handle.device_info is None
+    assert not any(
+        (DOMAIN, "my_battery") in device.identifiers
+        for device in dr.async_get(hass).devices
+    )
 
 
 async def test_yaml_setup_without_domain_config(hass):

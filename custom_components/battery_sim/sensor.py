@@ -309,7 +309,7 @@ class DisplayOnlySensor(RestoreEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {"name": self._device_name, "identifiers": {self._device_identifier}}
+        return self._handle.device_info
 
     @property
     def native_value(self):
@@ -486,10 +486,7 @@ class SimulatedBattery(RestoreEntity, SensorEntity):
 
     @property
     def device_info(self):
-        return {
-            "name": self._name,
-            "identifiers": {self.handle.device_identifier},
-        }
+        return self.handle.device_info
 
     @property
     def native_value(self):
@@ -590,7 +587,7 @@ class BatteryStateOfCharge(SensorEntity):
 
     @property
     def device_info(self):
-        return {"name": self._device_name, "identifiers": {self._device_identifier}}
+        return self.handle.device_info
 
     @property
     def native_value(self):
@@ -659,7 +656,7 @@ class BatteryStatus(SensorEntity):
 
     @property
     def device_info(self):
-        return {"name": self._device_name, "identifiers": {self._device_identifier}}
+        return self.handle.device_info
 
     @property
     def native_value(self):
