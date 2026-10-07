@@ -212,7 +212,7 @@ async def test_get_efficiency_service_unknown_device(hass, setup_battery):
     assert "No simulated battery found" in response["error"]
 
 
-async def test_yaml_setup_creates_handle_and_entities(hass):
+async def test_yaml_setup_creates_handle_and_entities(hass, caplog):
     yaml_config = {
         DOMAIN: {
             "my_battery": {
@@ -243,6 +243,7 @@ async def test_yaml_setup_creates_handle_and_entities(hass):
         (DOMAIN, "my_battery") in device.identifiers
         for device in dr.async_get(hass).devices
     )
+    assert "attach a device to an entity without a config entry" not in caplog.text
 
 
 async def test_yaml_setup_without_domain_config(hass):
