@@ -572,6 +572,17 @@ class SimulatedBatteryHandle:
         """Return a stable identifier tuple used for device registry linking."""
         return (DOMAIN, self._entry_id or self._name)
 
+    @property
+    def device_info(self):
+        """Return device info, or None for YAML batteries without a config entry.
+
+        Home Assistant only links entities to devices when they belong to a
+        config entry, and will reject device info from other entities.
+        """
+        if self._entry_id is None:
+            return None
+        return {"name": self._name, "identifiers": {self.device_identifier}}
+
     def matches_device_identifiers(self, identifiers):
         """Return true when any known identifier matches this handle."""
         known_identifiers = {

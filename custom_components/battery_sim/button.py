@@ -78,10 +78,7 @@ class BatteryButton(ButtonEntity):
 
     @property
     def device_info(self):
-        return {
-            "name": self._device_name,
-            "identifiers": {self._device_identifier},
-        }
+        return self._handle.device_info
 
     @property
     def icon(self):
