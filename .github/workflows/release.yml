@@ -1,0 +1,107 @@
+name: Release
+
+# Run from the Actions tab: enter the new version (e.g. 2.8.0). The workflow
+# writes it into every file that stores the version, runs the tests and
+# hassfest on the result, then pushes the commit and the v<version> tag to the
+# default branch together and publishes a GitHub release. The tag therefore
+# always points at tested code whose manifest matches the release, which is
+# what HACS downloads.
+#
+# If the tag was pushed but publishing the release failed, run the workflow
+# again with the same version: it skips straight to publishing the release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New version, e.g. 2.8.0"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v7"
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - uses: "actions/setup-python@v7"
+        with:
+          python-version: "3.14"
+          cache: "pip"
+
+      - name: Validate version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(python scripts/bump_version.py --normalize "$INPUT_VERSION")"
+          tag="v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "::error::Release $tag already exists"
+              exit 1
+            fi
+            echo "Tag $tag exists without a release; only publishing the release."
+            echo "resume=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "resume=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update version in all files
+        if: steps.version.outputs.resume == 'false'
+        run: python scripts/bump_version.py "${{ steps.version.outputs.version }}"
+
+      - name: Install test dependencies
+        if: steps.version.outputs.resume == 'false'
+        run: pip install -r requirements_test.txt
+
+      - name: Run tests
+        if: steps.version.outputs.resume == 'false'
+        run: pytest
+
+      - name: Validate with hassfest
+        if: steps.version.outputs.resume == 'false'
+        uses: "home-assistant/actions/hassfest@master"
+
+      - name: Commit, tag and push
+        if: steps.version.outputs.resume == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add custom_components
+          if git diff --cached --quiet; then
+            echo "Version files already at $VERSION"
+          else
+            git commit -m "Bump version to $VERSION"
+          fi
+          git tag -a "$TAG" -m "Release $TAG"
+          # Atomic: either the branch and the tag both move, or neither does.
+          git push --atomic origin "HEAD:refs/heads/$BRANCH" "refs/tags/$TAG"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          args=(--title "$TAG" --generate-notes --verify-tag)
+          if [ "$PRERELEASE" = "true" ]; then args+=(--prerelease); fi
+          gh release create "$TAG" "${args[@]}"
